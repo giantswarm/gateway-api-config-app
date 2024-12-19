@@ -1,0 +1,41 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: custom-proxy-config
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                  - name: envoy
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  - name: shutdown-manager
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  securityContext:
+                    runAsGroup: 65534
+                    runAsNonRoot: true
+                    runAsUser: 65534
+                    seccompProfile:
+                      type: RuntimeDefault
+      envoyService:
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: ingress.mati208.gaws.gigantic.io
+          giantswarm.io/external-dns: managed

@@ -1,4 +1,5 @@
-name: {APP-NAME}
+name: envoy-gateway
+namespace: giantswarm
 serviceType: managed
 
 project:
@@ -7,6 +8,9 @@ project:
 
 image:
   registry: quay.io
-  name: giantswarm/{APP-NAME}
+  name: giantswarm/envoy-gateway-default-configuration
   tag: v0.0.1
   pullPolicy: IfNotPresent
+
+gateway:
+  host: test.gaws.gigantic.io
