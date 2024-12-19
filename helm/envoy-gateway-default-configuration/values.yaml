@@ -2,15 +2,7 @@ name: envoy-gateway
 namespace: giantswarm
 serviceType: managed
 
-project:
-  branch: "[[ .Branch ]]"
-  commit: "[[ .SHA ]]"
-
-image:
-  registry: quay.io
-  name: giantswarm/envoy-gateway-default-configuration
-  tag: v0.0.1
-  pullPolicy: IfNotPresent
-
 gateway:
+  name: default
+  class: default
   host: test.gaws.gigantic.io

@@ -13,5 +13,5 @@ spec:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: external-gateway
-            namespace: default
+          - name: {{ .Values.gateway.name }}
+            namespace: {{ .Values.namespace }}
