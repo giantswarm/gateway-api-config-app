@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-giantswarm-gw
 spec:
-  gatewayClassName: eg
+  gatewayClassName: {{ .Values.gateway.class }}
   listeners:
     - name: http
       protocol: HTTP
