@@ -1,8 +1,8 @@
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
-  name: custom-proxy-config
-  namespace: envoy-gateway-system
+  name: proxy-default-config
+  namespace: {{ .Values.namespace }}
 spec:
   provider:
     type: Kubernetes
@@ -37,5 +37,5 @@ spec:
                       type: RuntimeDefault
       envoyService:
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: ingress.mati208.gaws.gigantic.io
+          external-dns.alpha.kubernetes.io/hostname: {{ .Values.gateway.host }}
           giantswarm.io/external-dns: managed
