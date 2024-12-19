@@ -1,0 +1,8 @@
+name: envoy-gateway
+namespace: giantswarm
+serviceType: managed
+
+gateway:
+  name: default
+  class: default
+  host: test.gaws.gigantic.io
