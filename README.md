@@ -1,11 +1,9 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/giantswarm/envoy-gateway-default-configuration/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/giantswarm/envoy-gateway-default-configuration/tree/main)
 
-[Read me after cloning this template (GS staff only)](https://handbook.giantswarm.io/docs/dev-and-releng/app-developer-processes/adding_app_to_appcatalog/)
+# envoy-gateway-default-configuration chart
 
-# {envoy-gateway-default-configuration} chart
-
-Giant Swarm offers a {envoy-gateway-default-configuration} App which can be installed in workload clusters.
-Here we define the {envoy-gateway-default-configuration} chart with its templates and default configuration.
+Giant Swarm offers a `envoy-gateway-default-configuration` App, which can be installed in workload clusters together with [envoy-gateway-app](https://github.com/giantswarm/envoy-gateway-app).
+Here, we define the `envoy-gateway-default-configuration` chart with its templates and default configuration.
 
 **What is this app?**
 
@@ -50,7 +48,7 @@ workload cluster `abc12`:
 
 ```
 
-See our [full reference on how to configure apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
+See our [full reference on configuring apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
 
 ## Compatibility
 
@@ -67,4 +65,4 @@ Not following these limitations will most likely result in a broken deployment.
 
 ## Credit
 
-- {APP HELM REPOSITORY}
+- [Giant Swarm Catalog](https://github.com/giantswarm/giantswarm-catalog)
