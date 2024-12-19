@@ -3,13 +3,20 @@
 # envoy-gateway-default-configuration chart
 
 Giant Swarm offers a `envoy-gateway-default-configuration` App, which can be installed in workload clusters together with [envoy-gateway-app](https://github.com/giantswarm/envoy-gateway-app).
+
 Here, we define the `envoy-gateway-default-configuration` chart with its templates and default configuration.
 
 **What is this app?**
 
+Envoy Gateway Default Configuration is a Giant Swarm App that provides a default configuration for the Envoy Gateway App. It is a optional dependency for the Envoy Gateway App to have a default gateway configuration.
+
 **Why did we add it?**
 
+Since the default [envoy-gateway-app](https://github.com/giantswarm/envoy-gateway-app) only deploys the Envoy Gateway, it does not provide a default configuration for the gateway. This gives the user the flexibility to configure the gateway as needed to have a quick start.
+
 **Who can use it?**
+
+Any platform user who wants to have a default configuration for the Envoy Gateway App.
 
 ## Installing
 
@@ -25,27 +32,56 @@ There are several ways to install this app onto a workload cluster.
 
 **This is an example of a values file you could upload using our web interface.**
 
+Configure the gateway name, class and host to your needs.
+
 ```yaml
 # values.yaml
-
+gateway:
+  name: default
+  class: default
+  host: test.gaws.gigantic.io
 ```
 
 ### Sample App CR and ConfigMap for the management cluster
 
-If you have access to the Kubernetes API on the management cluster, you could create
-the App CR and ConfigMap directly.
+If you have access to the platform API on the management cluster, you could create the App CR and ConfigMap directly.
 
-Here is an example that would install the app to
-workload cluster `abc12`:
+Here is an example that would install the app to workload cluster `abc12`:
 
 ```yaml
 # appCR.yaml
-
+apiVersion: application.giantswarm.io/v1alpha1
+kind: App
+metadata:
+  labels:
+    giantswarm.io/cluster: abc12
+  name: envoy-gateway-default-configuration
+  namespace: org-giantswarm
+spec:
+  catalog: giantswarm
+  extraconfigs:
+    - name: envoy-gateway-default-configuration-user-values
+      namespace: org-giantswarm
+  kubeConfig:
+    inCluster: false
+  name: envoy-gateway-default-configuration
+  namespace: giantswarm
+  version: 0.1.0
 ```
 
 ```yaml
 # user-values-configmap.yaml
-
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-gateway-default-configuration-user-values
+  namespace: org-giantswarm
+data:
+  values: |
+    gateway:
+      name: default
+      class: default
+      host: mycluster.gaws.gigantic.io
 ```
 
 See our [full reference on configuring apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
@@ -54,14 +90,11 @@ See our [full reference on configuring apps](https://docs.giantswarm.io/getting-
 
 This app has been tested to work with the following workload cluster release versions:
 
-- _add release version_
+- 0.1.0
 
 ## Limitations
 
-Some apps have restrictions on how they can be deployed.
-Not following these limitations will most likely result in a broken deployment.
-
-- _add limitation_
+None
 
 ## Credit
 
