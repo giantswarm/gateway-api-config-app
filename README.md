@@ -1,14 +1,14 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/giantswarm/envoy-gateway-default-configuration/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/giantswarm/envoy-gateway-default-configuration/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/giantswarm/gateway-api-config-app/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/giantswarm/gateway-api-config-app/tree/main)
 
-# envoy-gateway-default-configuration chart
+# gateway-api-config chart
 
-Giant Swarm offers a `envoy-gateway-default-configuration` App, which can be installed in workload clusters together with [envoy-gateway-app](https://github.com/giantswarm/envoy-gateway-app).
+Giant Swarm offers a `gateway-api-config` App, which can be installed in workload clusters together with [envoy-gateway-app](https://github.com/giantswarm/envoy-gateway-app).
 
-Here, we define the `envoy-gateway-default-configuration` chart with its templates and default configuration.
+Here, we define the `gateway-api-config` chart with its templates and default configuration.
 
 **What is this app?**
 
-Envoy Gateway Default Configuration is a Giant Swarm App that provides a default configuration for the Envoy Gateway App. It is a optional dependency for the Envoy Gateway App to have a default gateway configuration.
+Gateway API Config is a Giant Swarm App that provides a default configuration for the Envoy Gateway App. It is a optional dependency for the Envoy Gateway App to have a default gateway configuration.
 
 **Why did we add it?**
 
@@ -55,16 +55,16 @@ kind: App
 metadata:
   labels:
     giantswarm.io/cluster: abc12
-  name: envoy-gateway-default-configuration
+  name: gateway-api-config
   namespace: org-giantswarm
 spec:
   catalog: giantswarm
   extraconfigs:
-    - name: envoy-gateway-default-configuration-user-values
+    - name: gateway-api-config-user-values
       namespace: org-giantswarm
   kubeConfig:
     inCluster: false
-  name: envoy-gateway-default-configuration
+  name: gateway-api-config
   namespace: giantswarm
   version: 0.1.0
 ```
@@ -74,7 +74,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: envoy-gateway-default-configuration-user-values
+  name: gateway-api-config-user-values
   namespace: org-giantswarm
 data:
   values: |

@@ -1,7 +1,3 @@
-name: envoy-gateway
-namespace: giantswarm
-serviceType: managed
-
 gateway:
   name: default
   class: default
