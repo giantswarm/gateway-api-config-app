@@ -1,4 +1,5 @@
 replace-chart-version-with-git: true
+replace-app-version-with-git: true
 generate-metadata: true
-chart-dir: ./helm/{envoy-gateway-default-configuration}
+chart-dir: ./helm/gateway-api-config
 destination: ./build
