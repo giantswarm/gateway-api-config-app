@@ -1,28 +1,34 @@
+{{- range $i, $gateway := .Values.gateway }}
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: {{ .Values.gateway.name }}
-  namespace: {{ .Values.namespace }}
+  name: {{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+	{{- with $gateway.tls }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-giantswarm-gw
+    cert-manager.io/cluster-issuer: {{ .issuer }}
+  {{- end }}
 spec:
-  gatewayClassName: {{ .Values.gateway.class }}
+  gatewayClassName: {{ $gateway.className }}
   listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
+    {{- range $gateway.listeners }}
+    - name: {{ .name }}
+      protocol: {{ .protocol }}
+      port: {{ .port }}
+      {{- with .allowedRoutes }}
       allowedRoutes:
-        namespaces:
-          from: All
-    - name: https
-      protocol: HTTPS
-      hostname: {{ .Values.gateway.host }}
-      port: 443
-      allowedRoutes:
-        namespaces:
-          from: All
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      hostname: {{ with .hostname }}{{ tpl . $ }}{{- end }}
+      {{- with .tls }}
       tls:
-        mode: Terminate
+        mode: {{ .mode }}
+        {{- with .certSecretName }}
         certificateRefs:
         - kind: Secret
-          name: letsencrypt-giantswarm-gw
+          name: {{ default (printf "le-%s" $gateway.name) . }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+{{- end }}

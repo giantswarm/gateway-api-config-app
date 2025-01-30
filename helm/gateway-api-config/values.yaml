@@ -1,8 +1,25 @@
-gateway:
-  name: default
-  class: default
-  host: test.gaws.gigantic.io
+baseDomain: gs.com
 
 gatewayClass:
   - name: giantswarm-default
     overrideExternalDnsHostname: ""
+
+gateway:
+  - name: giantswarm-default
+    listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      protocol: HTTPS
+      hostname: example.{{ $.Values.baseDomain }}
+      port: 443
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certSecretName: letsencrypt-giantswarm-gw

@@ -3,16 +3,43 @@
     "type": "object",
     "properties": {
         "gateway": {
-            "type": "object",
-            "properties": {
-                "class": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "listeners": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "allowedRoutes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "namespaces": {
+                                            "type": "object",
+                                            "properties": {
+                                                "from": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "name": {
+                        "type": "string"
+                    }
                 }
             }
         },
