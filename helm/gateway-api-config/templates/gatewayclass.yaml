@@ -1,12 +1,57 @@
+{{- range .Values.gatewayClass }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: gatewayclass-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                  - name: envoy
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  - name: shutdown-manager
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  securityContext:
+                    runAsGroup: 65534
+                    runAsNonRoot: true
+                    runAsUser: 65534
+                    seccompProfile:
+                      type: RuntimeDefault
+      envoyService:
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: {{ default .name .overrideExternalDnsHostname }}.{{ $.baseDomain }}
+          giantswarm.io/external-dns: managed
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: {{ .Values.gateway.class }}
-  namespace: {{ .Values.namespace }}
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
 spec:
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
   parametersRef:
     group: gateway.envoyproxy.io
     kind: EnvoyProxy
-    name: proxy-default-config
-    namespace: {{ .Values.namespace }}
+    name: gatewayclass-{{ .name }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}

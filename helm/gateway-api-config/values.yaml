@@ -2,3 +2,7 @@ gateway:
   name: default
   class: default
   host: test.gaws.gigantic.io
+
+gatewayClass:
+  - name: eg
+    overrideExternalDnsHostname: ingress
