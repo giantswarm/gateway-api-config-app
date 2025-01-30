@@ -5,4 +5,4 @@ gateway:
 
 gatewayClass:
   - name: eg
-    overrideExternalDnsHostname: ingress
+    overrideExternalDnsHostname: ""
