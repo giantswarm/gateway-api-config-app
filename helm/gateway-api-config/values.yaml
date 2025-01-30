@@ -4,5 +4,5 @@ gateway:
   host: test.gaws.gigantic.io
 
 gatewayClass:
-  - name: eg
+  - name: giantswarm-default
     overrideExternalDnsHostname: ""
