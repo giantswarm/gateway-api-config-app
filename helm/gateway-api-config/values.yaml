@@ -6,6 +6,8 @@ gatewayClass:
 
 gateway:
   - name: giantswarm-default
+    tls:
+      issuer: letsencrypt-giantswarm-gw
     listeners:
     - name: http
       protocol: HTTP
