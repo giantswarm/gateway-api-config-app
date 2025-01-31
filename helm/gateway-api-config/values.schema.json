@@ -2,6 +2,9 @@
     "$schema": "http://json-schema.org/schema#",
     "type": "object",
     "properties": {
+        "baseDomain": {
+            "type": "string"
+        },
         "gateway": {
             "type": "array",
             "items": {
@@ -39,6 +42,14 @@
                     },
                     "name": {
                         "type": "string"
+                    },
+                    "tls": {
+                        "type": "object",
+                        "properties": {
+                            "issuer": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
