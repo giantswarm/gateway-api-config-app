@@ -5,6 +5,23 @@
         "baseDomain": {
             "type": "string"
         },
+        "clusterIssuer": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "gateway": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "gatewayClasses": {
             "type": "array",
             "items": {
