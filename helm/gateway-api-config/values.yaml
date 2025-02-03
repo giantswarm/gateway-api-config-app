@@ -1,4 +1,10 @@
-baseDomain: gs.com
+baseDomain: example.com
+
+clusterIssuer:
+  enabled: true
+  name: letsencrypt-giantswarm-gateway
+  email: accounts@giantswarm.io
+  gateway: giantswarm-default
 
 gatewayClasses:
   - name: giantswarm-default
@@ -7,7 +13,7 @@ gatewayClasses:
 gateways:
   - name: giantswarm-default
     tls:
-      issuer: letsencrypt-giantswarm-gw
+      issuer: letsencrypt-giantswarm-gateway
     listeners:
     - name: http
       protocol: HTTP
@@ -24,4 +30,4 @@ gateways:
           from: All
       tls:
         mode: Terminate
-        certSecretName: letsencrypt-giantswarm-gw
+        certSecretName: giantswarm-default-tls
