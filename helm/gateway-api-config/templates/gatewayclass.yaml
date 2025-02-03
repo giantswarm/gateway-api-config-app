@@ -1,4 +1,4 @@
-{{- range .Values.gatewayClass }}
+{{- range .Values.gatewayClasses }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy

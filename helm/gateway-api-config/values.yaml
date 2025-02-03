@@ -1,10 +1,10 @@
 baseDomain: gs.com
 
-gatewayClass:
+gatewayClasses:
   - name: giantswarm-default
     overrideExternalDnsHostname: ""
 
-gateway:
+gateways:
   - name: giantswarm-default
     tls:
       issuer: letsencrypt-giantswarm-gw
