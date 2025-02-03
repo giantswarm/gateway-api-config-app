@@ -13,4 +13,4 @@ spec:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: {{ .Values.gateway.name }}
+          - name: gateway-name

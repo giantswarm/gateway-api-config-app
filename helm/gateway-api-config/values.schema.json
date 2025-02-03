@@ -2,21 +2,10 @@
     "$schema": "http://json-schema.org/schema#",
     "type": "object",
     "properties": {
-        "gateway": {
-            "type": "object",
-            "properties": {
-                "class": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
+        "baseDomain": {
+            "type": "string"
         },
-        "gatewayClass": {
+        "gatewayClasses": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -26,6 +15,55 @@
                     },
                     "overrideExternalDnsHostname": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "gateways": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "listeners": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "allowedRoutes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "namespaces": {
+                                            "type": "object",
+                                            "properties": {
+                                                "from": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "type": "integer"
+                                },
+                                "protocol": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "tls": {
+                        "type": "object",
+                        "properties": {
+                            "issuer": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }

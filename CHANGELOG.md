@@ -9,5 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - changed: `app.giantswarm.io` label group was changed to `application.giantswarm.io`
 - Make GatewayClass customizable.
+- Make Gateway customizable.
 
 [Unreleased]: https://github.com/giantswarm/gateway-api-config-app/tree/main
