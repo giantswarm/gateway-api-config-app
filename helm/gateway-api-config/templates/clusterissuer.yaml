@@ -1,18 +1,23 @@
-{{- if .Values.clusterIssuer.enabled }}
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- if $gateway.tlsIssuer.enabled }}
 apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+kind: Issuer
 metadata:
-  name: {{ .Values.clusterIssuer.name }}
+  name: {{ $gateway.tlsIssuer.name }}
+  namespace: {{ $.Release.Namespace }}
 spec:
   acme:
-    email: {{ .Values.clusterIssuer.email }}
+    email: {{ $gateway.tlsIssuer.email }}
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
-      name: {{ .Values.clusterIssuer.name }}
+      name: {{ $gateway.tlsIssuer.name }}
     solvers:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: {{ .Values.clusterIssuer.gateway }}
-            namespace: {{ .Release.Namespace }}
+          - name: {{ $gateway.tlsIssuer.gateway }}
+            namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}
 {{- end }}

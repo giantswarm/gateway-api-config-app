@@ -1,9 +1,10 @@
-{{- range .Values.gatewayClasses }}
+{{- range $i, $class := .Values.gatewayClasses }}
+{{- if $class.enabled }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
 metadata:
-  name: gatewayclass-{{ .name }}
+  name: gatewayclass-{{ $class.name }}
   namespace: {{ $.Release.Namespace }}
 spec:
   provider:
@@ -39,19 +40,20 @@ spec:
                       type: RuntimeDefault
       envoyService:
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: {{ default .name .overrideExternalDnsHostname }}.{{ $.baseDomain }}
+          external-dns.alpha.kubernetes.io/hostname: {{ default $class.name $class.overrideExternalDnsHostname }}.{{ $.baseDomain }}
           giantswarm.io/external-dns: managed
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: {{ .name }}
+  name: {{ $class.name }}
   namespace: {{ $.Release.Namespace }}
 spec:
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
   parametersRef:
     group: gateway.envoyproxy.io
     kind: EnvoyProxy
-    name: gatewayclass-{{ .name }}
+    name: gatewayclass-{{ $class.name }}
     namespace: {{ $.Release.Namespace }}
+{{- end }}
 {{- end }}

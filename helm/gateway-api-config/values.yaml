@@ -1,19 +1,20 @@
 baseDomain: example.com
 
-clusterIssuer:
-  enabled: true
-  name: letsencrypt-giantswarm-gateway
-  email: accounts@giantswarm.io
-  gateway: giantswarm-default
-
 gatewayClasses:
-  - name: giantswarm-default
+  giantswarm-default:
+    enabled: true
+    name: giantswarm-default
     overrideExternalDnsHostname: ""
 
 gateways:
-  - name: giantswarm-default
-    tls:
-      issuer: letsencrypt-giantswarm-gateway
+  giantswarm-default:
+    enabled: true
+    name: giantswarm-default
+    tlsIssuer:
+      enabled: true
+      name: letsencrypt-giantswarm-gateway
+      email: accounts@giantswarm.io
+      gateway: giantswarm-default
     listeners:
     - name: http
       protocol: HTTP
