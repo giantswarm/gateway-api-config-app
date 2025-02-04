@@ -1,13 +1,23 @@
 {{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: {{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
-  {{- with $gateway.tls }}
+  {{- with $gateway.labels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if or $gateway.annotations $gateway.tlsIssuer }}
   annotations:
-    cert-manager.io/cluster-issuer: {{ .issuer }}
+    {{- if $gateway.tlsIssuer.enabled }}
+    cert-manager.io/issuer: {{ .issuer }}
+    {{- end }}
+    {{- with $gateway.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
@@ -31,4 +41,5 @@ spec:
         {{- end }}
       {{- end }}
     {{- end }}
+{{- end }}
 {{- end }}

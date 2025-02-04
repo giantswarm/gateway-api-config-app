@@ -1,16 +1,23 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- if $gateway.tlsIssuer.enabled }}
 apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
+kind: Issuer
 metadata:
-  name: letsencrypt-giantswarm-gw
-  namespace: {{ .Values.namespace }}
+  name: {{ $gateway.tlsIssuer.name }}
+  namespace: {{ $.Release.Namespace }}
 spec:
   acme:
-    email: accounts@giantswarm.io
+    email: {{ $gateway.tlsIssuer.email }}
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
-      name: letsencrypt-giantswarm-gw
+      name: {{ $gateway.tlsIssuer.name }}
     solvers:
     - http01:
         gatewayHTTPRoute:
           parentRefs:
-          - name: gateway-name
+          - name: {{ $gateway.tlsIssuer.gateway }}
+            namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}
+{{- end }}

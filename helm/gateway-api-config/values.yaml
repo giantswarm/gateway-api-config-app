@@ -1,13 +1,20 @@
-baseDomain: gs.com
+baseDomain: example.com
 
 gatewayClasses:
-  - name: giantswarm-default
+  giantswarm-default:
+    enabled: true
+    name: giantswarm-default
     overrideExternalDnsHostname: ""
 
 gateways:
-  - name: giantswarm-default
-    tls:
-      issuer: letsencrypt-giantswarm-gw
+  giantswarm-default:
+    enabled: true
+    name: giantswarm-default
+    tlsIssuer:
+      enabled: true
+      name: letsencrypt-giantswarm-gateway
+      email: accounts@giantswarm.io
+      gateway: giantswarm-default
     listeners:
     - name: http
       protocol: HTTP
@@ -24,4 +31,4 @@ gateways:
           from: All
       tls:
         mode: Terminate
-        certSecretName: letsencrypt-giantswarm-gw
+        certSecretName: giantswarm-default-tls

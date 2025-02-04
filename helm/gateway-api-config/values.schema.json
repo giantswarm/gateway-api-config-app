@@ -6,62 +6,81 @@
             "type": "string"
         },
         "gatewayClasses": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "overrideExternalDnsHostname": {
-                        "type": "string"
+            "type": "object",
+            "properties": {
+                "giantswarm-default": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "overrideExternalDnsHostname": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "gateways": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "listeners": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "allowedRoutes": {
-                                    "type": "object",
-                                    "properties": {
-                                        "namespaces": {
-                                            "type": "object",
-                                            "properties": {
-                                                "from": {
-                                                    "type": "string"
+            "type": "object",
+            "properties": {
+                "giantswarm-default": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "listeners": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "allowedRoutes": {
+                                        "type": "object",
+                                        "properties": {
+                                            "namespaces": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "from": {
+                                                        "type": "string"
+                                                    }
                                                 }
                                             }
                                         }
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "port": {
+                                        "type": "integer"
+                                    },
+                                    "protocol": {
+                                        "type": "string"
                                     }
+                                }
+                            }
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "tlsIssuer": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string"
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "gateway": {
+                                    "type": "string"
                                 },
                                 "name": {
                                     "type": "string"
-                                },
-                                "port": {
-                                    "type": "integer"
-                                },
-                                "protocol": {
-                                    "type": "string"
                                 }
-                            }
-                        }
-                    },
-                    "name": {
-                        "type": "string"
-                    },
-                    "tls": {
-                        "type": "object",
-                        "properties": {
-                            "issuer": {
-                                "type": "string"
                             }
                         }
                     }
