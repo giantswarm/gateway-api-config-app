@@ -13,7 +13,7 @@ metadata:
   {{- if or $gateway.annotations $gateway.tlsIssuer }}
   annotations:
     {{- if $gateway.tlsIssuer.enabled }}
-    cert-manager.io/cluster-issuer: {{ .issuer }}
+    cert-manager.io/issuer: {{ .issuer }}
     {{- end }}
     {{- with $gateway.annotations }}
     {{- toYaml . | nindent 4 }}
