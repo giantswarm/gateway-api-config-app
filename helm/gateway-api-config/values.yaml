@@ -10,6 +10,7 @@ gateways:
   giantswarm-default:
     enabled: true
     name: giantswarm-default
+    className: giantswarm-default
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway
