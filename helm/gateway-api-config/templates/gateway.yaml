@@ -38,6 +38,11 @@ metadata:
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: gateway-{{ $gateway.name }}
+    namespace: {{ $.Release.Namespace }}
   listeners:
     {{- range $gateway.listeners }}
     - name: {{ .name }}
