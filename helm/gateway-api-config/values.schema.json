@@ -30,6 +30,9 @@
                 "giantswarm-default": {
                     "type": "object",
                     "properties": {
+                        "className": {
+                            "type": "string"
+                        },
                         "enabled": {
                             "type": "boolean"
                         },
@@ -65,6 +68,14 @@
                         },
                         "name": {
                             "type": "string"
+                        },
+                        "service": {
+                            "type": "object",
+                            "properties": {
+                                "annotations": {
+                                    "type": "object"
+                                }
+                            }
                         },
                         "tlsIssuer": {
                             "type": "object",

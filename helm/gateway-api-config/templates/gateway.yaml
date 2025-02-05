@@ -1,6 +1,23 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
 ---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: gateway-{{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  provider:
+    type: Kubernetes
+    {{- if $gateway.service }}
+    kubernetes:
+      envoyService:
+        {{- with $gateway.service.annotations }}
+        annotations:
+          {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
+        {{- end }}
+    {{- end }}
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -21,6 +38,12 @@ metadata:
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: gateway-{{ $gateway.name }}
+      namespace: {{ $.Release.Namespace }}
   listeners:
     {{- range $gateway.listeners }}
     - name: {{ .name }}
