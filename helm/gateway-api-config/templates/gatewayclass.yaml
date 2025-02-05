@@ -38,10 +38,6 @@ spec:
                     runAsUser: 65534
                     seccompProfile:
                       type: RuntimeDefault
-      envoyService:
-        annotations:
-          external-dns.alpha.kubernetes.io/hostname: {{ default $class.name $class.overrideExternalDnsHostname }}.{{ $.baseDomain }}
-          giantswarm.io/external-dns: managed
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
