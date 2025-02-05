@@ -12,5 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make Gateway customizable.
 - Add Issuer per Gateway.
 - Add annotations and labels for the Gateways
+- Move external-dns config to the Gateway level
 
 [Unreleased]: https://github.com/giantswarm/gateway-api-config-app/tree/main
