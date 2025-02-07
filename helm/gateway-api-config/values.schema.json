@@ -30,6 +30,9 @@
                         "certificate": {
                             "type": "object",
                             "properties": {
+                                "dnsNames": {
+                                    "type": "array"
+                                },
                                 "enabled": {
                                     "type": "boolean"
                                 }

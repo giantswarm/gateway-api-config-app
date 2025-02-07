@@ -22,6 +22,7 @@ gateways:
       gateway: giantswarm-default
     certificate:
       enabled: true
+      dnsNames: []
     listeners:
     - name: http
       protocol: HTTP
