@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow multiple certificateRefs in listener for custom Certificates.
 - Allow subdomains in HTTPS listener.
 - Support multiple dnsNames in Certificate CR.
+- Rename gateway and class to `default` in Values schema.
 
 ## [0.1.0] - 2025-02-05
 
