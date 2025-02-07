@@ -31,7 +31,7 @@ gateways:
           from: All
     - name: https
       protocol: HTTPS
-      hostname: example.{{ $.Values.baseDomain }}
+      hostname: '*.{{ $.Values.baseDomain }}'
       port: 443
       allowedRoutes:
         namespaces:
