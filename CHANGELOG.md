@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use Certificate resource instead of cert-manager annotation.
+- Allow multiple certificateRefs in listener for custom Certificates.
+- Allow subdomains in HTTPS listener.
+- Support multiple dnsNames in Certificate CR.
+
 ## [0.1.0] - 2025-02-05
 
 - changed: `app.giantswarm.io` label group was changed to `application.giantswarm.io`
