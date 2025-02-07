@@ -40,18 +40,18 @@ spec:
       name: gateway-{{ $gateway.name }}
       namespace: {{ $.Release.Namespace }}
   listeners:
-    {{- range $gateway.listeners }}
-    - name: {{ .name }}
-      protocol: {{ .protocol }}
-      port: {{ .port }}
-      {{- with .allowedRoutes }}
+    {{- range $k, $l:= $gateway.listeners }}
+    - name: {{ $l.name }}
+      protocol: {{ $l.protocol }}
+      port: {{ $l.port }}
+      {{- with $l.allowedRoutes }}
       allowedRoutes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .hostname }}
+      {{- with $l.hostname }}
       hostname: {{ tpl (. | quote) $ }}
       {{- end }}
-      {{- with .tls }}
+      {{- with $l.tls }}
       tls:
         mode: {{ .mode }}
         {{- if and (eq .mode "Terminate") ($gateway.certificate.enabled) }}
@@ -59,7 +59,7 @@ spec:
         - kind: Secret
           name: gateway-{{ $gateway.name }}-tls
         {{- end }}
-        {{- with .certificateRefs }}
+        {{- range .certificateRefs }}
         - kind: Secret
           name: {{ .name }}
           namespace: {{ .namespace }}
