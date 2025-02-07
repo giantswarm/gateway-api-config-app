@@ -16,9 +16,6 @@
                         },
                         "name": {
                             "type": "string"
-                        },
-                        "overrideExternalDnsHostname": {
-                            "type": "string"
                         }
                     }
                 }
@@ -30,7 +27,18 @@
                 "giantswarm-default": {
                     "type": "object",
                     "properties": {
+                        "certificate": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "className": {
+                            "type": "string"
+                        },
+                        "dnsName": {
                             "type": "string"
                         },
                         "enabled": {
