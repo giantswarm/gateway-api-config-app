@@ -48,7 +48,9 @@ spec:
       allowedRoutes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      hostname: {{ with .hostname }}{{ tpl . $ }}{{- end }}
+      {{- with .hostname }}
+      hostname: {{ tpl (. | quote) $ }}
+      {{- end }}
       {{- with .tls }}
       tls:
         mode: {{ .mode }}
