@@ -8,7 +8,7 @@
         "gatewayClasses": {
             "type": "object",
             "properties": {
-                "giantswarm-default": {
+                "default": {
                     "type": "object",
                     "properties": {
                         "enabled": {
@@ -24,7 +24,7 @@
         "gateways": {
             "type": "object",
             "properties": {
-                "giantswarm-default": {
+                "default": {
                     "type": "object",
                     "properties": {
                         "certificate": {

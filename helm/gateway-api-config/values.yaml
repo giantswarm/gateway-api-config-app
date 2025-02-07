@@ -1,12 +1,12 @@
 baseDomain: example.com
 
 gatewayClasses:
-  giantswarm-default:
+  default:
     enabled: true
     name: giantswarm-default
 
 gateways:
-  giantswarm-default:
+  default:
     enabled: true
     name: giantswarm-default
     dnsName: gateway
