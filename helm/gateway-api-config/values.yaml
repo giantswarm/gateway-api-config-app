@@ -38,4 +38,3 @@ gateways:
           from: All
       tls:
         mode: Terminate
-        certSecretName: giantswarm-default-tls
