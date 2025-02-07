@@ -27,14 +27,9 @@ metadata:
   labels:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if or $gateway.annotations $gateway.tlsIssuer }}
+  {{- with $gateway.annotations }}
   annotations:
-    {{- if $gateway.tlsIssuer.enabled }}
-    cert-manager.io/issuer: {{ .issuer }}
-    {{- end }}
-    {{- with $gateway.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
