@@ -8,16 +8,13 @@
         "gatewayClasses": {
             "type": "object",
             "properties": {
-                "giantswarm-default": {
+                "default": {
                     "type": "object",
                     "properties": {
                         "enabled": {
                             "type": "boolean"
                         },
                         "name": {
-                            "type": "string"
-                        },
-                        "overrideExternalDnsHostname": {
                             "type": "string"
                         }
                     }
@@ -27,41 +24,95 @@
         "gateways": {
             "type": "object",
             "properties": {
-                "giantswarm-default": {
+                "default": {
                     "type": "object",
                     "properties": {
+                        "certificate": {
+                            "type": "object",
+                            "properties": {
+                                "dnsNames": {
+                                    "type": "array"
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "className": {
+                            "type": "string"
+                        },
+                        "dnsName": {
                             "type": "string"
                         },
                         "enabled": {
                             "type": "boolean"
                         },
                         "listeners": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "allowedRoutes": {
-                                        "type": "object",
-                                        "properties": {
-                                            "namespaces": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "from": {
-                                                        "type": "string"
+                            "type": "object",
+                            "properties": {
+                                "http": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedRoutes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "namespaces": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "from": {
+                                                            "type": "string"
+                                                        }
                                                     }
                                                 }
                                             }
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "integer"
+                                        },
+                                        "protocol": {
+                                            "type": "string"
                                         }
-                                    },
-                                    "name": {
-                                        "type": "string"
-                                    },
-                                    "port": {
-                                        "type": "integer"
-                                    },
-                                    "protocol": {
-                                        "type": "string"
+                                    }
+                                },
+                                "https": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowedRoutes": {
+                                            "type": "object",
+                                            "properties": {
+                                                "namespaces": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "from": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "hostname": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "port": {
+                                            "type": "integer"
+                                        },
+                                        "protocol": {
+                                            "type": "string"
+                                        },
+                                        "tls": {
+                                            "type": "object",
+                                            "properties": {
+                                                "mode": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -27,14 +27,9 @@ metadata:
   labels:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if or $gateway.annotations $gateway.tlsIssuer }}
+  {{- with $gateway.annotations }}
   annotations:
-    {{- if $gateway.tlsIssuer.enabled }}
-    cert-manager.io/issuer: {{ .issuer }}
-    {{- end }}
-    {{- with $gateway.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
@@ -45,22 +40,29 @@ spec:
       name: gateway-{{ $gateway.name }}
       namespace: {{ $.Release.Namespace }}
   listeners:
-    {{- range $gateway.listeners }}
-    - name: {{ .name }}
-      protocol: {{ .protocol }}
-      port: {{ .port }}
-      {{- with .allowedRoutes }}
+    {{- range $k, $l:= $gateway.listeners }}
+    - name: {{ $l.name }}
+      protocol: {{ $l.protocol }}
+      port: {{ $l.port }}
+      {{- with $l.allowedRoutes }}
       allowedRoutes:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      hostname: {{ with .hostname }}{{ tpl . $ }}{{- end }}
-      {{- with .tls }}
+      {{- with $l.hostname }}
+      hostname: {{ tpl (. | quote) $ }}
+      {{- end }}
+      {{- with $l.tls }}
       tls:
         mode: {{ .mode }}
-        {{- with .certSecretName }}
+        {{- if and (eq .mode "Terminate") ($gateway.certificate.enabled) }}
         certificateRefs:
         - kind: Secret
-          name: {{ default (printf "le-%s" $gateway.name) . }}
+          name: gateway-{{ $gateway.name }}-tls
+        {{- end }}
+        {{- range .certificateRefs }}
+        - kind: Secret
+          name: {{ .name }}
+          namespace: {{ .namespace }}
         {{- end }}
       {{- end }}
     {{- end }}

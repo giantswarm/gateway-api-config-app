@@ -1,14 +1,15 @@
 baseDomain: example.com
 
 gatewayClasses:
-  giantswarm-default:
+  default:
     enabled: true
     name: giantswarm-default
 
 gateways:
-  giantswarm-default:
+  default:
     enabled: true
     name: giantswarm-default
+    dnsName: gateway
     className: giantswarm-default
     service:
       annotations:
@@ -19,20 +20,25 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
+    certificate:
+      enabled: true
+      dnsNames: []
     listeners:
-    - name: http
-      protocol: HTTP
-      port: 80
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: https
-      protocol: HTTPS
-      hostname: example.{{ $.Values.baseDomain }}
-      port: 443
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certSecretName: giantswarm-default-tls
+      http:
+        name: http
+        protocol: HTTP
+        port: 80
+        allowedRoutes:
+          namespaces:
+            from: All
+      https:
+        name: https
+        protocol: HTTPS
+        hostname: '*.{{ $.Values.baseDomain }}'
+        port: 443
+        allowedRoutes:
+          namespaces:
+            from: All
+        tls:
+          mode: Terminate
+          certiicateRefs: []

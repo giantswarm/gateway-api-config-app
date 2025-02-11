@@ -1,0 +1,29 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- if $gateway.certificate.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gateway-{{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  dnsNames:
+  - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+  {{- with $gateway.certificate.dnsNames }}
+  {{- toYaml . | nindent 2}}
+  {{- end }}
+  {{- if $gateway.tlsIssuer.enabled }}
+  issuerRef:
+    group: cert-manager.io
+    kind: Issuer
+    name: {{ $gateway.tlsIssuer.name }}
+  {{- else }}
+  issuerRef:
+    group: cert-manager.io
+    kind: {{ $gateway.certificate.issuer.kind }}
+    name: {{ $gateway.certificate.issuer.name }}
+  {{- end }}
+  secretName: gateway-{{ $gateway.name }}-tls
+{{- end }}
+{{- end }}
+{{- end }}
