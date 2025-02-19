@@ -9,7 +9,7 @@ metadata:
 spec:
   dnsNames:
   - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
-  {{- with $gateway.certificate.dnsNames }}
+  {{- with $gateway.hostnames }}
   {{- toYaml . | nindent 2}}
   {{- end }}
   {{- if $gateway.tlsIssuer.enabled }}

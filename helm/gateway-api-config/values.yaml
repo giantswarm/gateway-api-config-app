@@ -11,6 +11,14 @@ gateways:
     name: giantswarm-default
     dnsName: gateway
     className: giantswarm-default
+    hostnames: []
+    certificate:
+      enabled: true
+      issuer:
+        kind: ""
+        name: ""
+    dnsEndpoints:
+      enabled: true
     service:
       annotations: {}
       labels: {}
@@ -19,9 +27,6 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
-    certificate:
-      enabled: true
-      dnsNames: []
     listeners:
       http:
         name: http
