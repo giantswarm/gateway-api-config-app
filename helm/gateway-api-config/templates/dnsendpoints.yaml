@@ -7,6 +7,10 @@ kind: DNSEndpoint
 metadata:
   name: gateway-{{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
+  annotations:
+    giantswarm.io/external-dns: managed
+  labels:
+    {{- include "labels.common" . | nindent 4 }}
 spec:
   endpoints:
   {{- range $j, $hostname := $gateway.hostnames }}
