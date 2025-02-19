@@ -30,22 +30,41 @@
                         "certificate": {
                             "type": "object",
                             "properties": {
-                                "dnsNames": {
-                                    "type": "array"
-                                },
                                 "enabled": {
                                     "type": "boolean"
+                                },
+                                "issuer": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kind": {
+                                            "type": "string"
+                                        },
+                                        "name": {
+                                            "type": "string"
+                                        }
+                                    }
                                 }
                             }
                         },
                         "className": {
                             "type": "string"
                         },
+                        "dnsEndpoints": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "dnsName": {
                             "type": "string"
                         },
                         "enabled": {
                             "type": "boolean"
+                        },
+                        "hostnames": {
+                            "type": "array"
                         },
                         "listeners": {
                             "type": "object",
@@ -108,6 +127,9 @@
                                         "tls": {
                                             "type": "object",
                                             "properties": {
+                                                "certiicateRefs": {
+                                                    "type": "array"
+                                                },
                                                 "mode": {
                                                     "type": "string"
                                                 }
@@ -124,6 +146,9 @@
                             "type": "object",
                             "properties": {
                                 "annotations": {
+                                    "type": "object"
+                                },
+                                "labels": {
                                     "type": "object"
                                 }
                             }
