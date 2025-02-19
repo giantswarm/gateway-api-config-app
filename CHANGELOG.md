@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Always set external-dns annotation based on dnsName and baseDomain.
+- Use hostnames list for Certificates and add dnsEndpoints CR.
+
 ## [0.2.0] - 2025-02-12
 
 ### Changed
