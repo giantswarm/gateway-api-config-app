@@ -12,10 +12,16 @@ spec:
     {{- if $gateway.service }}
     kubernetes:
       envoyService:
-        {{- with $gateway.service.annotations }}
-        annotations:
+        {{- with $gateway.service.labels }}
+        labels:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
         {{- end }}
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+          giantswarm.io/external-dns: managed
+          {{- with $gateway.service.annotations }}
+          {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
+          {{- end }}
     {{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
