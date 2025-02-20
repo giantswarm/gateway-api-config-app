@@ -10,7 +10,7 @@ metadata:
   annotations:
     giantswarm.io/external-dns: managed
   labels:
-    {{- include "labels.common" . | nindent 4 }}
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   endpoints:
   {{- range $j, $hostname := $gateway.hostnames }}

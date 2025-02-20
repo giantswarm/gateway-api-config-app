@@ -7,7 +7,7 @@ metadata:
   name: gateway-{{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "labels.common" . | nindent 4 }}
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   provider:
     type: Kubernetes
@@ -32,7 +32,7 @@ metadata:
   name: {{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "labels.common" . | nindent 4 }}
+    {{- include "labels.common" $ | nindent 4 }}
     {{- with $gateway.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
