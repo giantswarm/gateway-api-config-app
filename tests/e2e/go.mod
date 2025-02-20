@@ -9,14 +9,12 @@ replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 replace github.com/alessio/shellescape => al.essio.dev/pkg/shellescape v1.5.0
 
 require (
-	github.com/giantswarm/apptest-framework v1.11.0
+	github.com/giantswarm/apptest-framework v1.12.0
 	github.com/giantswarm/clustertest v1.32.1
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	k8s.io/apimachinery v0.32.2
 )
-
-replace github.com/giantswarm/apptest-framework => /home/matias/gs/testing/apptest-framework
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
