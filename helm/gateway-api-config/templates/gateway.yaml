@@ -6,16 +6,24 @@ kind: EnvoyProxy
 metadata:
   name: gateway-{{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   provider:
     type: Kubernetes
     {{- if $gateway.service }}
     kubernetes:
       envoyService:
-        {{- with $gateway.service.annotations }}
-        annotations:
+        {{- with $gateway.service.labels }}
+        labels:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
         {{- end }}
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+          giantswarm.io/external-dns: managed
+          {{- with $gateway.service.annotations }}
+          {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
+          {{- end }}
     {{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -23,10 +31,11 @@ kind: Gateway
 metadata:
   name: {{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
-  {{- with $gateway.labels }}
   labels:
+    {{- include "labels.common" $ | nindent 4 }}
+    {{- with $gateway.labels }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
   {{- with $gateway.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

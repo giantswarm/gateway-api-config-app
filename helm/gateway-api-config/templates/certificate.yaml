@@ -6,10 +6,12 @@ kind: Certificate
 metadata:
   name: gateway-{{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   dnsNames:
   - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
-  {{- with $gateway.certificate.dnsNames }}
+  {{- with $gateway.hostnames }}
   {{- toYaml . | nindent 2}}
   {{- end }}
   {{- if $gateway.tlsIssuer.enabled }}

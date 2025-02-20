@@ -1,0 +1,25 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- if and $gateway.dnsEndpoints.enabled $gateway.hostnames }}
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: gateway-{{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    giantswarm.io/external-dns: managed
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  endpoints:
+  {{- range $j, $hostname := $gateway.hostnames }}
+  - dnsName: {{ $hostname }}
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

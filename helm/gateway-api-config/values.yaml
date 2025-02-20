@@ -11,18 +11,22 @@ gateways:
     name: giantswarm-default
     dnsName: gateway
     className: giantswarm-default
+    hostnames: []
+    certificate:
+      enabled: true
+      issuer:
+        kind: ""
+        name: ""
+    dnsEndpoints:
+      enabled: true
     service:
-      annotations:
-        external-dns.alpha.kubernetes.io/hostname: gateway.{{ $.Values.baseDomain }}
-        giantswarm.io/external-dns: managed
+      annotations: {}
+      labels: {}
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
-    certificate:
-      enabled: true
-      dnsNames: []
     listeners:
       http:
         name: http

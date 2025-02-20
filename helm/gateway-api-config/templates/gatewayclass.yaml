@@ -6,6 +6,8 @@ kind: EnvoyProxy
 metadata:
   name: gatewayclass-{{ $class.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   provider:
     type: Kubernetes
@@ -44,6 +46,8 @@ kind: GatewayClass
 metadata:
   name: {{ $class.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
 spec:
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
   parametersRef:
