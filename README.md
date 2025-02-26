@@ -28,20 +28,6 @@ There are several ways to install this app onto a workload cluster.
 
 ## Configuring
 
-### values.yaml
-
-**This is an example of a values file you could upload using our web interface.**
-
-Configure the gateway name, class and host to your needs.
-
-```yaml
-# values.yaml
-gateway:
-  name: default
-  class: default
-  host: test.gaws.gigantic.io
-```
-
 ### Sample App CR and ConfigMap for the management cluster
 
 If you have access to the platform API on the management cluster, you could create the App CR and ConfigMap directly.
@@ -66,7 +52,7 @@ spec:
     inCluster: false
   name: gateway-api-config
   namespace: giantswarm
-  version: 0.1.0
+  version: 0.3.0
 ```
 
 ```yaml
@@ -78,23 +64,13 @@ metadata:
   namespace: org-giantswarm
 data:
   values: |
-    gateway:
-      name: default
-      class: default
-      host: mycluster.gaws.gigantic.io
+    gateways:
+      default:
+        hostnames:
+          - test.<mycluster>.gaws.gigantic.io
 ```
 
 See our [full reference on configuring apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
-
-## Compatibility
-
-This app has been tested to work with the following workload cluster release versions:
-
-- 0.1.0
-
-## Limitations
-
-None
 
 ## Credit
 
