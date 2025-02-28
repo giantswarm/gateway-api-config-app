@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-02-26
+
 ### Changed
 
 - Always set external-dns annotation based on dnsName and baseDomain.
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/giantswarm/gateway-api-config-app/releases/tag/v0.1.0
