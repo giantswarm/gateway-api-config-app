@@ -1,5 +1,6 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
+{{- if $gateway.podMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
@@ -28,5 +29,6 @@ spec:
       app.kubernetes.io/component: proxy
       app.kubernetes.io/name: envoy
       gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
+{{- end }}
 {{- end }}
 {{- end }}
