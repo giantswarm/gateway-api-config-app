@@ -63,9 +63,6 @@
                         "enabled": {
                             "type": "boolean"
                         },
-                        "hostnames": {
-                            "type": "array"
-                        },
                         "listeners": {
                             "type": "object",
                             "properties": {
@@ -142,6 +139,9 @@
                         "name": {
                             "type": "string"
                         },
+                        "overrideBaseDomain": {
+                            "type": "string"
+                        },
                         "podMonitor": {
                             "type": "object",
                             "properties": {
@@ -160,6 +160,9 @@
                                     "type": "object"
                                 }
                             }
+                        },
+                        "subdomains": {
+                            "type": "array"
                         },
                         "tlsIssuer": {
                             "type": "object",
