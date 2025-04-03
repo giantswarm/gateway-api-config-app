@@ -19,7 +19,7 @@ spec:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
         {{- end }}
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+          external-dns.alpha.kubernetes.io/hostname: {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
           giantswarm.io/external-dns: managed
           {{- with $gateway.service.annotations }}
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
