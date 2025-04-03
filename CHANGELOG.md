@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Values.gateway.hostnames now accepts a list of subdomains only.
+- baseDomain can be overridden per Gateway.
+
 ## [0.4.0] - 2025-03-05
 
 ### Added

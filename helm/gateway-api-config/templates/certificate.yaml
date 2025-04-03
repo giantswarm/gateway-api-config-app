@@ -10,9 +10,9 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   dnsNames:
-  - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
-  {{- with $gateway.hostnames }}
-  {{- toYaml . | nindent 2}}
+  - {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
+  {{- range $k, $v := $gateway.subdomains }}
+  - {{ $v }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
   {{- end }}
   {{- if $gateway.tlsIssuer.enabled }}
   issuerRef:

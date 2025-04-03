@@ -11,7 +11,8 @@ gateways:
     name: giantswarm-default
     dnsName: gateway
     className: giantswarm-default
-    hostnames: []
+    overrideBaseDomain: ""
+    subdomains: []
     certificate:
       enabled: true
       issuer:

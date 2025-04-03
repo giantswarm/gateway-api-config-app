@@ -1,6 +1,6 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
-{{- if and $gateway.dnsEndpoints.enabled $gateway.hostnames }}
+{{- if and $gateway.dnsEndpoints.enabled $gateway.subdomains }}
 ---
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
@@ -13,12 +13,12 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   endpoints:
-  {{- range $j, $hostname := $gateway.hostnames }}
-  - dnsName: {{ $hostname }}
+  {{- range $k, $v := $gateway.subdomains }}
+  - dnsName: {{ $v }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
     recordTTL: 300
     recordType: CNAME
     targets:
-    - {{ $gateway.dnsName }}.{{ $.Values.baseDomain }}
+    - {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
   {{- end }}
 {{- end }}
 {{- end }}
