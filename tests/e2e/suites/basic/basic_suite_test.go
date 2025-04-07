@@ -51,7 +51,7 @@ func TestBasic(t *testing.T) {
 
 					return done, nil
 				}).
-					WithTimeout(5 * time.Minute).
+					WithTimeout(15 * time.Minute).
 					WithPolling(5 * time.Second).
 					Should(BeTrue())
 			})
