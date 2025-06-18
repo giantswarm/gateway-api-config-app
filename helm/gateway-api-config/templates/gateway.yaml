@@ -63,15 +63,19 @@ spec:
       {{- with $l.tls }}
       tls:
         mode: {{ .mode }}
-        {{- if and (eq .mode "Terminate") ($gateway.certificate.enabled) }}
+        {{- if or (.certificateRefs) ($gateway.certificate.enabled) }}
         certificateRefs:
+        {{- if and (eq .mode "Terminate") ($gateway.certificate.enabled) }}
         - kind: Secret
           name: gateway-{{ $gateway.name }}-tls
         {{- end }}
         {{- range .certificateRefs }}
         - kind: Secret
           name: {{ .name }}
+          {{- if .namespace }}
           namespace: {{ .namespace }}
+          {{- end }}
+        {{- end }}
         {{- end }}
       {{- end }}
     {{- end }}

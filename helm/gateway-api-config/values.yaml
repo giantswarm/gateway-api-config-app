@@ -48,4 +48,4 @@ gateways:
             from: All
         tls:
           mode: Terminate
-          certiicateRefs: []
+          certificateRefs: []
