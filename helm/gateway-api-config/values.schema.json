@@ -124,7 +124,7 @@
                                         "tls": {
                                             "type": "object",
                                             "properties": {
-                                                "certiicateRefs": {
+                                                "certificateRefs": {
                                                     "type": "array"
                                                 },
                                                 "mode": {
