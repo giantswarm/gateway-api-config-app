@@ -125,7 +125,18 @@
                                             "type": "object",
                                             "properties": {
                                                 "certificateRefs": {
-                                                    "type": "array"
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "namespace": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
                                                 },
                                                 "mode": {
                                                     "type": "string"
