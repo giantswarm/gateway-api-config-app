@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-06-24
+
 ### Fixed
 
 - Ensure that the Gateway is correctly templated when only certificateRefs are used.
@@ -51,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v0.2.0...v0.3.0
