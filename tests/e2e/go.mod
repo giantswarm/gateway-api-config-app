@@ -1,6 +1,6 @@
 module e2e
 
-go 1.24.6
+go 1.25.1
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
