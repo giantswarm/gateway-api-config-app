@@ -8,7 +8,7 @@ gatewayClasses:
       enabled: true
       envoyDeployment:
         container:
-          imageRegistry: gsoci.azurecr.io/giantswarm/envoy
+          imageRepository: gsoci.azurecr.io/giantswarm/envoy
 
 gateways:
   default:
