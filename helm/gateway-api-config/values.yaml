@@ -49,3 +49,6 @@ gateways:
         tls:
           mode: Terminate
           certificateRefs: []
+    envoyProxy:
+      enabled: true
+      envoyDeployment: {}
