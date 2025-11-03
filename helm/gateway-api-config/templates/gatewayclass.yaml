@@ -1,5 +1,6 @@
 {{- range $i, $class := .Values.gatewayClasses }}
 {{- if $class.enabled }}
+{{- if $class.envoyProxy.enabled }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -13,6 +14,10 @@ spec:
     type: Kubernetes
     kubernetes:
       envoyDeployment:
+        {{- with $class.envoyProxy.envoyDeployment }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if not (hasKey $class.envoyProxy.envoyDeployment "patch") }}
         patch:
           type: StrategicMerge
           value:
@@ -40,6 +45,8 @@ spec:
                     runAsUser: 65534
                     seccompProfile:
                       type: RuntimeDefault
+        {{- end }}
+{{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass

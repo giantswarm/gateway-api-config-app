@@ -4,6 +4,11 @@ gatewayClasses:
   default:
     enabled: true
     name: giantswarm-default
+    envoyProxy:
+      enabled: true
+      envoyDeployment:
+        container:
+          imageRegistry: gsoci.azurecr.io/giantswarm/envoy
 
 gateways:
   default:
