@@ -4,6 +4,40 @@ gatewayClasses:
   default:
     enabled: true
     name: giantswarm-default
+    envoyProxy:
+      enabled: true
+      envoyDeployment:
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                  - name: envoy
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  - name: shutdown-manager
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                  securityContext:
+                    runAsGroup: 65534
+                    runAsNonRoot: true
+                    runAsUser: 65534
+                    seccompProfile:
+                      type: RuntimeDefault
+      envoyService: {}
+      envoyHpa: {}
+      envoyPDB: {}
+      envoyServiceAccount: {}
 
 gateways:
   default:
@@ -49,3 +83,9 @@ gateways:
         tls:
           mode: Terminate
           certificateRefs: []
+    envoyProxy:
+      enabled: true
+      envoyDeployment: {}
+      envoyHpa: {}
+      envoyPDB: {}
+      envoyServiceAccount: {}
