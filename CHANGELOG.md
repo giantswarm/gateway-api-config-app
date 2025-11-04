@@ -10,9 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated E2E tests to use apptest-framework v1.14.0.
-- Allow for custom envoyDeployment configuration the Gateway.
-- Allow for custom envoyDeployment configuration the GatewayClass.
-- Override envoy proxy image repository by default.
+- Allow for custom envoyProxy provider configuration the Gateway.
+- Allow for custom envoyProxy provider configuration the GatewayClass.
 
 ## [0.5.1] - 2025-06-24
 
