@@ -14,6 +14,29 @@
                         "enabled": {
                             "type": "boolean"
                         },
+                        "envoyProxy": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "envoyDeployment": {
+                                    "type": "object"
+                                },
+                                "envoyHpa": {
+                                    "type": "object"
+                                },
+                                "envoyPDB": {
+                                    "type": "object"
+                                },
+                                "envoyService": {
+                                    "type": "object"
+                                },
+                                "envoyServiceAccount": {
+                                    "type": "object"
+                                }
+                            }
+                        },
                         "name": {
                             "type": "string"
                         }
@@ -62,6 +85,26 @@
                         },
                         "enabled": {
                             "type": "boolean"
+                        },
+                        "envoyProxy": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "envoyDeployment": {
+                                    "type": "object"
+                                },
+                                "envoyHpa": {
+                                    "type": "object"
+                                },
+                                "envoyPDB": {
+                                    "type": "object"
+                                },
+                                "envoyServiceAccount": {
+                                    "type": "object"
+                                }
+                            }
                         },
                         "listeners": {
                             "type": "object",

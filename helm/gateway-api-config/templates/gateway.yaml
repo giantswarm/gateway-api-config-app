@@ -29,6 +29,18 @@ spec:
           {{- with $gateway.service.annotations }}
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
           {{- end }}
+      {{- with $gateway.envoyProxy.envoyHpa }}
+      envoyHpa:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.envoyProxy.envoyPDB }}
+      envoyPDB:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $gateway.envoyProxy.envoyServiceAccount }}
+      envoyServiceAccount:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     {{- end }}
 {{- end }}
 ---
