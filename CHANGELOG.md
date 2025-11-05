@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow for custom envoyProxy provider configuration the GatewayClass.
 - Set proxy image for default gateway to gsoci.azurecr.io/giantswarm/envoy
 
-
 ## [0.5.1] - 2025-06-24
 
 ### Fixed

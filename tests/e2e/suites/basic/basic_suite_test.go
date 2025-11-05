@@ -1,17 +1,24 @@
 package basic
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/giantswarm/apptest-framework/v2/pkg/state"
 	"github.com/giantswarm/apptest-framework/v2/pkg/suite"
+	"github.com/giantswarm/clustertest/v2/pkg/client"
 	"github.com/giantswarm/clustertest/v2/pkg/logger"
 	"github.com/giantswarm/clustertest/v2/pkg/wait"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -61,6 +68,50 @@ func TestBasic(t *testing.T) {
 					WithPolling(5 * time.Second).
 					Should(BeTrue())
 			})
+
+			It("should have the envoy proxy pods running", func() {
+				wcName := state.GetCluster().Name
+				wcClient, _ := state.GetFramework().WC(wcName)
+				proxyPodsListOptions := &cr.ListOptions{
+					Namespace: "envoy-gateway-system",
+					LabelSelector: labels.SelectorFromSet(map[string]string{
+						"app.kubernetes.io/component": "proxy",
+						"app.kubernetes.io/name":      "envoy",
+					}),
+				}
+				Eventually(arePodsRunning(state.GetContext(), wcClient, proxyPodsListOptions)).
+					WithTimeout(5 * time.Minute).
+					WithPolling(5 * time.Second).
+					Should(BeTrue())
+			})
 		}).
 		Run(t, "Gateway-API Config Test")
+}
+
+func arePodsRunning(ctx context.Context, kubeClient *client.Client, listOptions *cr.ListOptions) wait.WaitCondition {
+	return func() (bool, error) {
+		podList := &corev1.PodList{}
+		var err error
+
+		if listOptions != nil {
+			err = kubeClient.List(ctx, podList, listOptions)
+		} else {
+			err = kubeClient.List(ctx, podList)
+		}
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, pod := range podList.Items {
+			phase := pod.Status.Phase
+			if phase != corev1.PodRunning && phase != corev1.PodSucceeded {
+				logger.Log("pod %s/%s in %s phase", pod.Namespace, pod.Name, phase)
+				return false, fmt.Errorf("pod %s/%s in %s phase", pod.Namespace, pod.Name, phase)
+			}
+		}
+
+		logger.Log("All (%d) pods currently in a running or completed state", len(podList.Items))
+		return true, nil
+	}
 }
