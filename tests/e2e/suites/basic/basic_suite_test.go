@@ -3,6 +3,7 @@ package basic
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -80,6 +81,35 @@ func TestBasic(t *testing.T) {
 					}),
 				}
 				Eventually(arePodsRunning(state.GetContext(), wcClient, proxyPodsListOptions)).
+					WithTimeout(5 * time.Minute).
+					WithPolling(5 * time.Second).
+					Should(BeTrue())
+			})
+
+			It("should use the gsoci.azurecr.io/giantswarm/envoy image for the envoy proxy pods", func() {
+				wcName := state.GetCluster().Name
+				wcClient, _ := state.GetFramework().WC(wcName)
+				Eventually(func() (bool, error) {
+					proxyPods := &corev1.PodList{}
+					err := wcClient.List(state.GetContext(), proxyPods, &cr.ListOptions{
+						Namespace: "envoy-gateway-system",
+						LabelSelector: labels.SelectorFromSet(map[string]string{
+							"app.kubernetes.io/component": "proxy",
+							"app.kubernetes.io/name":      "envoy",
+						}),
+					})
+					if err != nil {
+						return false, err
+					}
+					for _, pod := range proxyPods.Items {
+						for _, container := range pod.Spec.Containers {
+							if !strings.HasPrefix(container.Image, "gsoci.azurecr.io/giantswarm/envoy") {
+								return false, fmt.Errorf("pod %s/%s is using image %s", pod.Namespace, pod.Name, container.Image)
+							}
+						}
+					}
+					return true, nil
+				}).
 					WithTimeout(5 * time.Minute).
 					WithPolling(5 * time.Second).
 					Should(BeTrue())
