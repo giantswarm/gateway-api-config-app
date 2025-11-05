@@ -85,7 +85,9 @@ gateways:
           certificateRefs: []
     envoyProxy:
       enabled: true
-      envoyDeployment: {}
+      envoyDeployment:
+        container:
+          imageRepository: gsoci.azurecr.io/giantswarm/envoy
       envoyHpa: {}
       envoyPDB: {}
       envoyServiceAccount: {}
