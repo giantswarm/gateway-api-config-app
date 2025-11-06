@@ -88,9 +88,9 @@ gateways:
       envoyDeployment:
         container:
           imageRepository: gsoci.azurecr.io/giantswarm/envoy
-      envoyHpa: 
+      envoyHpa:
         minReplicas: 2
         maxReplicas: 10
-      envoyPDB: 
+      envoyPDB:
         maxUnavailable: "25%"
       envoyServiceAccount: {}
