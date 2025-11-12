@@ -19,6 +19,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       envoyService:
+        {{- with $gateway.service.loadBalancerClass }}
+        loadBalancerClass: {{ . }}
+        {{- end }}
+        {{- with $gateway.service.externalTrafficPolicy }}
+        externalTrafficPolicy: {{ . }}
+        {{- end }}
         {{- with $gateway.service.labels }}
         labels:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}

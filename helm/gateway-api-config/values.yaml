@@ -57,6 +57,8 @@ gateways:
     service:
       annotations: {}
       labels: {}
+      externalTrafficPolicy: ""
+      loadBalancerClass: ""
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway
