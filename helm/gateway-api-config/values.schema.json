@@ -213,6 +213,14 @@
                                 "annotations": {
                                     "type": "object"
                                 },
+                                "awsNetworkLoadBalancer": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
                                 "externalTrafficPolicy": {
                                     "type": "string"
                                 },

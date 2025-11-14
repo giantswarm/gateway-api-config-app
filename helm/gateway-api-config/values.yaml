@@ -59,6 +59,8 @@ gateways:
       labels: {}
       externalTrafficPolicy: ""
       loadBalancerClass: ""
+      awsNetworkLoadBalancer:
+        enabled: false
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway
