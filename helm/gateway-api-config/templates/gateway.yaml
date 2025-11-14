@@ -42,6 +42,25 @@ spec:
       {{- end }}
     {{- end }}
 {{- end }}
+{{- if $gateway.service.awsNetworkLoadBalancer.enabled }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: gateway-{{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ $gateway.name }}
+  proxyProtocol:
+    optional: false
+  healthCheck:
+    path: /healthz
+{{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
