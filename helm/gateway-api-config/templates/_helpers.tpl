@@ -97,8 +97,8 @@ Gateway Shutdown Manager configuration
 {{- $minDrainDuration = "60s" }}
 {{- end }}
 
-{{/* Override defaults if $gateway.shutdown is set */}}
-{{- with $gateway.shutdown }}
+{{/* Override defaults if $gateway.envoyProxy.shutdown is set */}}
+{{- with $gateway.envoyProxy.shutdown }}
 {{- $drainTimeout = .drainTimeout }}
 {{- $minDrainDuration = .minDrainDuration }}
 {{- end }}
