@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Set AWS NLBs annotations by default when AWS NLB is used.
+- Allow to configure shutdown manager.
+- Allow to configure externalTrafficPolicy and loadBalancerClass for Service. 
+
 ## [1.0.0] - 2025-11-06
 
 ### Changed
