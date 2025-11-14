@@ -57,6 +57,10 @@ gateways:
     service:
       annotations: {}
       labels: {}
+      externalTrafficPolicy: ""
+      loadBalancerClass: ""
+      awsNetworkLoadBalancer:
+        enabled: false
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway
@@ -85,6 +89,7 @@ gateways:
           certificateRefs: []
     envoyProxy:
       enabled: true
+      shutdown: {}
       envoyDeployment:
         container:
           imageRepository: gsoci.azurecr.io/giantswarm/envoy

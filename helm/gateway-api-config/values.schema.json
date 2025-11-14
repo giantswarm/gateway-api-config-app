@@ -103,6 +103,9 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "shutdown": {
+                                    "type": "object"
                                 }
                             }
                         },
@@ -210,8 +213,22 @@
                                 "annotations": {
                                     "type": "object"
                                 },
+                                "awsNetworkLoadBalancer": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
+                                "externalTrafficPolicy": {
+                                    "type": "string"
+                                },
                                 "labels": {
                                     "type": "object"
+                                },
+                                "loadBalancerClass": {
+                                    "type": "string"
                                 }
                             }
                         },
