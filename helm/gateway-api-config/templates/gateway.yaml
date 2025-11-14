@@ -10,6 +10,7 @@ metadata:
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
+  {{- include "gateway.shutdown" $gateway | nindent 2 }}
   provider:
     type: Kubernetes
     {{- if $gateway.service }}
@@ -19,22 +20,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       envoyService:
-        {{- with $gateway.service.loadBalancerClass }}
-        loadBalancerClass: {{ . }}
-        {{- end }}
-        {{- with $gateway.service.externalTrafficPolicy }}
-        externalTrafficPolicy: {{ . }}
-        {{- end }}
+        loadBalancerClass: {{ include "service.loadBalancerClass" $gateway.service }}
+        externalTrafficPolicy: {{ include "service.externalTrafficPolicy" $gateway.service }}
         {{- with $gateway.service.labels }}
         labels:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
         {{- end }}
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
-          giantswarm.io/external-dns: managed
-          {{- with $gateway.service.annotations }}
-          {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
-          {{- end }}
+          {{- include "service.annotations" (dict "baseDomain" $.Values.baseDomain "gateway" $gateway) | nindent 10}}
       {{- with $gateway.envoyProxy.envoyHpa }}
       envoyHpa:
         {{- toYaml . | nindent 8 }}
