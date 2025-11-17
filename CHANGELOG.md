@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Set AWS NLBs annotations by default when AWS NLB is used.
+- Enable PROXY protocol and set HealthCheck path when AWS NLB is used.
 - Allow to configure shutdown manager.
 - Allow to configure externalTrafficPolicy and loadBalancerClass for Service. 
 
