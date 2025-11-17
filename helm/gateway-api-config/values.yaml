@@ -54,13 +54,14 @@ gateways:
         name: ""
     dnsEndpoints:
       enabled: true
+    provider:
+      aws:
+        useNetworkLoadBalancer: true
     service:
       annotations: {}
       labels: {}
       externalTrafficPolicy: ""
       loadBalancerClass: ""
-      awsNetworkLoadBalancer:
-        enabled: false
     tlsIssuer:
       enabled: true
       name: letsencrypt-giantswarm-gateway

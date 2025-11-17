@@ -27,7 +27,7 @@ spec:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
         {{- end }}
         annotations:
-          {{- include "service.annotations" (dict "baseDomain" $.Values.baseDomain "gateway" $gateway) | nindent 10}}
+          {{- include "service.annotations" (dict "provider" $.Values.provider "baseDomain" $.Values.baseDomain "gateway" $gateway) | nindent 10 }}
       {{- with $gateway.envoyProxy.envoyHpa }}
       envoyHpa:
         {{- toYaml . | nindent 8 }}
@@ -42,7 +42,8 @@ spec:
       {{- end }}
     {{- end }}
 {{- end }}
-{{- if $gateway.service.awsNetworkLoadBalancer.enabled }}
+{{- if eq $.Values.provider "capa" }}
+{{- if $gateway.provider.aws.useNetworkLoadBalancer }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
@@ -60,6 +61,7 @@ spec:
     optional: false
   healthCheck:
     path: /healthz
+{{- end }}
 {{- end }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
