@@ -10,7 +10,7 @@ metadata:
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
-  {{- include "gateway.shutdown" $gateway | nindent 2 }}
+  {{- include "gateway.shutdown" (dict "provider" $.Values.provider "gateway" $gateway) | nindent 2 }}
   provider:
     type: Kubernetes
     {{- if $gateway.service }}
@@ -20,8 +20,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       envoyService:
-        loadBalancerClass: {{ include "service.loadBalancerClass" $gateway.service }}
-        externalTrafficPolicy: {{ include "service.externalTrafficPolicy" $gateway.service }}
+        loadBalancerClass: {{ include "service.loadBalancerClass" (dict "provider" $.Values.provider "gateway" $gateway) }}
+        externalTrafficPolicy: {{ include "service.externalTrafficPolicy" (dict "provider" $.Values.provider "gateway" $gateway) }}
         {{- with $gateway.service.labels }}
         labels:
           {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}

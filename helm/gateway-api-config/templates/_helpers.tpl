@@ -35,8 +35,7 @@ Gateway Service annotations
 {{- $_ := set $annotations "giantswarm.io/external-dns" "managed" }}
 
 {{- /* Use AWS NLB */}}
-{{- if eq .provider "capa" }}
-{{- if .gateway.provider.aws.useNetworkLoadBalancer }}
+{{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
 {{- /* Enable PROXY Protocol */}}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol" "*" }}
 
@@ -52,7 +51,6 @@ Gateway Service annotations
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-attributes" "load_balancing.cross_zone.enabled=true" }}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-target-group-attributes" "target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=200" }}
 {{- end }}
-{{- end }}
 
 {{- $annotations = mergeOverwrite $annotations (deepCopy $service.annotations) }}
 {{- $annotations | toYaml }}
@@ -62,8 +60,8 @@ Gateway Service annotations
 Gateway Service loadBalancerClass
 */}}
 {{- define "service.loadBalancerClass" -}}
-{{- $service := . }}
-{{- if and $service.awsNetworkLoadBalancer $service.awsNetworkLoadBalancer.enabled }}
+{{- $service := .gateway.service }}
+{{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
 {{- "service.k8s.aws/nlb" | default $service.loadBalancerClass }}
 {{- else }}
 {{- "" | default $service.loadBalancerClass }}
@@ -74,8 +72,8 @@ Gateway Service loadBalancerClass
 Gateway Service externalTrafficPolicy
 */}}
 {{- define "service.externalTrafficPolicy" -}}
-{{- $service := . }}
-{{- if and $service.awsNetworkLoadBalancer $service.awsNetworkLoadBalancer.enabled }}
+{{- $service := .gateway.service }}
+{{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
 {{- "Local" | default $service.externalTrafficPolicy }}
 {{- else }}
 {{- "Cluster" | default $service.externalTrafficPolicy }}
@@ -86,17 +84,16 @@ Gateway Service externalTrafficPolicy
 Gateway Shutdown Manager configuration
 */}}
 {{- define "gateway.shutdown" -}}
-{{- $gateway := . }}
-{{- $service := $gateway.service }}
+{{- $service := .gateway.service }}
 {{- $drainTimeout := "" }}
 {{- $minDrainDuration := "" }}
 {{- /* Set defaults for AWS NLBs */}}
-{{- if and $service.awsNetworkLoadBalancer $service.awsNetworkLoadBalancer.enabled }}
+{{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
 {{- $drainTimeout = "180s" }}
 {{- $minDrainDuration = "60s" }}
 {{- end }}
-{{- /* Override defaults if $gateway.envoyProxy.shutdown is set */}}
-{{- with $gateway.envoyProxy.shutdown }}
+{{- /* Override defaults if .gateway.envoyProxy.shutdown is set */}}
+{{- with .gateway.envoyProxy.shutdown }}
 {{- $drainTimeout = .drainTimeout }}
 {{- $minDrainDuration = .minDrainDuration }}
 {{- end }}
