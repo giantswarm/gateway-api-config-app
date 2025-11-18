@@ -103,6 +103,9 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "shutdown": {
+                                    "type": "object"
                                 }
                             }
                         },
@@ -204,14 +207,33 @@
                                 }
                             }
                         },
+                        "provider": {
+                            "type": "object",
+                            "properties": {
+                                "aws": {
+                                    "type": "object",
+                                    "properties": {
+                                        "useNetworkLoadBalancer": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         "service": {
                             "type": "object",
                             "properties": {
                                 "annotations": {
                                     "type": "object"
                                 },
+                                "externalTrafficPolicy": {
+                                    "type": "string"
+                                },
                                 "labels": {
                                     "type": "object"
+                                },
+                                "loadBalancerClass": {
+                                    "type": "string"
                                 }
                             }
                         },
