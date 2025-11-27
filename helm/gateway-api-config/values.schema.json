@@ -50,7 +50,7 @@
                 "default": {
                     "type": "object",
                     "properties": {
-                        "certificate": {
+                        "certificates": {
                             "type": "object",
                             "properties": {
                                 "enabled": {
@@ -167,6 +167,9 @@
                                         "protocol": {
                                             "type": "string"
                                         },
+                                        "subdomains": {
+                                            "type": "array"
+                                        },
                                         "tls": {
                                             "type": "object",
                                             "properties": {
@@ -236,9 +239,6 @@
                                     "type": "string"
                                 }
                             }
-                        },
-                        "subdomains": {
-                            "type": "array"
                         },
                         "tlsIssuer": {
                             "type": "object",

@@ -1,6 +1,12 @@
 {{- range $i, $gateway := .Values.gateways }}
-{{- if $gateway.enabled }}
-{{- if and $gateway.dnsEndpoints.enabled $gateway.subdomains }}
+{{- if and $gateway.enabled $gateway.dnsEndpoints.enabled }}
+{{- $subdomains := list }}
+{{- range $j, $listener := $gateway.listeners }}
+{{- range $k, $subdomain := $listener.subdomains }}
+{{- $subdomains = append $subdomains (printf "%s.%s" $subdomain (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $))) -}}
+{{- end }}
+{{- end }}
+{{- if $subdomains }}
 ---
 apiVersion: externaldns.k8s.io/v1alpha1
 kind: DNSEndpoint
@@ -13,8 +19,8 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   endpoints:
-  {{- range $k, $v := $gateway.subdomains }}
-  - dnsName: {{ $v }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
+  {{- range $subdomains }}
+  - dnsName: {{ . | quote }}
     recordTTL: 300
     recordType: CNAME
     targets:

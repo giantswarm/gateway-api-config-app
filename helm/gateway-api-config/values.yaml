@@ -46,8 +46,7 @@ gateways:
     dnsName: gateway
     className: giantswarm-default
     overrideBaseDomain: ""
-    subdomains: []
-    certificate:
+    certificates:
       enabled: true
       issuer:
         kind: ""
@@ -81,6 +80,7 @@ gateways:
         name: https
         protocol: HTTPS
         hostname: '*.{{ $.Values.baseDomain }}'
+        subdomains: []
         port: 443
         allowedRoutes:
           namespaces:

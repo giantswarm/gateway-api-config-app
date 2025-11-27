@@ -101,11 +101,11 @@ spec:
       {{- with $l.tls }}
       tls:
         mode: {{ .mode }}
-        {{- if or (.certificateRefs) ($gateway.certificate.enabled) }}
+        {{- if or (.certificateRefs) ($gateway.certificates.enabled) }}
         certificateRefs:
-        {{- if and (eq .mode "Terminate") ($gateway.certificate.enabled) }}
+        {{- if and (eq .mode "Terminate") ($gateway.certificates.enabled) }}
         - kind: Secret
-          name: gateway-{{ $gateway.name }}-tls
+          name: {{ printf "gateway-%s-%s-tls" $gateway.name $l.name }}
         {{- end }}
         {{- range .certificateRefs }}
         - kind: Secret
