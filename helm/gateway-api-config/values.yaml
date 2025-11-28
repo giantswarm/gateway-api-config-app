@@ -46,14 +46,6 @@ gateways:
     dnsName: gateway
     className: giantswarm-default
     overrideBaseDomain: ""
-    subdomains: []
-    certificate:
-      enabled: true
-      issuer:
-        kind: ""
-        name: ""
-    dnsEndpoints:
-      enabled: true
     provider:
       aws:
         useNetworkLoadBalancer: true
@@ -81,6 +73,16 @@ gateways:
         name: https
         protocol: HTTPS
         hostname: '*.{{ $.Values.baseDomain }}'
+        subdomains: []
+        certificate:
+          enabled: true
+          issuer:
+            kind: ""
+            name: ""
+        dnsEndpoints:
+          enabled: true
+          annotations:
+            giantswarm.io/external-dns: managed
         port: 443
         allowedRoutes:
           namespaces:
