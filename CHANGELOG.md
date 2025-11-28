@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Move `gateways.<gateway>.subdomains` to `gateways.<gateway>.listeners.<listener>.subdomains`.
-- Rename `gateways.<gateway>.certificate` to `gateways.<gateway>.certificates`
+- Support additional listeners with custom `hostname`
+  - Move `gateways.<gateway>.subdomains` to `gateways.<gateway>.listeners.<listener>.subdomains`.
+  - Move `gateways.<gateway>.certificate` to `gateways.<gateway>.listeners.<listener>.certificate`
+  - Move `gateways.<gateway>.dnsEndpoints` to `gateways.<gateway>.listeners.<listener>.dnsEndpoints`
+  - Add `annotations` to DNSEndpoints
 
 ## [1.1.0] - 2025-11-18
 

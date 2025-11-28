@@ -1,7 +1,7 @@
 {{- range $i, $gateway := .Values.gateways }}
-{{- if and $gateway.enabled $gateway.certificates.enabled }}
+{{- if and $gateway.enabled }}
 {{- range $j, $listener := $gateway.listeners }}
-{{- if eq $listener.protocol "HTTPS" }}
+{{- if and $listener.certificate $listener.certificate.enabled (eq $listener.protocol "HTTPS") }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -24,8 +24,8 @@ spec:
   {{- else }}
   issuerRef:
     group: cert-manager.io
-    kind: {{ $gateway.certificates.issuer.kind }}
-    name: {{ $gateway.certificates.issuer.name }}
+    kind: {{ $listener.certificate.issuer.kind }}
+    name: {{ $listener.certificate.issuer.name }}
   {{- end }}
   secretName: {{ printf "gateway-%s-%s-tls" $gateway.name $listener.name }}
 {{- end }}
