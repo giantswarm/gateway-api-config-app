@@ -1,18 +1,23 @@
 {{- range $i, $gateway := .Values.gateways }}
-{{- if $gateway.enabled }}
-{{- if $gateway.certificate.enabled }}
+{{- if and $gateway.enabled }}
+{{- range $j, $listener := $gateway.listeners }}
+{{- if and $listener.certificate $listener.certificate.enabled (eq $listener.protocol "HTTPS") }}
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: gateway-{{ $gateway.name }}
+  name: {{ printf "gateway-%s-%s" $gateway.name $listener.name }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   dnsNames:
-  - {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
-  {{- range $k, $v := $gateway.subdomains }}
-  - {{ $v }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
+  {{- $baseDomain := (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $)) -}}
+  {{- if eq $baseDomain $.Values.baseDomain }}
+  - {{ printf "%s.%s" $gateway.dnsName $baseDomain | quote }}
+  {{- end }}
+  {{- range $k, $v := $listener.subdomains }}
+  - {{ printf "%s.%s" $v $baseDomain | quote }}
   {{- end }}
   {{- if $gateway.tlsIssuer.enabled }}
   issuerRef:
@@ -22,10 +27,11 @@ spec:
   {{- else }}
   issuerRef:
     group: cert-manager.io
-    kind: {{ $gateway.certificate.issuer.kind }}
-    name: {{ $gateway.certificate.issuer.name }}
+    kind: {{ $listener.certificate.issuer.kind }}
+    name: {{ $listener.certificate.issuer.name }}
   {{- end }}
-  secretName: gateway-{{ $gateway.name }}-tls
+  secretName: {{ printf "gateway-%s-%s-tls" $gateway.name $listener.name }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
