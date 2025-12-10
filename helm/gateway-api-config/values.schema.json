@@ -205,6 +205,14 @@
                         "overrideBaseDomain": {
                             "type": "string"
                         },
+                        "podLogs": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "podMonitor": {
                             "type": "object",
                             "properties": {

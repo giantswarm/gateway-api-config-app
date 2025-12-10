@@ -59,6 +59,8 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
+    podLogs:
+      enabled: true
     podMonitor:
       enabled: true
     listeners:
