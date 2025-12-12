@@ -265,6 +265,9 @@
                                 },
                                 "name": {
                                     "type": "string"
+                                },
+                                "httpRedirect": {
+                                    "type": "boolean"
                                 }
                             }
                         }

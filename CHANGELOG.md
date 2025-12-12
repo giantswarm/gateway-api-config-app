@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add PodLogs for pod collection.
+- Add option to enable HTTP redirect per gateway.
 
 ## [1.2.0] - 2025-12-02
 
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set AWS NLBs annotations by default when AWS NLB is used.
 - Enable PROXY protocol and set HealthCheck path when AWS NLB is used.
 - Allow to configure shutdown manager.
-- Allow to configure externalTrafficPolicy and loadBalancerClass for Service. 
+- Allow to configure externalTrafficPolicy and loadBalancerClass for Service.
 
 ## [1.0.0] - 2025-11-06
 

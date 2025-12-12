@@ -59,6 +59,7 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
+      httpRedirect: true
     podLogs:
       enabled: true
     podMonitor:
