@@ -109,6 +109,9 @@
                                         },
                                         "protocol": {
                                             "type": "string"
+                                        },
+                                        "httpsRedirectEnabled": {
+                                            "type": "boolean"
                                         }
                                     }
                                 },
