@@ -68,7 +68,7 @@ gateways:
         name: http
         protocol: HTTP
         port: 80
-        httpsRedirectEnabled: true
+        httpsRedirectEnabled: false
         allowedRoutes:
           namespaces:
             from: All
