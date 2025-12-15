@@ -52,7 +52,7 @@ spec:
     inCluster: false
   name: gateway-api-config
   namespace: giantswarm
-  version: 0.3.0
+  version: 1.3.0
 ```
 
 ```yaml
@@ -71,6 +71,39 @@ data:
 ```
 
 See our [full reference on configuring apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
+
+## Resources
+
+### GatewayClass
+
+This chart deploys a `giantswarm-default` GatewayClass with an associated EnvoyProxy configuration.
+
+The default EnvoyProxy settings apply security hardening:
+
+- Runs as non-root user (UID/GID 65534)
+- Read-only root filesystem
+- All capabilities dropped
+- Seccomp profile set to `RuntimeDefault`
+
+### Gateway
+
+This chart deploys a `giantswarm-default` Gateway using the `giantswarm-default` GatewayClass.
+
+The default Gateway includes:
+
+- **Listeners**: HTTP (port 80) and HTTPS (port 443) with wildcard hostname `*.{baseDomain}`
+- **TLS**: Certificates managed via Let's Encrypt (`letsencrypt-giantswarm-gateway` issuer)
+- **DNS**: Automatic DNS endpoint creation via external-dns
+- **Autoscaling**: HPA with 2-10 replicas and PDB with 25% max unavailable
+- **Observability**: PodLogs and PodMonitor enabled for logging and metrics
+- **AWS support**: Network Load Balancer on CAPA clusters with:
+  - Proxy protocol enabled
+  - `preserve_client_ip` disabled
+  - Cross-zone load balancing
+  - Internet-facing scheme
+  - Health checks on `/healthz` (port 80)
+  - Local external traffic policy
+  - Graceful shutdown with 180s drain timeout and 60s min drain duration
 
 ## Credit
 
