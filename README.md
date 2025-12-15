@@ -101,13 +101,13 @@ The default Gateway includes:
 
 On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
 
-- Proxy protocol enabled
-- `preserve_client_ip` disabled
-- Cross-zone load balancing
-- Internet-facing scheme
-- Health checks on `/healthz` (port 80)
-- Local external traffic policy
-- Graceful shutdown with 180s drain timeout and 60s min drain duration
+- **Proxy protocol enabled**: Preserves original client IP and port information through the load balancer, required for accurate client identification at the application layer.
+- **`preserve_client_ip` disabled**: Avoids asymmetric routing issues when using proxy protocol; client IP is already conveyed via proxy protocol headers.
+- **Cross-zone load balancing**: Distributes traffic evenly across all targets in all availability zones, improving fault tolerance and resource utilization.
+- **Internet-facing scheme**: Exposes the Gateway publicly to accept traffic from the internet.
+- **Health checks on `/healthz` (port 80)**: Uses Envoy's built-in health endpoint to ensure traffic is only routed to healthy pods.
+- **Local external traffic policy**: Preserves the source IP at the node level and avoids extra network hops, reducing latency.
+- **Graceful shutdown (180s drain, 60s min drain)**: Allows in-flight requests to complete during pod termination, aligning with NLB's deregistration delay for zero-downtime deployments.
 
 ## Credit
 
