@@ -96,14 +96,18 @@ The default Gateway includes:
 - **DNS**: Automatic DNS endpoint creation via external-dns
 - **Autoscaling**: HPA with 2-10 replicas and PDB with 25% max unavailable
 - **Observability**: PodLogs and PodMonitor enabled for logging and metrics
-- **AWS support**: Network Load Balancer on CAPA clusters with:
-  - Proxy protocol enabled
-  - `preserve_client_ip` disabled
-  - Cross-zone load balancing
-  - Internet-facing scheme
-  - Health checks on `/healthz` (port 80)
-  - Local external traffic policy
-  - Graceful shutdown with 180s drain timeout and 60s min drain duration
+
+#### AWS Network Load Balancer (CAPA)
+
+On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
+
+- Proxy protocol enabled
+- `preserve_client_ip` disabled
+- Cross-zone load balancing
+- Internet-facing scheme
+- Health checks on `/healthz` (port 80)
+- Local external traffic policy
+- Graceful shutdown with 180s drain timeout and 60s min drain duration
 
 ## Credit
 
