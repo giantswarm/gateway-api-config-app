@@ -52,7 +52,7 @@ spec:
     inCluster: false
   name: gateway-api-config
   namespace: giantswarm
-  version: 0.3.0
+  version: 1.3.0
 ```
 
 ```yaml
@@ -71,6 +71,43 @@ data:
 ```
 
 See our [full reference on configuring apps](https://docs.giantswarm.io/getting-started/app-platform/app-configuration/) for more details.
+
+## Resources
+
+### GatewayClass
+
+This chart deploys a `giantswarm-default` GatewayClass with an associated EnvoyProxy configuration.
+
+The default EnvoyProxy settings apply security hardening:
+
+- Runs as non-root user (UID/GID 65534)
+- Read-only root filesystem
+- All capabilities dropped
+- Seccomp profile set to `RuntimeDefault`
+
+### Gateway
+
+This chart deploys a `giantswarm-default` Gateway using the `giantswarm-default` GatewayClass.
+
+The default Gateway includes:
+
+- **Listeners**: HTTP (port 80) and HTTPS (port 443) with wildcard hostname `*.{baseDomain}`
+- **TLS**: Certificates managed via Let's Encrypt (`letsencrypt-giantswarm-gateway` issuer)
+- **DNS**: Automatic DNS endpoint creation via external-dns
+- **Autoscaling**: HPA with 2-10 replicas and PDB with 25% max unavailable
+- **Observability**: PodLogs and PodMonitor enabled for logging and metrics
+
+#### AWS Network Load Balancer (CAPA)
+
+On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
+
+- **Proxy protocol enabled**: Preserves original client IP and port information through the load balancer, required for accurate client identification at the application layer.
+- **`preserve_client_ip` disabled**: Avoids asymmetric routing issues when using proxy protocol; client IP is already conveyed via proxy protocol headers.
+- **Cross-zone load balancing**: Distributes traffic evenly across all targets in all availability zones, improving fault tolerance and resource utilization.
+- **Internet-facing scheme**: Exposes the Gateway publicly to accept traffic from the internet.
+- **Health checks on `/healthz` (port 80)**: Uses Envoy's built-in health endpoint to ensure traffic is only routed to healthy pods.
+- **Local external traffic policy**: Preserves the source IP at the node level and avoids extra network hops, reducing latency.
+- **Graceful shutdown (180s drain, 60s min drain)**: Allows in-flight requests to complete during pod termination, aligning with NLB's deregistration delay for zero-downtime deployments.
 
 ## Credit
 
