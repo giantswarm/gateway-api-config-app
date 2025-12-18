@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Support listeners with apex domain or single subdomain hostnames.
+
 ## [1.3.0] - 2025-12-12
 
 ### Added
