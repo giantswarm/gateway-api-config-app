@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-12-18
+
 ### Changed
 
 - Support listeners with apex domain or single subdomain hostnames.
@@ -93,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.0.0...v1.1.0
