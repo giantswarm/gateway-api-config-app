@@ -18,7 +18,7 @@ Common labels
 */}}
 {{- define "labels.common" -}}
 app.kubernetes.io/name: {{ include "name" . | quote }}
-application.giantswarm.io/team: {{ index .Chart.Annotations "application.giantswarm.io/team" | quote }}
+application.giantswarm.io/team: {{ index .Chart.Annotations "io.giantswarm.application.team" | quote }}
 giantswarm.io/managed-by: {{ .Release.Name | quote }}
 helm.sh/chart: {{ include "chart" . | quote }}
 {{- end -}}
@@ -31,7 +31,7 @@ Gateway Service annotations
 {{- $annotations := dict }}
 
 {{- /* Enable External-DNS */}}
-{{- $_ := set $annotations "external-dns.alpha.kubernetes.io/hostname" (printf "%s.%s" .gateway.dnsName (.gateway.overrideBaseDomain | default .baseDomain)) }} 
+{{- $_ := set $annotations "external-dns.alpha.kubernetes.io/hostname" (printf "%s.%s" .gateway.dnsName (.gateway.overrideBaseDomain | default .baseDomain)) }}
 {{- $_ := set $annotations "giantswarm.io/external-dns" "managed" }}
 
 {{- /* Use AWS NLB */}}
