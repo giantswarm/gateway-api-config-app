@@ -21,7 +21,7 @@ spec:
         name: {{ $gateway.name }}
         namespace: {{ $.Release.Namespace }}
         labels:
-          {{- include "labels.common" $ | nindent 4 }}
+          {{- include "labels.common" $ | nindent 10 }}
       spec:
         podMetricsEndpoints:
         - honorLabels: true
@@ -43,7 +43,6 @@ spec:
             app.kubernetes.io/component: proxy
             app.kubernetes.io/name: envoy
             gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
-{{- end }}
 {{- if $gateway.podLogs.enabled }}
 ---
 apiVersion: kyverno.io/v1
@@ -66,7 +65,7 @@ spec:
         name: {{ $gateway.name }}
         namespace: {{ $.Release.Namespace }}
         labels:
-          {{- include "labels.common" $ | nindent 4 }}
+          {{- include "labels.common" $ | nindent 10 }}
       spec:
         namespaceSelector:
           matchLabels:
@@ -81,6 +80,7 @@ spec:
             app.kubernetes.io/component: proxy
             app.kubernetes.io/name: envoy
             gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
