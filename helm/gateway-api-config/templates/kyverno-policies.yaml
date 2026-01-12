@@ -4,7 +4,7 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-gateway-pod-monitors
+  name: generate-gateway-pod-monitors-{{ $gateway.name }}
 spec:
   rules:
   - name: generate-gateway-pod-monitors
@@ -17,41 +17,42 @@ spec:
       synchronize: true
       apiVersion: monitoring.coreos.com/v1
       kind: PodMonitor
-      metadata:
-        name: {{ $gateway.name }}
-        namespace: {{ $.Release.Namespace }}
-        labels:
-          {{- include "labels.common" $ | nindent 10 }}
-      spec:
-        podMetricsEndpoints:
-        - honorLabels: true
-          interval: 60s
-          metricRelabelings: []
-          path: /stats/prometheus
-          port: metrics
-          relabelings:
-          - action: replace
-            replacement: ${1}
-            sourceLabels:
-            - __meta_kubernetes_pod_node_name
-            targetLabel: node
-        namespaceSelector:
-          matchNames:
-          - {{ $.Release.Namespace }}
-        selector:
-          matchLabels:
-            app.kubernetes.io/component: proxy
-            app.kubernetes.io/name: envoy
-            gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
+      name: {{ $gateway.name }}
+      namespace: {{ $.Release.Namespace }}
+      data:
+        metadata:
+          labels:
+            {{- include "labels.common" $ | nindent 12 }}
+        spec:
+          podMetricsEndpoints:
+          - honorLabels: true
+            interval: 60s
+            metricRelabelings: []
+            path: /stats/prometheus
+            port: metrics
+            relabelings:
+            - action: replace
+              replacement: ${1}
+              sourceLabels:
+              - __meta_kubernetes_pod_node_name
+              targetLabel: node
+          namespaceSelector:
+            matchNames:
+            - {{ $.Release.Namespace }}
+          selector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
 {{- if $gateway.podLogs.enabled }}
 ---
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-gateway-pod-monitors
+  name: generate-gateway-pod-logs-{{ $gateway.name }}
 spec:
   rules:
-  - name: generate-gateway-pod-monitors
+  - name: generate-gateway-pod-logs
     match:
       any:
       - resources:
@@ -61,25 +62,26 @@ spec:
       synchronize: true
       apiVersion: monitoring.grafana.com/v1alpha2
       kind: PodLogs
-      metadata:
-        name: {{ $gateway.name }}
-        namespace: {{ $.Release.Namespace }}
-        labels:
-          {{- include "labels.common" $ | nindent 10 }}
-      spec:
-        namespaceSelector:
-          matchLabels:
-            kubernetes.io/metadata.name: {{ $.Release.Namespace }}
-        relabelings:
-        # Configure tenant for data routing
-        - action: replace
-          replacement: giantswarm
-          targetLabel: giantswarm_observability_tenant
-        selector:
-          matchLabels:
-            app.kubernetes.io/component: proxy
-            app.kubernetes.io/name: envoy
-            gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
+      name: {{ $gateway.name }}
+      namespace: {{ $.Release.Namespace }}
+      data:
+        metadata:
+          labels:
+            {{- include "labels.common" $ | nindent 12 }}
+        spec:
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $.Release.Namespace }}
+          relabelings:
+          # Configure tenant for data routing
+          - action: replace
+            replacement: giantswarm
+            targetLabel: giantswarm_observability_tenant
+          selector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
 {{- end }}
 {{- end }}
 {{- end }}
