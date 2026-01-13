@@ -133,6 +133,7 @@ rules:
   - list
   - watch
   - create
+  - update
   - patch
   - delete
 {{- end }}
@@ -146,6 +147,7 @@ rules:
   - list
   - watch
   - create
+  - update
   - patch
   - delete
 {{- end }}
