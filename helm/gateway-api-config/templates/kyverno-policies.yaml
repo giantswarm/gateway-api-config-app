@@ -84,5 +84,36 @@ spec:
               gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
 {{- end }}
 {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    application.giantswarm.io/team: cabbage
+    rbac.kyverno.io/aggregate-to-background-controller: "true"
+  name: kyverno:gateway-api:always-podmonitors-and-podlogs-creation
+rules:
+{{- if $gateway.podMonitor.enabled }}
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - PodMonitors
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+{{- end }}
+{{- if $gateway.podLogs.enabled }}
+- apiGroups:
+  - monitoring.grafana.com
+  resources:
+  - PodLogs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+{{- end }}
 {{- end }}
 {{- end }}
