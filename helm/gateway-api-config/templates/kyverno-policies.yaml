@@ -90,30 +90,64 @@ kind: ClusterRole
 metadata:
   labels:
     application.giantswarm.io/team: cabbage
-    rbac.kyverno.io/aggregate-to-background-controller: "true"
-  name: kyverno:gateway-api:always-podmonitors-and-podlogs-creation
+    rbac.kyverno.io/aggregate-to-admission-controller: "true"
+    rbac.kyverno.io/aggregate-to-reports-controller: "true"
+  name: kyverno:gateway-api:allow-podmonitors-and-podlogs-viewing
 rules:
 {{- if $gateway.podMonitor.enabled }}
 - apiGroups:
   - monitoring.coreos.com
   resources:
-  - PodMonitors
+  - podmonitors
   verbs:
   - get
   - list
   - watch
-  - create
 {{- end }}
 {{- if $gateway.podLogs.enabled }}
 - apiGroups:
   - monitoring.grafana.com
   resources:
-  - PodLogs
+  - podlogs
+  verbs:
+  - get
+  - list
+  - watch
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    application.giantswarm.io/team: cabbage
+    rbac.kyverno.io/aggregate-to-background-controller: "true"
+  name: kyverno:gateway-api:allow-podmonitors-and-podlogs-creation
+rules:
+{{- if $gateway.podMonitor.enabled }}
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - podmonitors
   verbs:
   - get
   - list
   - watch
   - create
+  - patch
+  - delete
+{{- end }}
+{{- if $gateway.podLogs.enabled }}
+- apiGroups:
+  - monitoring.grafana.com
+  resources:
+  - podlogs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - patch
+  - delete
 {{- end }}
 {{- end }}
 {{- end }}
