@@ -1,5 +1,12 @@
 baseDomain: example.com
 
+kyvernoPolicies:
+  observability:
+    resourceName: "{{ request.object.metadata.name }}"
+    resourceNamespace: "{{ request.object.metadata.namespace }}"
+  preconditions:
+    key: "{{ request.object.spec.gatewayClassName }}"
+
 gatewayClasses:
   default:
     enabled: true
@@ -59,10 +66,6 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
-    podLogs:
-      enabled: true
-    podMonitor:
-      enabled: true
     listeners:
       http:
         name: http

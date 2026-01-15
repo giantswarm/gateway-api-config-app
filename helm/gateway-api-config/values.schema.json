@@ -21,7 +21,92 @@
                                     "type": "boolean"
                                 },
                                 "envoyDeployment": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "patch": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "spec": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "template": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "spec": {
+                                                                            "type": "object",
+                                                                            "properties": {
+                                                                                "containers": {
+                                                                                    "type": "array",
+                                                                                    "items": {
+                                                                                        "type": "object",
+                                                                                        "properties": {
+                                                                                            "name": {
+                                                                                                "type": "string"
+                                                                                            },
+                                                                                            "securityContext": {
+                                                                                                "type": "object",
+                                                                                                "properties": {
+                                                                                                    "allowPrivilegeEscalation": {
+                                                                                                        "type": "boolean"
+                                                                                                    },
+                                                                                                    "capabilities": {
+                                                                                                        "type": "object",
+                                                                                                        "properties": {
+                                                                                                            "drop": {
+                                                                                                                "type": "array",
+                                                                                                                "items": {
+                                                                                                                    "type": "string"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    "readOnlyRootFilesystem": {
+                                                                                                        "type": "boolean"
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                "securityContext": {
+                                                                                    "type": "object",
+                                                                                    "properties": {
+                                                                                        "runAsGroup": {
+                                                                                            "type": "integer"
+                                                                                        },
+                                                                                        "runAsNonRoot": {
+                                                                                            "type": "boolean"
+                                                                                        },
+                                                                                        "runAsUser": {
+                                                                                            "type": "integer"
+                                                                                        },
+                                                                                        "seccompProfile": {
+                                                                                            "type": "object",
+                                                                                            "properties": {
+                                                                                                "type": {
+                                                                                                    "type": "string"
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 },
                                 "envoyHpa": {
                                     "type": "object"
@@ -66,13 +151,36 @@
                                     "type": "boolean"
                                 },
                                 "envoyDeployment": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "container": {
+                                            "type": "object",
+                                            "properties": {
+                                                "imageRepository": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
                                 },
                                 "envoyHpa": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "maxReplicas": {
+                                            "type": "integer"
+                                        },
+                                        "minReplicas": {
+                                            "type": "integer"
+                                        }
+                                    }
                                 },
                                 "envoyPDB": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "maxUnavailable": {
+                                            "type": "string"
+                                        }
+                                    }
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
@@ -101,6 +209,9 @@
                                                 }
                                             }
                                         },
+                                        "httpsRedirectEnabled": {
+                                            "type": "boolean"
+                                        },
                                         "name": {
                                             "type": "string"
                                         },
@@ -109,9 +220,6 @@
                                         },
                                         "protocol": {
                                             "type": "string"
-                                        },
-                                        "httpsRedirectEnabled": {
-                                            "type": "boolean"
                                         }
                                     }
                                 },
@@ -154,7 +262,12 @@
                                             "type": "object",
                                             "properties": {
                                                 "annotations": {
-                                                    "type": "object"
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "giantswarm.io/external-dns": {
+                                                            "type": "string"
+                                                        }
+                                                    }
                                                 },
                                                 "enabled": {
                                                     "type": "boolean"
@@ -180,18 +293,7 @@
                                             "type": "object",
                                             "properties": {
                                                 "certificateRefs": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "name": {
-                                                                "type": "string"
-                                                            },
-                                                            "namespace": {
-                                                                "type": "string"
-                                                            }
-                                                        }
-                                                    }
+                                                    "type": "array"
                                                 },
                                                 "mode": {
                                                     "type": "string"
@@ -207,22 +309,6 @@
                         },
                         "overrideBaseDomain": {
                             "type": "string"
-                        },
-                        "podLogs": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean"
-                                }
-                            }
-                        },
-                        "podMonitor": {
-                            "type": "object",
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean"
-                                }
-                            }
                         },
                         "provider": {
                             "type": "object",
@@ -270,6 +356,30 @@
                                     "type": "string"
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "kyvernoPolicies": {
+            "type": "object",
+            "properties": {
+                "observability": {
+                    "type": "object",
+                    "properties": {
+                        "resourceName": {
+                            "type": "string"
+                        },
+                        "resourceNamespace": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "preconditions": {
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "type": "string"
                         }
                     }
                 }

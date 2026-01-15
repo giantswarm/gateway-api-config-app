@@ -1,10 +1,9 @@
-{{- range $i, $gateway := .Values.gateways }}
-{{- if and $gateway.enabled }}
-{{- if $gateway.podMonitor.enabled }}
+{{- range $i, $class := .Values.gatewayClasses }}
+{{- if $class.enabled }}
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-gateway-pod-monitors-{{ $gateway.name }}
+  name: generate-gateway-pod-monitors-{{ $class.name }}
 spec:
   rules:
   - name: generate-gateway-pod-monitors
@@ -13,12 +12,17 @@ spec:
       - resources:
           kinds:
           - gateway.networking.k8s.io/v1/Gateway
+    preconditions:
+      all:
+      - key: {{ $.Values.kyvernoPolicies.preconditions.key | quote }}
+        operator: Equals
+        value: {{ $class.name }}
     generate:
       synchronize: true
       apiVersion: monitoring.coreos.com/v1
       kind: PodMonitor
-      name: {{ $gateway.name }}
-      namespace: {{ $.Release.Namespace }}
+      name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+      namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
       data:
         metadata:
           labels:
@@ -36,20 +40,17 @@ spec:
               sourceLabels:
               - __meta_kubernetes_pod_node_name
               targetLabel: node
-          namespaceSelector:
-            matchNames:
-            - {{ $.Release.Namespace }}
           selector:
             matchLabels:
               app.kubernetes.io/component: proxy
               app.kubernetes.io/name: envoy
-              gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
-{{- if $gateway.podLogs.enabled }}
+              gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+              gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
 ---
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-gateway-pod-logs-{{ $gateway.name }}
+  name: generate-gateway-pod-logs-{{ $class.name }}
 spec:
   rules:
   - name: generate-gateway-pod-logs
@@ -58,20 +59,22 @@ spec:
       - resources:
           kinds:
           - gateway.networking.k8s.io/v1/Gateway
+    preconditions:
+      all:
+      - key: {{ $.Values.kyvernoPolicies.preconditions.key | quote }}
+        operator: Equals
+        value: {{ $class.name }}
     generate:
       synchronize: true
       apiVersion: monitoring.grafana.com/v1alpha2
       kind: PodLogs
-      name: {{ $gateway.name }}
-      namespace: {{ $.Release.Namespace }}
+      name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+      namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
       data:
         metadata:
           labels:
             {{- include "labels.common" $ | nindent 12 }}
         spec:
-          namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: {{ $.Release.Namespace }}
           relabelings:
           # Configure tenant for data routing
           - action: replace
@@ -81,9 +84,8 @@ spec:
             matchLabels:
               app.kubernetes.io/component: proxy
               app.kubernetes.io/name: envoy
-              gateway.envoyproxy.io/owning-gateway-name: {{ $gateway.name }}
-{{- end }}
-{{- end }}
+              gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+              gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -94,7 +96,6 @@ metadata:
     rbac.kyverno.io/aggregate-to-reports-controller: "true"
   name: kyverno:gateway-api:allow-podmonitors-and-podlogs-viewing
 rules:
-{{- if $gateway.podMonitor.enabled }}
 - apiGroups:
   - monitoring.coreos.com
   resources:
@@ -103,8 +104,6 @@ rules:
   - get
   - list
   - watch
-{{- end }}
-{{- if $gateway.podLogs.enabled }}
 - apiGroups:
   - monitoring.grafana.com
   resources:
@@ -113,7 +112,6 @@ rules:
   - get
   - list
   - watch
-{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -123,7 +121,6 @@ metadata:
     rbac.kyverno.io/aggregate-to-background-controller: "true"
   name: kyverno:gateway-api:allow-podmonitors-and-podlogs-creation
 rules:
-{{- if $gateway.podMonitor.enabled }}
 - apiGroups:
   - monitoring.coreos.com
   resources:
@@ -136,8 +133,6 @@ rules:
   - update
   - patch
   - delete
-{{- end }}
-{{- if $gateway.podLogs.enabled }}
 - apiGroups:
   - monitoring.grafana.com
   resources:
@@ -150,6 +145,5 @@ rules:
   - update
   - patch
   - delete
-{{- end }}
 {{- end }}
 {{- end }}
