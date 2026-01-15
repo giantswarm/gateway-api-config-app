@@ -145,5 +145,13 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gateways
+  verbs:
+  - get
+  - list
+  - watch
 {{- end }}
 {{- end }}
