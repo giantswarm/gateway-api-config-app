@@ -3,7 +3,6 @@ baseDomain: example.com
 kyvernoPolicies:
   observability:
     resourceName: "{{ request.object.metadata.name }}"
-    resourceNamespace: "{{ request.object.metadata.namespace }}"
   preconditions:
     key: "{{ request.object.spec.gatewayClassName }}"
 

@@ -369,9 +369,6 @@
                     "properties": {
                         "resourceName": {
                             "type": "string"
-                        },
-                        "resourceNamespace": {
-                            "type": "string"
                         }
                     }
                 },
