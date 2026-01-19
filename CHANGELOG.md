@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add gateway_name and gateway_namespace labels on metrics and logs.
+
 ## [1.5.0] - 2026-01-19
 
 ### Changed

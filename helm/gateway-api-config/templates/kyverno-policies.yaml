@@ -40,6 +40,14 @@ spec:
               sourceLabels:
               - __meta_kubernetes_pod_node_name
               targetLabel: node
+            - action: replace
+              sourceLabels:
+              - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_name
+              targetLabel: gateway_name
+            - action: replace
+              sourceLabels:
+              - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_namespace
+              targetLabel: gateway_namespace
           selector:
             matchLabels:
               app.kubernetes.io/component: proxy
@@ -80,6 +88,14 @@ spec:
           - action: replace
             replacement: giantswarm
             targetLabel: giantswarm_observability_tenant
+          - action: replace
+            sourceLabels:
+            - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_name
+            targetLabel: gateway_name
+          - action: replace
+            sourceLabels:
+            - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_namespace
+            targetLabel: gateway_namespace
           selector:
             matchLabels:
               app.kubernetes.io/component: proxy

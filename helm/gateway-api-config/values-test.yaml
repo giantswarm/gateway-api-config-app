@@ -1,0 +1,71 @@
+baseDomain: mati212.gs.gigantic.io
+
+gateways:
+  default:
+    dnsName: ingress
+  internal:
+    enabled: true
+    name: giantswarm-internal
+    dnsName: gateway
+    className: giantswarm-default
+    provider:
+      aws:
+        useNetworkLoadBalancer: true
+    service:
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      labels: {}
+      externalTrafficPolicy: ""
+      loadBalancerClass: ""
+    tlsIssuer:
+      enabled: true
+      name: letsencrypt-giantswarm-gateway-internal
+      email: accounts@giantswarm.io
+      gateway: giantswarm-internal
+    podLogs:
+      enabled: true
+    podMonitor:
+      enabled: true
+    listeners:
+      http:
+        name: http
+        protocol: HTTP
+        port: 80
+        httpsRedirectEnabled: false
+        allowedRoutes:
+          namespaces:
+            from: All
+      https:
+        name: https
+        protocol: HTTPS
+        hostname: '*.{{ $.Values.baseDomain }}'
+        subdomains:
+          - pepeb
+        certificate:
+          enabled: true
+          issuer:
+            kind: ""
+            name: ""
+        dnsEndpoints:
+          enabled: true
+          annotations:
+            giantswarm.io/external-dns: managed
+        port: 443
+        allowedRoutes:
+          namespaces:
+            from: All
+        tls:
+          mode: Terminate
+          certificateRefs: []
+    envoyProxy:
+      enabled: true
+      shutdown: {}
+      envoyDeployment:
+        container:
+          imageRepository: gsoci.azurecr.io/giantswarm/envoy
+      envoyHpa:
+        minReplicas: 2
+        maxReplicas: 10
+      envoyPDB:
+        maxUnavailable: "25%"
+      envoyServiceAccount: {}
