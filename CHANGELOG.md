@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Replace PodMonitor and PodLog resources template by "generate" kyverno policies.
+
 ## [1.4.1] - 2026-01-08
 
 ### Changed

@@ -1,0 +1,157 @@
+{{- range $i, $class := .Values.gatewayClasses }}
+{{- if $class.enabled }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-gateway-pod-monitors-{{ $class.name }}
+spec:
+  rules:
+  - name: generate-gateway-pod-monitors
+    match:
+      any:
+      - resources:
+          kinds:
+          - gateway.networking.k8s.io/v1/Gateway
+    preconditions:
+      all:
+      - key: {{ $.Values.kyvernoPolicies.preconditions.key | quote }}
+        operator: Equals
+        value: {{ $class.name }}
+    generate:
+      synchronize: true
+      apiVersion: monitoring.coreos.com/v1
+      kind: PodMonitor
+      name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+      namespace: envoy-gateway-system
+      data:
+        metadata:
+          labels:
+            {{- include "labels.common" $ | nindent 12 }}
+        spec:
+          podMetricsEndpoints:
+          - honorLabels: true
+            interval: 60s
+            metricRelabelings: []
+            path: /stats/prometheus
+            port: metrics
+            relabelings:
+            - action: replace
+              replacement: ${1}
+              sourceLabels:
+              - __meta_kubernetes_pod_node_name
+              targetLabel: node
+          selector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+              gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-gateway-pod-logs-{{ $class.name }}
+spec:
+  rules:
+  - name: generate-gateway-pod-logs
+    match:
+      any:
+      - resources:
+          kinds:
+          - gateway.networking.k8s.io/v1/Gateway
+    preconditions:
+      all:
+      - key: {{ $.Values.kyvernoPolicies.preconditions.key | quote }}
+        operator: Equals
+        value: {{ $class.name }}
+    generate:
+      synchronize: true
+      apiVersion: monitoring.grafana.com/v1alpha2
+      kind: PodLogs
+      name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+      namespace: envoy-gateway-system
+      data:
+        metadata:
+          labels:
+            {{- include "labels.common" $ | nindent 12 }}
+        spec:
+          relabelings:
+          # Configure tenant for data routing
+          - action: replace
+            replacement: giantswarm
+            targetLabel: giantswarm_observability_tenant
+          selector:
+            matchLabels:
+              app.kubernetes.io/component: proxy
+              app.kubernetes.io/name: envoy
+              gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
+              gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    application.giantswarm.io/team: cabbage
+    rbac.kyverno.io/aggregate-to-admission-controller: "true"
+    rbac.kyverno.io/aggregate-to-reports-controller: "true"
+  name: kyverno:gateway-api:allow-podmonitors-and-podlogs-viewing
+rules:
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - podmonitors
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - monitoring.grafana.com
+  resources:
+  - podlogs
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    application.giantswarm.io/team: cabbage
+    rbac.kyverno.io/aggregate-to-background-controller: "true"
+  name: kyverno:gateway-api:allow-podmonitors-and-podlogs-creation
+rules:
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - podmonitors
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - monitoring.grafana.com
+  resources:
+  - podlogs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - gateways
+  verbs:
+  - get
+  - list
+  - watch
+{{- end }}
+{{- end }}
