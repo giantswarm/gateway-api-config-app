@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-01-20
+
 ### Changed
 
 - Add gateway_name and gateway_namespace labels on metrics and logs.
@@ -111,7 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.3.0...v1.4.0
