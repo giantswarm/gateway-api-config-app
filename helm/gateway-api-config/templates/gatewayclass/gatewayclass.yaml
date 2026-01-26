@@ -1,0 +1,19 @@
+{{- range $i, $class := .Values.gatewayClasses }}
+{{- if $class.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ $class.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: gatewayclass-{{ $class.name }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

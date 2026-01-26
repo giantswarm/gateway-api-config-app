@@ -1,0 +1,58 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+    {{- with $gateway.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $gateway.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  gatewayClassName: {{ $gateway.className }}
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: gateway-{{ $gateway.name }}
+      namespace: {{ $.Release.Namespace }}
+  listeners:
+    {{- range $k, $l:= $gateway.listeners }}
+    - name: {{ $l.name }}
+      protocol: {{ $l.protocol }}
+      port: {{ $l.port }}
+      {{- with $l.allowedRoutes }}
+      allowedRoutes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $l.hostname }}
+      hostname: {{ tpl (. | quote) $ }}
+      {{- end }}
+      {{- with $l.tls }}
+      tls:
+        mode: {{ .mode }}
+        {{- if or (.certificateRefs) ($l.certificate.enabled) }}
+        certificateRefs:
+        {{- if and (eq .mode "Terminate") ($l.certificate.enabled) }}
+        - kind: Secret
+          name: {{ printf "gateway-%s-%s-tls" $gateway.name $l.name }}
+        {{- end }}
+        {{- range .certificateRefs }}
+        - kind: Secret
+          name: {{ .name }}
+          {{- if .namespace }}
+          namespace: {{ .namespace }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
