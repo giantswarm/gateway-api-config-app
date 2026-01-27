@@ -1,5 +1,8 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if and $gateway.enabled $gateway.envoyProxy.enabled }}
+{{- if not $gateway.service }}
+{{- $_ := set $gateway "service" dict }}
+{{- end }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -12,7 +15,6 @@ spec:
   {{- include "gateway.shutdown" (dict "provider" $.Values.provider "gateway" $gateway) | nindent 2 }}
   provider:
     type: Kubernetes
-    {{- if $gateway.service }}
     kubernetes:
       {{- with $gateway.envoyProxy.envoyDeployment }}
       envoyDeployment:
@@ -39,6 +41,5 @@ spec:
       envoyServiceAccount:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-    {{- end }}
 {{- end }}
 {{- end }}
