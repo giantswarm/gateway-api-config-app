@@ -52,7 +52,7 @@ Gateway Service annotations
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-target-group-attributes" "target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=200,preserve_client_ip.enabled=false" }}
 {{- end }}
 
-{{- $annotations = mergeOverwrite $annotations (deepCopy $service.annotations) }}
+{{- $annotations = mergeOverwrite $annotations (deepCopy (default dict $service.annotations)) }}
 {{- $annotations | toYaml }}
 {{- end }}
 
@@ -62,9 +62,9 @@ Gateway Service loadBalancerClass
 {{- define "service.loadBalancerClass" -}}
 {{- $service := .gateway.service }}
 {{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
-{{- "service.k8s.aws/nlb" | default $service.loadBalancerClass }}
+{{- default "service.k8s.aws/nlb" $service.loadBalancerClass }}
 {{- else }}
-{{- "" | default $service.loadBalancerClass }}
+{{- default "" $service.loadBalancerClass }}
 {{- end }}
 {{- end }}
 
@@ -74,9 +74,9 @@ Gateway Service externalTrafficPolicy
 {{- define "service.externalTrafficPolicy" -}}
 {{- $service := .gateway.service }}
 {{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
-{{- "Local" | default $service.externalTrafficPolicy }}
+{{- default "Local" $service.externalTrafficPolicy }}
 {{- else }}
-{{- "Cluster" | default $service.externalTrafficPolicy }}
+{{- default "Cluster" $service.externalTrafficPolicy }}
 {{- end }}
 {{- end }}
 

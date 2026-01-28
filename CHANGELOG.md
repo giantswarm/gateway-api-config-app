@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
 - Split files into folders per Gateway and GatewayClass.
+- Fixed internal helm template function usage. Handle unset values more gracefully.
 
 ## [1.6.0] - 2026-01-20
 
