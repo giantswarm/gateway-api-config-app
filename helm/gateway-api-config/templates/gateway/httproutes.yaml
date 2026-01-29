@@ -1,6 +1,7 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
 {{- if $gateway.listeners.http.httpsRedirectEnabled }}
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
