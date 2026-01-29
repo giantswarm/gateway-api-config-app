@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-01-29
+
 ### Changed
 
 - Fixed missing yaml document separator for https redirect HTTPRoute, Issuer and ClusterPolicy templates.
@@ -124,7 +126,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.4.1...v1.5.0
