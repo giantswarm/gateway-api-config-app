@@ -1,5 +1,6 @@
 {{- range $i, $class := .Values.gatewayClasses }}
 {{- if $class.enabled }}
+---
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:

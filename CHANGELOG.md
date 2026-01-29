@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Fixed missing yaml document separator for https redirect HTTPRoute, Issuer and ClusterPolicy templates.
+
 ## [1.6.1] - 2026-01-28
 
 ### Changed
