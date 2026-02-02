@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Remove SecurityContext defaults from class, since Envoy Gateway already sets them.
+- Add PDB, HPA and container repository defaults to GatewayClass.
+- All GatewayClasses have the new defaults.
+- Add support for missing EnvoyProxy fields in GatewayClass.
+
 ## [1.6.2] - 2026-01-29
 
 ### Changed
