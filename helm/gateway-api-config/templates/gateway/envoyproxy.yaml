@@ -21,6 +21,10 @@ envoyDeployment:
 {{- end -}}
 {{- $envoyServiceDefaults := (include "gateway.envoyServiceDefaults" (dict "provider" $.Values.provider "baseDomain" $.Values.baseDomain "gateway" $gateway "root" $)) | fromYaml -}}
 {{- $_ := set $envoyProxyValues "envoyService" (mergeOverwrite $envoyServiceDefaults (deepCopy (default dict $envoyProxyValues.envoyService))) -}}
+{{- $shutdownDefaults := (include "gateway.shutdownDefaults" (dict "provider" $.Values.provider "gateway" $gateway)) | fromYaml -}}
+{{- if $shutdownDefaults -}}
+{{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}
+{{- end -}}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -30,53 +34,6 @@ metadata:
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
-  {{- include "gateway.shutdown" (dict "provider" $.Values.provider "gateway" $gateway) | nindent 2 }}
-  provider:
-    type: Kubernetes
-    kubernetes:
-      {{- with $envoyProxyValues.envoyDeployment }}
-      envoyDeployment:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $envoyProxyValues.envoyService }}
-      envoyService:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $envoyProxyValues.envoyHpa }}
-      envoyHpa:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $envoyProxyValues.envoyPDB }}
-      envoyPDB:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $envoyProxyValues.envoyServiceAccount }}
-      envoyServiceAccount:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-  {{- with $envoyProxyValues.logging }}
-  logging:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
-  {{- with $envoyProxyValues.telemetry }}
-  telemetry:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
-  {{- with $envoyProxyValues.bootstrap }}
-  bootstrap:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
-  {{- with $envoyProxyValues.concurrency }}
-  concurrency:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
-  {{- with $envoyProxyValues.extraArgs }}
-  extraArgs:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
-  {{- with $envoyProxyValues.mergeGateways }}
-  mergeGateways:
-    {{- toYaml . | nindent 8 }}
-  {{- end }}
+  {{- include "envoyProxy.spec" $envoyProxyValues | nindent 2 }}
 {{- end }}
 {{- end }}
