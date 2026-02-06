@@ -70,13 +70,8 @@ gateways:
           certificateRefs: []
     envoyProxy:
       enabled: true
-      shutdown: {}
-      envoyDeployment:
-        container:
-          imageRepository: gsoci.azurecr.io/giantswarm/envoy
-      envoyHpa:
-        minReplicas: 2
-        maxReplicas: 10
-      envoyPDB:
-        maxUnavailable: "25%"
+      envoyDeployment: {}
+      envoyService: {}
+      envoyHpa: {}
+      envoyPDB: {}
       envoyServiceAccount: {}
