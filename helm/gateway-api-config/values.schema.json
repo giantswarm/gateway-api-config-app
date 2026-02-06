@@ -66,41 +66,18 @@
                                     "type": "boolean"
                                 },
                                 "envoyDeployment": {
-                                    "type": "object",
-                                    "properties": {
-                                        "container": {
-                                            "type": "object",
-                                            "properties": {
-                                                "imageRepository": {
-                                                    "type": "string"
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "envoyHpa": {
-                                    "type": "object",
-                                    "properties": {
-                                        "maxReplicas": {
-                                            "type": "integer"
-                                        },
-                                        "minReplicas": {
-                                            "type": "integer"
-                                        }
-                                    }
-                                },
-                                "envoyPDB": {
-                                    "type": "object",
-                                    "properties": {
-                                        "maxUnavailable": {
-                                            "type": "string"
-                                        }
-                                    }
-                                },
-                                "envoyServiceAccount": {
                                     "type": "object"
                                 },
-                                "shutdown": {
+                                "envoyHpa": {
+                                    "type": "object"
+                                },
+                                "envoyPDB": {
+                                    "type": "object"
+                                },
+                                "envoyService": {
+                                    "type": "object"
+                                },
+                                "envoyServiceAccount": {
                                     "type": "object"
                                 }
                             }
