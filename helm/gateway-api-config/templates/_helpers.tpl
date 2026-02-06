@@ -81,6 +81,20 @@ Gateway Service externalTrafficPolicy
 {{- end }}
 
 {{/*
+Gateway EnvoyService defaults - computes provider-specific envoyService configuration
+*/}}
+{{- define "gateway.envoyServiceDefaults" -}}
+{{- $envoyService := dict }}
+{{- $_ := set $envoyService "loadBalancerClass" (include "service.loadBalancerClass" .) }}
+{{- $_ := set $envoyService "externalTrafficPolicy" (include "service.externalTrafficPolicy" .) }}
+{{- $_ := set $envoyService "annotations" ((include "service.annotations" .) | fromYaml) }}
+{{- if .gateway.service.labels }}
+{{- $_ := set $envoyService "labels" ((tpl (.gateway.service.labels | toYaml | toString) .root) | fromYaml) }}
+{{- end }}
+{{- $envoyService | toYaml }}
+{{- end }}
+
+{{/*
 Gateway Shutdown Manager configuration
 */}}
 {{- define "gateway.shutdown" -}}

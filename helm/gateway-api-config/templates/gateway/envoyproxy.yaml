@@ -19,6 +19,8 @@ envoyDeployment:
 {{- if $customEnvoyProxyValues -}}
 {{- $envoyProxyValues = mergeOverwrite $envoyProxyValues (deepCopy $customEnvoyProxyValues) -}}
 {{- end -}}
+{{- $envoyServiceDefaults := (include "gateway.envoyServiceDefaults" (dict "provider" $.Values.provider "baseDomain" $.Values.baseDomain "gateway" $gateway "root" $)) | fromYaml -}}
+{{- $_ := set $envoyProxyValues "envoyService" (mergeOverwrite $envoyServiceDefaults (deepCopy (default dict $envoyProxyValues.envoyService))) -}}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -36,15 +38,10 @@ spec:
       envoyDeployment:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with $envoyProxyValues.envoyService }}
       envoyService:
-        loadBalancerClass: {{ include "service.loadBalancerClass" (dict "provider" $.Values.provider "gateway" $gateway) }}
-        externalTrafficPolicy: {{ include "service.externalTrafficPolicy" (dict "provider" $.Values.provider "gateway" $gateway) }}
-        {{- with $gateway.service.labels }}
-        labels:
-          {{- (tpl (. | toYaml | toString ) $) | nindent 10 }}
-        {{- end }}
-        annotations:
-          {{- include "service.annotations" (dict "provider" $.Values.provider "baseDomain" $.Values.baseDomain "gateway" $gateway) | nindent 10 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with $envoyProxyValues.envoyHpa }}
       envoyHpa:
         {{- toYaml . | nindent 8 }}
