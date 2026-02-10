@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add PDB, HPA and container repository defaults to GatewayClass.
 - All GatewayClasses have the new defaults.
 - Add support for missing EnvoyProxy fields in GatewayClass.
+- Apply the same defaults/merge pattern from GatewayClass to Gateway EnvoyProxy.
+- Add support for overriding envoyService fields via `envoyProxy.envoyService`.
+- Extract shared `envoyProxy.spec` helper to deduplicate EnvoyProxy templates.
 
 ## [1.6.2] - 2026-01-29
 

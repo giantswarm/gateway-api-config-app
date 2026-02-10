@@ -81,26 +81,86 @@ Gateway Service externalTrafficPolicy
 {{- end }}
 
 {{/*
-Gateway Shutdown Manager configuration
+Gateway EnvoyService defaults - computes provider-specific envoyService configuration
 */}}
-{{- define "gateway.shutdown" -}}
-{{- $service := .gateway.service }}
-{{- $drainTimeout := "" }}
-{{- $minDrainDuration := "" }}
+{{- define "gateway.envoyServiceDefaults" -}}
+{{- $envoyService := dict }}
+{{- $_ := set $envoyService "loadBalancerClass" (include "service.loadBalancerClass" .) }}
+{{- $_ := set $envoyService "externalTrafficPolicy" (include "service.externalTrafficPolicy" .) }}
+{{- $_ := set $envoyService "annotations" ((include "service.annotations" .) | fromYaml) }}
+{{- if .gateway.service.labels }}
+{{- $_ := set $envoyService "labels" ((tpl (.gateway.service.labels | toYaml | toString) .root) | fromYaml) }}
+{{- end }}
+{{- $envoyService | toYaml }}
+{{- end }}
+
+{{/*
+Gateway Shutdown defaults - computes provider-specific shutdown configuration
+*/}}
+{{- define "gateway.shutdownDefaults" -}}
+{{- $shutdown := dict }}
 {{- /* Set defaults for AWS NLBs */}}
 {{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
-{{- $drainTimeout = "180s" }}
-{{- $minDrainDuration = "60s" }}
+{{- $_ := set $shutdown "drainTimeout" "180s" }}
+{{- $_ := set $shutdown "minDrainDuration" "60s" }}
 {{- end }}
-{{- /* Override defaults if .gateway.envoyProxy.shutdown is set */}}
-{{- with .gateway.envoyProxy.shutdown }}
-{{- $drainTimeout = .drainTimeout }}
-{{- $minDrainDuration = .minDrainDuration }}
+{{- $shutdown | toYaml }}
 {{- end }}
-{{- /* Print shutdown block */}}
-{{- if and $drainTimeout $minDrainDuration }}
+
+{{/*
+EnvoyProxy spec - shared spec output for EnvoyProxy resources
+Takes: envoyProxyValues (dict with all the envoyProxy configuration)
+*/}}
+{{- define "envoyProxy.spec" -}}
+provider:
+  type: Kubernetes
+  kubernetes:
+    {{- with .envoyDeployment }}
+    envoyDeployment:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .envoyService }}
+    envoyService:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .envoyHpa }}
+    envoyHpa:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .envoyPDB }}
+    envoyPDB:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .envoyServiceAccount }}
+    envoyServiceAccount:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- with .logging }}
+logging:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .telemetry }}
+telemetry:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .bootstrap }}
+bootstrap:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .concurrency }}
+concurrency:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .extraArgs }}
+extraArgs:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .mergeGateways }}
+mergeGateways:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- with .shutdown }}
 shutdown:
-  drainTimeout: {{ $drainTimeout }}
-  minDrainDuration: {{ $minDrainDuration }}
+  {{- toYaml . | nindent 2 }}
 {{- end }}
 {{- end }}
