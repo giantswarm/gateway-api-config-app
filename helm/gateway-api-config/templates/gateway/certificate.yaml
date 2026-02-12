@@ -19,9 +19,9 @@ spec:
   {{- if eq $baseDomain $.Values.baseDomain }}
   - {{ printf "%s.%s" $gateway.dnsName $baseDomain | quote }}
   {{- end }}
+  {{- end }}
   {{- range $k, $v := $listener.subdomains }}
   - {{ printf "%s.%s" $v $baseDomain | quote }}
-  {{- end }}
   {{- end }}
   issuerRef:
     group: cert-manager.io
