@@ -13,7 +13,7 @@ metadata:
 spec:
   dnsNames:
   {{- if or (not (hasPrefix "*." $listener.hostname)) $listener.certificate.wildcard }}
-  - {{ $listener.hostname | quote }}
+  - {{ tpl $listener.hostname $ | quote }}
   {{- else }}
   {{- $baseDomain := (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $)) -}}
   {{- if eq $baseDomain $.Values.baseDomain }}
