@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Add `certificate.wildcard` option to include wildcard hostname in certificate dnsNames (disabled by default).
 - Default certificate issuer to listener-level `certificate.issuer.name`, falling back to `gateway.tlsIssuer.name`.
 - Remove SecurityContext defaults from class, since Envoy Gateway already sets them.
 - Add PDB, HPA and container repository defaults to GatewayClass.

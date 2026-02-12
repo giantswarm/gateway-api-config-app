@@ -12,7 +12,7 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   dnsNames:
-  {{- if not (hasPrefix "*." $listener.hostname) }}
+  {{- if or (not (hasPrefix "*." $listener.hostname)) $listener.certificate.wildcard }}
   - {{ $listener.hostname | quote }}
   {{- else }}
   {{- $baseDomain := (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $)) -}}

@@ -137,6 +137,9 @@
                                                 "enabled": {
                                                     "type": "boolean"
                                                 },
+                                                "wildcard": {
+                                                    "type": "boolean"
+                                                },
                                                 "issuer": {
                                                     "type": "object",
                                                     "properties": {
