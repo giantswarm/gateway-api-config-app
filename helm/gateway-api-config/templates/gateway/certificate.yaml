@@ -12,28 +12,21 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   dnsNames:
-  {{- if not (hasPrefix "*." $listener.hostname) }}
-  - {{ $listener.hostname | quote }}
-  {{- else }}
   {{- $baseDomain := (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $)) -}}
+  {{- if or (not (hasPrefix "*." $listener.hostname)) $listener.certificate.wildcard }}
+  - {{ tpl $listener.hostname $ | quote }}
+  {{- else }}
   {{- if eq $baseDomain $.Values.baseDomain }}
   - {{ printf "%s.%s" $gateway.dnsName $baseDomain | quote }}
+  {{- end }}
   {{- end }}
   {{- range $k, $v := $listener.subdomains }}
   - {{ printf "%s.%s" $v $baseDomain | quote }}
   {{- end }}
-  {{- end }}
-  {{- if $gateway.tlsIssuer.enabled }}
   issuerRef:
     group: cert-manager.io
-    kind: Issuer
-    name: {{ $gateway.tlsIssuer.name }}
-  {{- else }}
-  issuerRef:
-    group: cert-manager.io
-    kind: {{ $listener.certificate.issuer.kind }}
-    name: {{ $listener.certificate.issuer.name }}
-  {{- end }}
+    kind: {{ $listener.certificate.issuer.kind | default "Issuer" }}
+    name: {{ $listener.certificate.issuer.name | default $gateway.tlsIssuer.name }}
   secretName: {{ printf "gateway-%s-%s-tls" $gateway.name $listener.name }}
 {{- end }}
 {{- end }}

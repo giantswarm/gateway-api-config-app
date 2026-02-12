@@ -54,6 +54,7 @@ gateways:
         subdomains: []
         certificate:
           enabled: true
+          wildcard: false
           issuer:
             kind: ""
             name: ""
