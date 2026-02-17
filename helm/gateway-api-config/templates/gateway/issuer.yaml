@@ -1,6 +1,6 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
-{{- if $gateway.tlsIssuer.enabled }}
+{{- if dig "tlsIssuer" "enabled" false $gateway }}
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
