@@ -1,10 +1,10 @@
 apiVersion: v2
-appVersion: 1.7.0
+appVersion: 1.7.1
 name: gateway-api-config
 description: Default configuration for Envoy Gateway
 home: https://github.com/giantswarm/gateway-api-config-app
 icon: https://s.giantswarm.io/app-icons/gateway-api/1/light.svg
-version: 1.7.0
+version: 1.7.1
 annotations:
   io.giantswarm.application.team: cabbage
   io.giantswarm.application.audience: "all"
