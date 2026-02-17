@@ -15,7 +15,7 @@ envoyDeployment:
 {{- $customEnvoyProxyValues := $class.envoyProxy -}}
 {{- if $customEnvoyProxyValues -}}
 {{- $envoyProxyValues = mergeOverwrite $envoyProxyValues (deepCopy $customEnvoyProxyValues) -}}
-{{- end -}}
+{{- end }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy

@@ -24,7 +24,7 @@ envoyDeployment:
 {{- $shutdownDefaults := (include "gateway.shutdownDefaults" (dict "provider" $.Values.provider "gateway" $gateway)) | fromYaml -}}
 {{- if $shutdownDefaults -}}
 {{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}
-{{- end -}}
+{{- end }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
