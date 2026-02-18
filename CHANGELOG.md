@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Make `generate-gateway-pod-monitors` ClusterPolicy a pre-install helm hook.
+
 ## [1.7.2] - 2026-02-17
 
 ### Fixed
