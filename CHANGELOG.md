@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fix
+
+- Omit loadBalancerClass from service definition when no value is set.
+
 ## [1.7.3] - 2026-02-19
 
 ### Changed
