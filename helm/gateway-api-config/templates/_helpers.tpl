@@ -155,9 +155,8 @@ concurrency:
 extraArgs:
   {{- toYaml . | nindent 2 }}
 {{- end }}
-{{- with .mergeGateways }}
-mergeGateways:
-  {{- toYaml . | nindent 2 }}
+{{- if .mergeGateways }}
+mergeGateways: {{ .mergeGateways }}
 {{- end }}
 {{- with .shutdown }}
 shutdown:
