@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add missing hook annotations to all resources associated with ClusterPolicies.
+
 ## [1.7.4] - 2026-02-23
 
-### Fix
+### Fixed
 
 - Omit loadBalancerClass from service definition when no value is set.
 
