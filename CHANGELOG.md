@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix weight of ClusterPolicy hook.
+
 ## [1.7.5] - 2026-02-24
 
 ### Fixed
