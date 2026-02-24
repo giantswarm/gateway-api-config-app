@@ -150,9 +150,8 @@ telemetry:
 bootstrap:
   {{- toYaml . | nindent 2 }}
 {{- end }}
-{{- with .concurrency }}
-concurrency:
-  {{- toYaml . | nindent 2 }}
+{{- if .concurrency }}
+concurrency: {{ .concurrency }}
 {{- end }}
 {{- with .extraArgs }}
 extraArgs:

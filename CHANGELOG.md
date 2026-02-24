@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix `mergeGateways` field definition for EnvoyProxy in helpers.
+- Fix `mergeGateways` and `concurrency` fields definition for EnvoyProxy in helpers.
 
 ## [1.7.6] - 2026-02-24
 
