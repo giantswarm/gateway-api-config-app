@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.7] - 2026-02-24
+
 ### Fixed
 
 - Fix `mergeGateways` and `concurrency` fields definition for EnvoyProxy in helpers.
@@ -180,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.6...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.7...HEAD
+[1.7.7]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.6...v1.7.7
 [1.7.6]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.5...v1.7.6
 [1.7.5]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.4...v1.7.5
 [1.7.4]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.3...v1.7.4
