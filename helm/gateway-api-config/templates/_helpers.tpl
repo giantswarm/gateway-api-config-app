@@ -85,7 +85,10 @@ Gateway EnvoyService defaults - computes provider-specific envoyService configur
 */}}
 {{- define "gateway.envoyServiceDefaults" -}}
 {{- $envoyService := dict }}
-{{- $_ := set $envoyService "loadBalancerClass" (include "service.loadBalancerClass" .) }}
+{{- $loadBalancerClass := (include "service.loadBalancerClass" .) }}
+{{- if $loadBalancerClass }}
+{{- $_ := set $envoyService "loadBalancerClass" $loadBalancerClass }}
+{{- end }}
 {{- $_ := set $envoyService "externalTrafficPolicy" (include "service.externalTrafficPolicy" .) }}
 {{- $_ := set $envoyService "annotations" ((include "service.annotations" .) | fromYaml) }}
 {{- if .gateway.service.labels }}
