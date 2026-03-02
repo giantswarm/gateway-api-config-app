@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Only template `infrastructure` field in Gateway resource if mergeGateways feature is disabled.
+
 ## [1.7.7] - 2026-02-24
 
 ### Fixed
