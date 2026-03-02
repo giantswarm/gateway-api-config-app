@@ -79,14 +79,6 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
-                                },
-                                "mergeGateways": {
-                                    "type": "object",
-                                    "properties": {
-                                        "enabled": {
-                                            "type": "boolean"
-                                        }
-                                    }
                                 }
                             }
                         },
@@ -271,6 +263,9 @@
                     "type": "object",
                     "properties": {
                         "resourceName": {
+                            "type": "string"
+                        },
+                        "resourceNamespace": {
                             "type": "string"
                         }
                     }
