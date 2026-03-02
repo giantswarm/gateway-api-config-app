@@ -10,7 +10,7 @@ envoyDeployment:
 {{- end }}
 
 {{- range $i, $gateway := .Values.gateways }}
-{{- if and $gateway.enabled $gateway.envoyProxy.enabled }}
+{{- if and $gateway.enabled (and $gateway.envoyProxy.enabled (not $gateway.envoyProxy.mergeGateways.enabled)) }}
 {{- if not $gateway.service }}
 {{- $_ := set $gateway "service" dict }}
 {{- end }}

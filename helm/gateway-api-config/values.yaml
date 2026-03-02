@@ -71,6 +71,8 @@ gateways:
           certificateRefs: []
     envoyProxy:
       enabled: true
+      mergeGateways:
+        enabled: false
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}

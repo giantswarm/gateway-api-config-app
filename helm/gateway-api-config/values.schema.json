@@ -79,6 +79,14 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "mergeGateways": {
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean"
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -137,9 +145,6 @@
                                                 "enabled": {
                                                     "type": "boolean"
                                                 },
-                                                "wildcard": {
-                                                    "type": "boolean"
-                                                },
                                                 "issuer": {
                                                     "type": "object",
                                                     "properties": {
@@ -150,6 +155,9 @@
                                                             "type": "string"
                                                         }
                                                     }
+                                                },
+                                                "wildcard": {
+                                                    "type": "boolean"
                                                 }
                                             }
                                         },
