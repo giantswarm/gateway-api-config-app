@@ -15,7 +15,7 @@ spec:
     kind: Gateway
     name: {{ $gateway.name }}
   proxyProtocol:
-    optional: false
+    optional: {{ default false $gateway.envoyProxy.proxyProtocol.optional }}
   healthCheck:
     path: /healthz
 {{- end }}

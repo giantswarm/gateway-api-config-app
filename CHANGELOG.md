@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Make `proxyProtocol.optional` in ClientTrafficPolicy configurable from the values.
+
 ## [1.7.8] - 2026-03-04
 
 ### Fixed

@@ -72,6 +72,8 @@ gateways:
           certificateRefs: []
     envoyProxy:
       enabled: true
+      proxyProtocol:
+        optional: false
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}
