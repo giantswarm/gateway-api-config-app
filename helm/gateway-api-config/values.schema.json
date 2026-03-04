@@ -79,6 +79,14 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "proxyProtocol": {
+                                    "type": "object",
+                                    "properties": {
+                                        "optional": {
+                                            "type": "boolean"
+                                        }
+                                    }
                                 }
                             }
                         },
