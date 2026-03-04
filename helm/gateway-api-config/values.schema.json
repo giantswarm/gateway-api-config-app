@@ -137,9 +137,6 @@
                                                 "enabled": {
                                                     "type": "boolean"
                                                 },
-                                                "wildcard": {
-                                                    "type": "boolean"
-                                                },
                                                 "issuer": {
                                                     "type": "object",
                                                     "properties": {
@@ -150,6 +147,9 @@
                                                             "type": "string"
                                                         }
                                                     }
+                                                },
+                                                "wildcard": {
+                                                    "type": "boolean"
                                                 }
                                             }
                                         },
@@ -263,6 +263,9 @@
                     "type": "object",
                     "properties": {
                         "resourceName": {
+                            "type": "string"
+                        },
+                        "resourceNamespace": {
                             "type": "string"
                         }
                     }

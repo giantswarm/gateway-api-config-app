@@ -17,12 +17,14 @@ metadata:
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
+  {{- if not $gateway.envoyProxy.enabled }}
   infrastructure:
     parametersRef:
       group: gateway.envoyproxy.io
       kind: EnvoyProxy
       name: gateway-{{ $gateway.name }}
       namespace: {{ $.Release.Namespace }}
+  {{- end }}
   listeners:
     {{- range $k, $l:= $gateway.listeners }}
     - name: {{ $l.name }}
