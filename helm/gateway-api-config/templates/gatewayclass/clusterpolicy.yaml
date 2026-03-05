@@ -86,6 +86,7 @@ spec:
         operator: Equals
         value: {{ $class.name }}
     generate:
+      generateExisting: true
       synchronize: true
       apiVersion: monitoring.coreos.com/v1
       kind: PodMonitor
@@ -135,6 +136,7 @@ spec:
         value: {{ $class.name }}
     generate:
       synchronize: true
+      generateExisting: true
       apiVersion: monitoring.grafana.com/v1alpha2
       kind: PodLogs
       name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
