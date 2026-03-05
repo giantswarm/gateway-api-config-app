@@ -17,7 +17,7 @@ metadata:
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
-  {{- if not $gateway.envoyProxy.enabled }}
+  {{- if $gateway.envoyProxy.enabled }}
   infrastructure:
     parametersRef:
       group: gateway.envoyproxy.io
