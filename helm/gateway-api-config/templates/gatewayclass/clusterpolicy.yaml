@@ -71,15 +71,10 @@ rules:
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: generate-gateway-pod-monitors-{{ $class.name }}
-  annotations:
-    # pre install hook to make sure the policy is in place before any gateways are created
-    # This will make sure the pod monitors are created at the installation time.
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-4"
+  name: generate-gateway-monitoring-{{ $class.name }}
 spec:
   rules:
-  - name: generate-gateway-pod-monitors
+  - name: generate-gateway-podmonitors
     match:
       any:
       - resources:
@@ -127,17 +122,7 @@ spec:
               app.kubernetes.io/name: envoy
               gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
               gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
----
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
-metadata:
-  name: generate-gateway-pod-logs-{{ $class.name }}
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-weight": "-4"
-spec:
-  rules:
-  - name: generate-gateway-pod-logs
+  - name: generate-gateway-podlogs
     match:
       any:
       - resources:
