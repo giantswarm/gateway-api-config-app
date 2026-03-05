@@ -6,6 +6,7 @@ kyvernoPolicies:
     resourceNamespace: "{{ request.object.metadata.namespace }}"
   preconditions:
     key: "{{ request.object.spec.gatewayClassName }}"
+    infrastructureKindKey: "{{ request.object.spec.infrastructure.parametersRef.kind || '' }}"
 
 gatewayClasses:
   default:

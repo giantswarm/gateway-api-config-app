@@ -273,6 +273,9 @@
                 "preconditions": {
                     "type": "object",
                     "properties": {
+                        "infrastructureKindKey": {
+                            "type": "string"
+                        },
                         "key": {
                             "type": "string"
                         }
