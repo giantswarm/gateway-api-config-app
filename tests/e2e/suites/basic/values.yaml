@@ -1,0 +1,18 @@
+gateways:
+  default:
+    dnsName: ingress
+    listeners:
+      http:
+        httpsRedirectEnabled: true
+        allowedRoutes:
+          namespaces:
+            from: Same
+      https:
+        dnsEndpoints:
+          enabled: false
+        certificate:
+          enabled: true
+          wildcard: true
+          issuer:
+            kind: ClusterIssuer
+            name: letsencrypt-giantswarm
