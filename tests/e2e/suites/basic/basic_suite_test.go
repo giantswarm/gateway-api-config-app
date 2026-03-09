@@ -34,6 +34,9 @@ func TestBasic(t *testing.T) {
 			It("should have monitoring resources generated", func() {
 				monitoringTests()
 			})
+			It("should have the gatewayclass resources correctly configured", func() {
+				gatewayClassTests()
+			})
 		}).
 		Run(t, "Gateway-API Config Test")
 }
