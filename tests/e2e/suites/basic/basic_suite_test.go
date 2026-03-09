@@ -28,13 +28,11 @@ func TestBasic(t *testing.T) {
 		WithValuesFile("./values.yaml").
 		Tests(func() {
 			It("should have the app correctly deployed", deploymentTests)
-			It("should have kyverno policies in place", func() {
-				policyTests()
-			})
 			It("should have monitoring resources generated", func() {
 				monitoringTests()
 			})
 			It("should have the gatewayclass resources correctly configured", func() {
+				policyTests()
 				gatewayClassTests()
 			})
 		}).
