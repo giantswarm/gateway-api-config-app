@@ -18,7 +18,7 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func deploymentTests() {
+func deploymentAppTests() {
 	By("checking bundle application is created")
 	Expect(state.GetBundleApplication()).ToNot(BeNil())
 	Expect(state.GetBundleApplication().AppName).ToNot(Equal(state.GetApplication().AppName))
@@ -50,10 +50,13 @@ func deploymentTests() {
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(BeTrue())
+}
 
-	By("checking envoy proxy pods are running")
+func gatewayDeploymentTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
+
+	By("checking envoy proxy pods are running")
 	proxyPodsListOptions := &cr.ListOptions{
 		Namespace: "envoy-gateway-system",
 		LabelSelector: labels.SelectorFromSet(map[string]string{

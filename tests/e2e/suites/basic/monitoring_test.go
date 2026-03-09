@@ -13,7 +13,7 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func monitoringTests() {
+func gatewayMonitoringTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 

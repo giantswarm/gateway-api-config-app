@@ -27,9 +27,8 @@ func TestBasic(t *testing.T) {
 		WithIsUpgrade(isUpgrade).
 		WithValuesFile("./values.yaml").
 		Tests(func() {
-			It("should have the app correctly deployed", deploymentTests)
-			It("should have monitoring resources generated", func() {
-				monitoringTests()
+			It("should have the app correctly deployed", func() {
+				deploymentAppTests()
 			})
 			It("should have the gatewayclass resources correctly configured", func() {
 				gatewayClassResourceTests()
@@ -44,6 +43,10 @@ func TestBasic(t *testing.T) {
 				gatewayIssuerTests()
 				gatewayCertificateTests()
 				gatewayHTTPRouteTests()
+			})
+			It("should have the gateway correctly deployed", func() {
+				gatewayDeploymentTests()
+				gatewayMonitoringTests()
 			})
 		}).
 		Run(t, "Gateway-API Config Test")
