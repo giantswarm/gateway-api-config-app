@@ -37,6 +37,14 @@ func TestBasic(t *testing.T) {
 				gatewayClassPolicyTests()
 				gatewayClassKyvernoRBACTests()
 			})
+			It("should have the gateway resources correctly configured", func() {
+				gatewayGatewayTests()
+				gatewayEnvoyProxyTests()
+				gatewayClientTrafficPolicyTests()
+				gatewayIssuerTests()
+				gatewayCertificateTests()
+				gatewayHTTPRouteTests()
+			})
 		}).
 		Run(t, "Gateway-API Config Test")
 }
