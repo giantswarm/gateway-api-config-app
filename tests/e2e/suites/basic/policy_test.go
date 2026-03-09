@@ -13,7 +13,7 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func policyTests() {
+func gatewayClassPolicyTests() {
 	By("checking ClusterPolicy generate-gateway-monitoring-giantswarm-default exists")
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)

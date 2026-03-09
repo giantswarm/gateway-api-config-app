@@ -15,7 +15,7 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func gatewayClassTests() {
+func gatewayClassResourceTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
@@ -42,6 +42,11 @@ func gatewayClassTests() {
 	parametersRef := spec["parametersRef"].(map[string]any)
 	Expect(parametersRef["name"]).To(Equal("gatewayclass-giantswarm-default"))
 	Expect(parametersRef["kind"]).To(Equal("EnvoyProxy"))
+}
+
+func gatewayClassEnvoyProxyTests() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
 
 	By("checking EnvoyProxy gatewayclass-giantswarm-default exists in envoy-gateway-system")
 	envoyProxy := &unstructured.Unstructured{}
@@ -78,6 +83,11 @@ func gatewayClassTests() {
 	By("checking EnvoyProxy PDB maxUnavailable=25%")
 	pdb := kubernetes["envoyPDB"].(map[string]any)
 	Expect(pdb["maxUnavailable"]).To(Equal("25%"))
+}
+
+func gatewayClassKyvernoRBACTests() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
 
 	By("checking ClusterRole kyverno:gateway-api:allow-monitoring-viewing exists")
 	viewingRole := &rbacv1.ClusterRole{}
