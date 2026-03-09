@@ -26,6 +26,12 @@ func TestBasic(t *testing.T) {
 		WithInstallNamespace("envoy-gateway-system").
 		WithIsUpgrade(isUpgrade).
 		WithValuesFile("./values.yaml").
+		AfterClusterReady(func() {
+			installDependencies()
+		}).
+		AfterSuite(func() {
+			cleanupDependencies()
+		}).
 		Tests(func() {
 			It("should have the app correctly deployed", func() {
 				deploymentAppTests()
