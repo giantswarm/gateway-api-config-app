@@ -53,6 +53,38 @@ func gatewayGatewayTests() {
 	Expect(listenersByName).To(HaveKey("https"))
 	Expect(listenersByName["https"]["port"]).To(BeEquivalentTo(443))
 	Expect(listenersByName["https"]["protocol"]).To(Equal("HTTPS"))
+
+	By("checking Gateway is Accepted and Programmed")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "giantswarm-default",
+			Namespace: "envoy-gateway-system",
+		}, gateway); err != nil {
+			return false, err
+		}
+		status, ok := gateway.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		accepted, programmed := false, false
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			switch condition["type"] {
+			case "Accepted":
+				accepted = condition["status"] == "True"
+			case "Programmed":
+				programmed = condition["status"] == "True"
+			}
+		}
+		return accepted && programmed, nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(BeTrue())
 }
 
 func gatewayEnvoyProxyTests() {

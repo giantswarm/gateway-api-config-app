@@ -42,6 +42,31 @@ func gatewayClassResourceTests() {
 	parametersRef := spec["parametersRef"].(map[string]any)
 	Expect(parametersRef["name"]).To(Equal("gatewayclass-giantswarm-default"))
 	Expect(parametersRef["kind"]).To(Equal("EnvoyProxy"))
+
+	By("checking GatewayClass is Accepted")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{Name: "giantswarm-default"}, gatewayClass); err != nil {
+			return false, err
+		}
+		status, ok := gatewayClass.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Accepted" && condition["status"] == "True" {
+				return true, nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(BeTrue())
 }
 
 func gatewayClassEnvoyProxyTests() {
