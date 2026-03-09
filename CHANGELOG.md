@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Add precondition to the generate ClusterPolicies to comply with mergeGateways situations.
+- Adapt podmonitor and podlog generation to comply with mergeGateways situations.
 
 ## [1.7.9] - 2026-03-05
 
