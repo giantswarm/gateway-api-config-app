@@ -166,69 +166,6 @@ spec:
               app.kubernetes.io/name: envoy
               gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
               gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
-{{- else }}
----
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  labels:
-    {{- include "labels.common" $ | nindent 4 }}
-  name: {{ $class.name }}
-  namespace: {{ $.Release.Namespace }}
-spec:
-  podMetricsEndpoints:
-  - honorLabels: true
-    interval: 60s
-    metricRelabelings: []
-    path: /stats/prometheus
-    port: metrics
-    relabelings:
-    - action: replace
-      replacement: ${1}
-      sourceLabels:
-      - __meta_kubernetes_pod_node_name
-      targetLabel: node
-    - action: replace
-      sourceLabels:
-      - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_name
-      targetLabel: gateway_name
-    - action: replace
-      sourceLabels:
-      - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_namespace
-      targetLabel: gateway_namespace
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: proxy
-      app.kubernetes.io/name: envoy
-      gateway.envoyproxy.io/owning-gatewayclass: {{ $class.name }}
-      gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Release.Namespace }}
----
-apiVersion: monitoring.grafana.com/v1alpha2
-kind: PodLogs
-metadata:
-  labels:
-    {{- include "labels.common" $ | nindent 4 }}
-  name: {{ $class.name}}
-  namespace: {{ $.Release.Namespace }}
-spec:
-  relabelings:
-  - action: replace
-    replacement: giantswarm
-    targetLabel: giantswarm_observability_tenant
-  - action: replace
-    sourceLabels:
-    - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_name
-    targetLabel: gateway_name
-  - action: replace
-    sourceLabels:
-    - __meta_kubernetes_pod_label_gateway_envoyproxy_io_owning_gateway_namespace
-    targetLabel: gateway_namespace
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: proxy
-      app.kubernetes.io/name: envoy
-      gateway.envoyproxy.io/owning-gateway-name: {{ $class.name}}
-      gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Release.Namespace }}
 {{- end }}
 {{- end }}
 {{- end }}
