@@ -18,7 +18,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -84,6 +86,63 @@ func TestBasic(t *testing.T) {
 					WithTimeout(5 * time.Minute).
 					WithPolling(5 * time.Second).
 					Should(BeTrue())
+			})
+
+			It("should have deployed the kyverno ClusterPolicy for the default gateway class", func() {
+				wcName := state.GetCluster().Name
+				wcClient, _ := state.GetFramework().WC(wcName)
+				clusterPolicy := &unstructured.Unstructured{}
+				clusterPolicy.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   "kyverno.io",
+					Version: "v1",
+					Kind:    "ClusterPolicy",
+				})
+				Eventually(func() error {
+					return wcClient.Get(state.GetContext(), cr.ObjectKey{Name: "generate-gateway-monitoring-giantswarm-default"}, clusterPolicy)
+				}).
+					WithTimeout(5 * time.Minute).
+					WithPolling(5 * time.Second).
+					Should(Succeed())
+			})
+
+			It("should have generated a PodMonitor for the default gateway", func() {
+				wcName := state.GetCluster().Name
+				wcClient, _ := state.GetFramework().WC(wcName)
+				podMonitor := &unstructured.Unstructured{}
+				podMonitor.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   "monitoring.coreos.com",
+					Version: "v1",
+					Kind:    "PodMonitor",
+				})
+				Eventually(func() error {
+					return wcClient.Get(state.GetContext(), cr.ObjectKey{
+						Name:      "giantswarm-default",
+						Namespace: "envoy-gateway-system",
+					}, podMonitor)
+				}).
+					WithTimeout(5 * time.Minute).
+					WithPolling(5 * time.Second).
+					Should(Succeed())
+			})
+
+			It("should have generated a PodLogs for the default gateway", func() {
+				wcName := state.GetCluster().Name
+				wcClient, _ := state.GetFramework().WC(wcName)
+				podLogs := &unstructured.Unstructured{}
+				podLogs.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   "monitoring.grafana.com",
+					Version: "v1alpha2",
+					Kind:    "PodLogs",
+				})
+				Eventually(func() error {
+					return wcClient.Get(state.GetContext(), cr.ObjectKey{
+						Name:      "giantswarm-default",
+						Namespace: "envoy-gateway-system",
+					}, podLogs)
+				}).
+					WithTimeout(5 * time.Minute).
+					WithPolling(5 * time.Second).
+					Should(Succeed())
 			})
 
 			It("should use the gsoci.azurecr.io/giantswarm/envoy image for the envoy proxy pods", func() {
