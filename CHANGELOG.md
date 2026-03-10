@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Adapt podmonitor and podlog generation to comply with mergeGateways situations.
 
+### Changed
+
+- Consolidate ClusterPolicies and ClusterRoles into a single resource per gateway class.
+- Enable `generateExisting` on monitoring ClusterPolicies so they apply to already-existing Gateway resources.
+
 ## [1.7.9] - 2026-03-05
 
 ### Fixed
