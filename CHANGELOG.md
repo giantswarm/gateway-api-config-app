@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Adapt podmonitor and podlog generation to comply with mergeGateways situations.
+
 ## [1.7.10] - 2026-03-11
 
 ### Changed

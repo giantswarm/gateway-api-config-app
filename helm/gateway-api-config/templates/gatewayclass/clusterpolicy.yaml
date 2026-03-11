@@ -68,6 +68,7 @@ rules:
   - list
   - watch
 ---
+{{- if not $class.envoyProxy.mergeGateways }}
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -165,5 +166,6 @@ spec:
               app.kubernetes.io/name: envoy
               gateway.envoyproxy.io/owning-gateway-name: {{ $.Values.kyvernoPolicies.observability.resourceName | quote }}
               gateway.envoyproxy.io/owning-gateway-namespace: {{ $.Values.kyvernoPolicies.observability.resourceNamespace | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
