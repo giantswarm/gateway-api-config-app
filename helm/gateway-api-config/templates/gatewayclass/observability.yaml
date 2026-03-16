@@ -59,6 +59,6 @@ spec:
     matchLabels:
       app.kubernetes.io/component: proxy
       app.kubernetes.io/name: envoy
-      gateway.envoyproxy.io/owning-gateway-name: {{ $class.name}}
+      gateway.envoyproxy.io/owning-gatewayclass: {{ $class.name}}
 {{- end }}
 {{- end }}
