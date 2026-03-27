@@ -2,6 +2,7 @@ package basic
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v3/pkg/state"
+	"github.com/giantswarm/clustertest/v3/pkg/client"
 	"github.com/giantswarm/clustertest/v3/pkg/logger"
 	"github.com/giantswarm/clustertest/v3/pkg/wait"
 
@@ -223,5 +225,89 @@ func gatewayHPAAndPDBTests() {
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
+		Should(Succeed())
+}
+
+func getGatewayLBHostname(wcClient *client.Client) (string, error) {
+	svcList := &corev1.ServiceList{}
+	if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
+		Namespace: "envoy-gateway-system",
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
+			"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
+		}),
+	}); err != nil {
+		return "", err
+	}
+	if len(svcList.Items) == 0 {
+		return "", fmt.Errorf("no services found for gateway giantswarm-default")
+	}
+	ingress := svcList.Items[0].Status.LoadBalancer.Ingress
+	if len(ingress) == 0 || ingress[0].Hostname == "" {
+		return "", fmt.Errorf("LoadBalancer hostname not yet assigned")
+	}
+	return ingress[0].Hostname, nil
+}
+
+func gatewayHTTPRedirectBehaviorTest() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
+
+	noRedirectClient := &http.Client{
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: 10 * time.Second,
+	}
+
+	By("checking HTTP request to port 80 returns 301 redirect to HTTPS")
+	Eventually(func() error {
+		hostname, err := getGatewayLBHostname(wcClient)
+		if err != nil {
+			return err
+		}
+		resp, err := noRedirectClient.Get(fmt.Sprintf("http://%s/", hostname))
+		if err != nil {
+			return fmt.Errorf("HTTP request failed: %w", err)
+		}
+		defer resp.Body.Close() //nolint:errcheck
+		if resp.StatusCode != http.StatusMovedPermanently {
+			return fmt.Errorf("expected 301, got %d", resp.StatusCode)
+		}
+		location := resp.Header.Get("Location")
+		if !strings.HasPrefix(location, "https://") {
+			return fmt.Errorf("expected Location to start with https://, got %q", location)
+		}
+		logger.Log("HTTP redirect OK: %s -> %s", fmt.Sprintf("http://%s/", hostname), location)
+		return nil
+	}).
+		WithTimeout(10 * time.Minute).
+		WithPolling(15 * time.Second).
+		Should(Succeed())
+}
+
+func gatewayHealthCheckBehaviorTest() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
+
+	By("checking /healthz on the gateway LoadBalancer returns HTTP 200")
+	Eventually(func() error {
+		hostname, err := getGatewayLBHostname(wcClient)
+		if err != nil {
+			return err
+		}
+		resp, err := http.Get(fmt.Sprintf("http://%s/healthz", hostname)) //nolint:noctx
+		if err != nil {
+			return fmt.Errorf("HTTP request failed: %w", err)
+		}
+		defer resp.Body.Close() //nolint:errcheck
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("expected 200 from /healthz, got %d", resp.StatusCode)
+		}
+		logger.Log("/healthz returned 200 OK")
+		return nil
+	}).
+		WithTimeout(10 * time.Minute).
+		WithPolling(15 * time.Second).
 		Should(Succeed())
 }

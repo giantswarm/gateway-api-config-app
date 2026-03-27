@@ -1,6 +1,7 @@
 package basic
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -46,6 +47,47 @@ func gatewayMonitoringTests() {
 			Name:      "giantswarm-default",
 			Namespace: "envoy-gateway-system",
 		}, podLogs)
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+}
+
+func gatewayKyvernoRegenerationTest() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
+
+	podMonitorGVK := schema.GroupVersionKind{
+		Group:   "monitoring.coreos.com",
+		Version: "v1",
+		Kind:    "PodMonitor",
+	}
+	key := cr.ObjectKey{Name: "giantswarm-default", Namespace: "envoy-gateway-system"}
+
+	By("recording the creation timestamp of the existing PodMonitor giantswarm-default")
+	original := &unstructured.Unstructured{}
+	original.SetGroupVersionKind(podMonitorGVK)
+	Expect(wcClient.Get(state.GetContext(), key, original)).To(Succeed())
+	originalTS := original.GetCreationTimestamp()
+
+	By("deleting the Kyverno-generated PodMonitor giantswarm-default")
+	grace := int64(0)
+	Expect(wcClient.Delete(state.GetContext(), original, &cr.DeleteOptions{
+		GracePeriodSeconds: &grace,
+	})).To(Succeed())
+
+	By("waiting for Kyverno to regenerate the PodMonitor giantswarm-default")
+	recreated := &unstructured.Unstructured{}
+	recreated.SetGroupVersionKind(podMonitorGVK)
+	Eventually(func() error {
+		if err := wcClient.Get(state.GetContext(), key, recreated); err != nil {
+			return err
+		}
+		newTS := recreated.GetCreationTimestamp()
+		if !newTS.After(originalTS.Time) {
+			return fmt.Errorf("PodMonitor not yet recreated (same or older creation timestamp)")
+		}
+		return nil
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
