@@ -193,6 +193,34 @@ func gatewayIssuerTests() {
 	By("checking Issuer spec.acme.server contains letsencrypt.org")
 	server := acme["server"].(string)
 	Expect(server).To(ContainSubstring("letsencrypt.org"))
+
+	By("waiting for Issuer to reach Ready=True")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "letsencrypt-giantswarm-gateway",
+			Namespace: "envoy-gateway-system",
+		}, issuer); err != nil {
+			return false, err
+		}
+		status, ok := issuer.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Ready" {
+				return condition["status"] == "True", nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(10 * time.Minute).
+		WithPolling(10 * time.Second).
+		Should(BeTrue())
 }
 
 func gatewayCertificateTests() {
@@ -226,6 +254,34 @@ func gatewayCertificateTests() {
 
 	By("checking Certificate secretName = gateway-giantswarm-default-https-tls")
 	Expect(certSpec["secretName"]).To(Equal("gateway-giantswarm-default-https-tls"))
+
+	By("waiting for Certificate to reach Ready=True")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default-https",
+			Namespace: "envoy-gateway-system",
+		}, cert); err != nil {
+			return false, err
+		}
+		status, ok := cert.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Ready" {
+				return condition["status"] == "True", nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(15 * time.Minute).
+		WithPolling(10 * time.Second).
+		Should(BeTrue())
 }
 
 func gatewayHTTPRouteTests() {
