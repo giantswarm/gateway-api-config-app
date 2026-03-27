@@ -14,6 +14,8 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// gatewayGatewayTests verifies that the Gateway resource exists, has correct listeners on ports 80/443,
+// and reaches Accepted and Programmed states, confirming the gateway is configured and ready to handle traffic.
 func gatewayGatewayTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -87,6 +89,8 @@ func gatewayGatewayTests() {
 		Should(BeTrue())
 }
 
+// gatewayEnvoyProxyTests confirms EnvoyProxy is configured with Giant Swarm's image registry,
+// correct HPA autoscaling bounds (2-10 replicas), and PDB disruption budget to ensure availability during updates.
 func gatewayEnvoyProxyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -128,6 +132,8 @@ func gatewayEnvoyProxyTests() {
 	Expect(pdb["maxUnavailable"]).To(Equal("25%"))
 }
 
+// gatewayClientTrafficPolicyTests validates ClientTrafficPolicy correctly targets the gateway,
+// enforces PROXY protocol handling, and defines health check path for AWS NLB to detect healthy proxies.
 func gatewayClientTrafficPolicyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -164,6 +170,8 @@ func gatewayClientTrafficPolicyTests() {
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
 }
 
+// gatewayIssuerTests verifies the cert-manager Issuer exists with Let's Encrypt configuration
+// and reaches Ready state, ensuring TLS certificates can be provisioned for HTTPS.
 func gatewayIssuerTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -223,6 +231,8 @@ func gatewayIssuerTests() {
 		Should(BeTrue())
 }
 
+// gatewayCertificateTests confirms the TLS certificate is created with proper issuer references
+// and reaches Ready state, ensuring HTTPS is fully functional on the gateway.
 func gatewayCertificateTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -284,6 +294,8 @@ func gatewayCertificateTests() {
 		Should(BeTrue())
 }
 
+// gatewayHTTPRouteTests validates the HTTP-to-HTTPS redirect route is properly configured
+// to redirect port 80 traffic to port 443 with a 301 status code.
 func gatewayHTTPRouteTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)

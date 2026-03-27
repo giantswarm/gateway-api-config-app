@@ -22,6 +22,8 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// deploymentAppTests verifies the bundle application is installed with the correct version
+// before application-specific tests run, ensuring the deployment foundation is ready.
 func deploymentAppTests() {
 	By("checking bundle application is created")
 	Expect(state.GetBundleApplication()).ToNot(BeNil())
@@ -56,6 +58,8 @@ func deploymentAppTests() {
 		Should(BeTrue())
 }
 
+// gatewayDeploymentTests validates Envoy proxy pods are running, use correct Giant Swarm images,
+// have external-dns annotations for the AWS NLB hostname, and confirms the LoadBalancer service is provisioned with an external hostname.
 func gatewayDeploymentTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -182,6 +186,8 @@ func gatewayDeploymentTests() {
 		Should(Succeed())
 }
 
+// gatewayHPAAndPDBTests confirms HorizontalPodAutoscaler and PodDisruptionBudget resources exist
+// for the proxy, enabling automatic scaling and maintaining availability during cluster maintenance.
 func gatewayHPAAndPDBTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -249,6 +255,8 @@ func getGatewayLBHostname(wcClient *client.Client) (string, error) {
 	return ingress[0].Hostname, nil
 }
 
+// gatewayHTTPRedirectBehaviorTest verifies HTTP requests to the gateway receive a 301 redirect
+// to HTTPS, enforcing encryption for all traffic passing through the LoadBalancer.
 func gatewayHTTPRedirectBehaviorTest() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -286,6 +294,8 @@ func gatewayHTTPRedirectBehaviorTest() {
 		Should(Succeed())
 }
 
+// gatewayHealthCheckBehaviorTest confirms the gateway /healthz endpoint returns HTTP 200,
+// validating the health check path used by AWS NLB to determine proxy pod readiness.
 func gatewayHealthCheckBehaviorTest() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
