@@ -58,7 +58,7 @@ func gatewayDeploymentTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
-	By("checking envoy proxy pods are running")
+	By("checking envoy proxy pods are running and ready")
 	proxyPodsListOptions := &cr.ListOptions{
 		Namespace: "envoy-gateway-system",
 		LabelSelector: labels.SelectorFromSet(map[string]string{
@@ -70,6 +70,27 @@ func gatewayDeploymentTests() {
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(BeTrue())
+
+	Eventually(func() error {
+		proxyPods := &corev1.PodList{}
+		if err := wcClient.List(state.GetContext(), proxyPods, proxyPodsListOptions); err != nil {
+			return err
+		}
+		if len(proxyPods.Items) == 0 {
+			return fmt.Errorf("no proxy pods found")
+		}
+		for _, pod := range proxyPods.Items {
+			for _, cs := range pod.Status.ContainerStatuses {
+				if !cs.Ready {
+					return fmt.Errorf("pod %s/%s container %s is not ready", pod.Namespace, pod.Name, cs.Name)
+				}
+			}
+		}
+		return nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
 
 	By("checking envoy proxy pods use the gsoci image")
 	Eventually(func() (bool, error) {
