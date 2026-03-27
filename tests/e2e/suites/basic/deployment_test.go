@@ -12,7 +12,9 @@ import (
 	"github.com/giantswarm/clustertest/v3/pkg/logger"
 	"github.com/giantswarm/clustertest/v3/pkg/wait"
 
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
@@ -122,6 +124,52 @@ func gatewayDeploymentTests() {
 		}
 		if !strings.HasPrefix(hostname, "ingress.") {
 			return fmt.Errorf("expected hostname annotation to start with 'ingress.', got %q", hostname)
+		}
+		return nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+}
+
+func gatewayHPAAndPDBTests() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
+
+	proxyLabelSelector := labels.SelectorFromSet(map[string]string{
+		"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
+		"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
+	})
+
+	By("checking HorizontalPodAutoscaler exists for the giantswarm-default proxy")
+	Eventually(func() error {
+		hpaList := &autoscalingv2.HorizontalPodAutoscalerList{}
+		if err := wcClient.List(state.GetContext(), hpaList, &cr.ListOptions{
+			Namespace:     "envoy-gateway-system",
+			LabelSelector: proxyLabelSelector,
+		}); err != nil {
+			return err
+		}
+		if len(hpaList.Items) == 0 {
+			return fmt.Errorf("no HorizontalPodAutoscaler found for gateway giantswarm-default")
+		}
+		return nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+
+	By("checking PodDisruptionBudget exists for the giantswarm-default proxy")
+	Eventually(func() error {
+		pdbList := &policyv1.PodDisruptionBudgetList{}
+		if err := wcClient.List(state.GetContext(), pdbList, &cr.ListOptions{
+			Namespace:     "envoy-gateway-system",
+			LabelSelector: proxyLabelSelector,
+		}); err != nil {
+			return err
+		}
+		if len(pdbList.Items) == 0 {
+			return fmt.Errorf("no PodDisruptionBudget found for gateway giantswarm-default")
 		}
 		return nil
 	}).

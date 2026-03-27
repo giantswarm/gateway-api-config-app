@@ -52,6 +52,7 @@ func TestBasic(t *testing.T) {
 			})
 			It("should have the gateway correctly deployed", func() {
 				gatewayDeploymentTests()
+				gatewayHPAAndPDBTests()
 				gatewayMonitoringTests()
 			})
 		}).
