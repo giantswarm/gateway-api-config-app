@@ -151,6 +151,33 @@ func gatewayDeploymentTests() {
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(Succeed())
+
+	By("checking LoadBalancer service has an external hostname assigned by AWS")
+	Eventually(func() error {
+		svcList := &corev1.ServiceList{}
+		if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
+			Namespace: "envoy-gateway-system",
+			LabelSelector: labels.SelectorFromSet(map[string]string{
+				"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
+				"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
+			}),
+		}); err != nil {
+			return err
+		}
+		if len(svcList.Items) == 0 {
+			return fmt.Errorf("no services found for gateway giantswarm-default")
+		}
+		svc := svcList.Items[0]
+		ingress := svc.Status.LoadBalancer.Ingress
+		if len(ingress) == 0 || ingress[0].Hostname == "" {
+			return fmt.Errorf("LoadBalancer ingress hostname not yet assigned")
+		}
+		logger.Log("LoadBalancer hostname: %s", ingress[0].Hostname)
+		return nil
+	}).
+		WithTimeout(10 * time.Minute).
+		WithPolling(15 * time.Second).
+		Should(Succeed())
 }
 
 func gatewayHPAAndPDBTests() {
