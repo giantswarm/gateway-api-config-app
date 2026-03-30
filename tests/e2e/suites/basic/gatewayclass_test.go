@@ -15,6 +15,8 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// gatewayClassResourceTests verifies GatewayClass is created with correct Envoy Gateway controller reference,
+// parameter references, and reaches Accepted state, establishing it as a valid gateway configuration class.
 func gatewayClassResourceTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -69,6 +71,8 @@ func gatewayClassResourceTests() {
 		Should(BeTrue())
 }
 
+// gatewayClassEnvoyProxyTests confirms the GatewayClass parameter EnvoyProxy has correct image registry,
+// HPA min/max replicas, and PDB settings to control proxy scaling and disruptions.
 func gatewayClassEnvoyProxyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -110,6 +114,8 @@ func gatewayClassEnvoyProxyTests() {
 	Expect(pdb["maxUnavailable"]).To(Equal("25%"))
 }
 
+// gatewayClassKyvernoRBACTests verifies Kyverno ClusterRoles exist to allow monitoring resource generation
+// and viewing, ensuring the policy engine can automatically create PodMonitor and PodLogs per gateway.
 func gatewayClassKyvernoRBACTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)

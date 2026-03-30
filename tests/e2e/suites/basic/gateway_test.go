@@ -14,6 +14,8 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// gatewayGatewayTests verifies that the Gateway resource exists, has correct listeners on ports 80/443,
+// and reaches Accepted and Programmed states, confirming the gateway is configured and ready to handle traffic.
 func gatewayGatewayTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -87,6 +89,8 @@ func gatewayGatewayTests() {
 		Should(BeTrue())
 }
 
+// gatewayEnvoyProxyTests confirms EnvoyProxy is configured with Giant Swarm's image registry,
+// correct HPA autoscaling bounds (2-10 replicas), and PDB disruption budget to ensure availability during updates.
 func gatewayEnvoyProxyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -128,6 +132,8 @@ func gatewayEnvoyProxyTests() {
 	Expect(pdb["maxUnavailable"]).To(Equal("25%"))
 }
 
+// gatewayClientTrafficPolicyTests validates ClientTrafficPolicy correctly targets the gateway,
+// enforces PROXY protocol handling, and defines health check path for AWS NLB to detect healthy proxies.
 func gatewayClientTrafficPolicyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -164,6 +170,8 @@ func gatewayClientTrafficPolicyTests() {
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
 }
 
+// gatewayIssuerTests verifies the cert-manager Issuer exists with Let's Encrypt configuration
+// and reaches Ready state, ensuring TLS certificates can be provisioned for HTTPS.
 func gatewayIssuerTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -193,8 +201,38 @@ func gatewayIssuerTests() {
 	By("checking Issuer spec.acme.server contains letsencrypt.org")
 	server := acme["server"].(string)
 	Expect(server).To(ContainSubstring("letsencrypt.org"))
+
+	By("waiting for Issuer to reach Ready=True")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "letsencrypt-giantswarm-gateway",
+			Namespace: "envoy-gateway-system",
+		}, issuer); err != nil {
+			return false, err
+		}
+		status, ok := issuer.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Ready" {
+				return condition["status"] == "True", nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(10 * time.Minute).
+		WithPolling(10 * time.Second).
+		Should(BeTrue())
 }
 
+// gatewayCertificateTests confirms the TLS certificate is created with proper issuer references
+// and reaches Ready state, ensuring HTTPS is fully functional on the gateway.
 func gatewayCertificateTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -226,8 +264,38 @@ func gatewayCertificateTests() {
 
 	By("checking Certificate secretName = gateway-giantswarm-default-https-tls")
 	Expect(certSpec["secretName"]).To(Equal("gateway-giantswarm-default-https-tls"))
+
+	By("waiting for Certificate to reach Ready=True")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default-https",
+			Namespace: "envoy-gateway-system",
+		}, cert); err != nil {
+			return false, err
+		}
+		status, ok := cert.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Ready" {
+				return condition["status"] == "True", nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(15 * time.Minute).
+		WithPolling(10 * time.Second).
+		Should(BeTrue())
 }
 
+// gatewayHTTPRouteTests validates the HTTP-to-HTTPS redirect route is properly configured
+// to redirect port 80 traffic to port 443 with a 301 status code.
 func gatewayHTTPRouteTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)

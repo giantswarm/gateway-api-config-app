@@ -13,6 +13,8 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// gatewayClassPolicyTests verifies the Kyverno ClusterPolicy exists to automatically generate
+// PodMonitor and PodLogs for the gateway, ensuring monitoring resources are created when mergeGateways=false.
 func gatewayClassPolicyTests() {
 	By("checking ClusterPolicy generate-gateway-monitoring-giantswarm-default exists")
 	wcName := state.GetCluster().Name

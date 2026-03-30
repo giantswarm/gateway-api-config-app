@@ -52,7 +52,11 @@ func TestBasic(t *testing.T) {
 			})
 			It("should have the gateway correctly deployed", func() {
 				gatewayDeploymentTests()
+				gatewayHPAAndPDBTests()
+				gatewayHTTPRedirectBehaviorTest()
+				gatewayHealthCheckBehaviorTest()
 				gatewayMonitoringTests()
+				gatewayKyvernoRegenerationTest()
 			})
 		}).
 		Run(t, "Gateway-API Config Test")
