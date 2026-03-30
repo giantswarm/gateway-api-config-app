@@ -46,6 +46,7 @@ func TestBasic(t *testing.T) {
 				gatewayGatewayTests()
 				gatewayEnvoyProxyTests()
 				gatewayClientTrafficPolicyTests()
+				gatewayBackendTrafficPolicyTests()
 				gatewayIssuerTests()
 				gatewayCertificateTests()
 				gatewayHTTPRouteTests()

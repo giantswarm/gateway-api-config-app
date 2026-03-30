@@ -7,6 +7,23 @@ kyvernoPolicies:
   preconditions:
     key: "{{ request.object.spec.gatewayClassName }}"
 
+# Global error pages configuration applied to all gateways.
+# Per-gateway errorPages settings override these defaults.
+errorPages:
+  enabled: false
+  statusCodes:
+    - type: Value
+      value: 500
+    - type: Value
+      value: 502
+    - type: Value
+      value: 503
+    - type: Value
+      value: 504
+  contentType: "text/html"
+  body: ""
+  existingConfigMapName: ""
+
 gatewayClasses:
   default:
     enabled: true
@@ -70,6 +87,9 @@ gateways:
         tls:
           mode: Terminate
           certificateRefs: []
+    # Per-gateway error pages override global errorPages settings.
+    # Omit fields to inherit from global config.
+    errorPages: {}
     envoyProxy:
       enabled: true
       envoyDeployment: {}

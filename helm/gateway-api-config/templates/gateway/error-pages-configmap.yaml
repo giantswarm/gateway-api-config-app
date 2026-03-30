@@ -1,0 +1,17 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- $errorPages := include "errorPages.effective" (dict "global" $.Values.errorPages "gateway" $gateway.errorPages) | fromYaml }}
+{{- if and $errorPages.enabled (not $errorPages.existingConfigMapName) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-{{ $gateway.name }}-error-pages
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+data:
+  response.body: {{ $errorPages.body | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

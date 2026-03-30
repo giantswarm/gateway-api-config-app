@@ -1,0 +1,45 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- $errorPages := include "errorPages.effective" (dict "global" $.Values.errorPages "gateway" $gateway.errorPages) | fromYaml }}
+{{- if $errorPages.enabled }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: gateway-{{ $gateway.name }}-error-pages
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ $gateway.name }}
+  responseOverride:
+    - match:
+        statusCodes:
+          {{- range $errorPages.statusCodes }}
+          {{- if eq .type "Range" }}
+          - type: Range
+            start: {{ .start }}
+            end: {{ .end }}
+          {{- else }}
+          - type: Value
+            value: {{ .value }}
+          {{- end }}
+          {{- end }}
+      response:
+        contentType: {{ $errorPages.contentType | quote }}
+        body:
+          type: ValueRef
+          valueRef:
+            group: ""
+            kind: ConfigMap
+            {{- if $errorPages.existingConfigMapName }}
+            name: {{ $errorPages.existingConfigMapName }}
+            {{- else }}
+            name: gateway-{{ $gateway.name }}-error-pages
+            {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

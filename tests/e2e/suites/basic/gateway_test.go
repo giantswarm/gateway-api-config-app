@@ -170,6 +170,96 @@ func gatewayClientTrafficPolicyTests() {
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
 }
 
+// gatewayBackendTrafficPolicyTests validates BackendTrafficPolicy is configured to return
+// custom error pages for 5xx status codes, targeting the default gateway.
+func gatewayBackendTrafficPolicyTests() {
+	wcName := state.GetCluster().Name
+	wcClient, _ := state.GetFramework().WC(wcName)
+
+	By("checking BackendTrafficPolicy gateway-giantswarm-default-error-pages exists in envoy-gateway-system")
+	btp := &unstructured.Unstructured{}
+	btp.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "gateway.envoyproxy.io",
+		Version: "v1alpha1",
+		Kind:    "BackendTrafficPolicy",
+	})
+	Eventually(func() error {
+		return wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default-error-pages",
+			Namespace: "envoy-gateway-system",
+		}, btp)
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+
+	By("checking BackendTrafficPolicy targetRef name=giantswarm-default, kind=Gateway")
+	btpSpec := btp.Object["spec"].(map[string]any)
+	targetRef := btpSpec["targetRef"].(map[string]any)
+	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
+	Expect(targetRef["kind"]).To(Equal("Gateway"))
+
+	By("checking BackendTrafficPolicy responseOverride has Value and Range status codes")
+	responseOverride := btpSpec["responseOverride"].([]any)
+	Expect(responseOverride).To(HaveLen(1))
+	override := responseOverride[0].(map[string]any)
+	match := override["match"].(map[string]any)
+	statusCodes := match["statusCodes"].([]any)
+	Expect(statusCodes).To(HaveLen(3))
+
+	// First two are Value entries (500, 502)
+	code0 := statusCodes[0].(map[string]any)
+	Expect(code0["type"]).To(Equal("Value"))
+	Expect(code0["value"]).To(BeEquivalentTo(500))
+
+	code1 := statusCodes[1].(map[string]any)
+	Expect(code1["type"]).To(Equal("Value"))
+	Expect(code1["value"]).To(BeEquivalentTo(502))
+
+	// Third is a Range entry (503-504)
+	code2 := statusCodes[2].(map[string]any)
+	Expect(code2["type"]).To(Equal("Range"))
+	Expect(code2["start"]).To(BeEquivalentTo(503))
+	Expect(code2["end"]).To(BeEquivalentTo(504))
+
+	By("checking BackendTrafficPolicy response contentType=text/html and body references ConfigMap")
+	response := override["response"].(map[string]any)
+	Expect(response["contentType"]).To(Equal("text/html"))
+	body := response["body"].(map[string]any)
+	Expect(body["type"]).To(Equal("ValueRef"))
+	valueRef := body["valueRef"].(map[string]any)
+	Expect(valueRef["kind"]).To(Equal("ConfigMap"))
+	Expect(valueRef["name"]).To(Equal("gateway-giantswarm-default-error-pages"))
+
+	By("checking BackendTrafficPolicy is Accepted")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default-error-pages",
+			Namespace: "envoy-gateway-system",
+		}, btp); err != nil {
+			return false, err
+		}
+		status, ok := btp.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		conditions, ok := status["conditions"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, c := range conditions {
+			condition := c.(map[string]any)
+			if condition["type"] == "Accepted" {
+				return condition["status"] == "True", nil
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(BeTrue())
+}
+
 // gatewayIssuerTests verifies the cert-manager Issuer exists with Let's Encrypt configuration
 // and reaches Ready state, ensuring TLS certificates can be provisioned for HTTPS.
 func gatewayIssuerTests() {

@@ -3,6 +3,18 @@ apps:
     userConfig:
       configMap:
         values:
+          errorPages:
+            enabled: true
+            statusCodes:
+              - type: Value
+                value: 500
+              - type: Value
+                value: 502
+              - type: Range
+                start: 503
+                end: 504
+            contentType: "text/html"
+            body: "<html><body><h1>Giant Swarm - Service Unavailable</h1></body></html>"
           gateways:
             default:
               dnsName: ingress

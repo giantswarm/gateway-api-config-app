@@ -114,6 +114,19 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 EnvoyProxy spec - shared spec output for EnvoyProxy resources
 Takes: envoyProxyValues (dict with all the envoyProxy configuration)
 */}}
+{{/*
+Resolve effective errorPages config by merging global defaults with per-gateway overrides.
+Per-gateway values take precedence over global values.
+Takes: dict with "global" ($.Values.errorPages) and "gateway" ($gateway.errorPages)
+*/}}
+{{- define "errorPages.effective" -}}
+{{- $global := .global }}
+{{- $gateway := .gateway }}
+{{- $effective := deepCopy $global }}
+{{- $effective = mergeOverwrite $effective (deepCopy $gateway) }}
+{{- $effective | toYaml }}
+{{- end -}}
+
 {{- define "envoyProxy.spec" -}}
 provider:
   type: Kubernetes
