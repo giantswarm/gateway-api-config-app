@@ -244,14 +244,28 @@ func gatewayBackendTrafficPolicyTests() {
 		if !ok {
 			return false, nil
 		}
-		conditions, ok := status["conditions"].([]any)
+		ancestors, ok := status["ancestors"].([]any)
 		if !ok {
 			return false, nil
 		}
-		for _, c := range conditions {
-			condition := c.(map[string]any)
-			if condition["type"] == "Accepted" {
-				return condition["status"] == "True", nil
+		for _, a := range ancestors {
+			ancestor := a.(map[string]any)
+			ancestorRef, ok := ancestor["ancestorRef"].(map[string]any)
+			if !ok {
+				continue
+			}
+			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != "giantswarm-default" {
+				continue
+			}
+			conditions, ok := ancestor["conditions"].([]any)
+			if !ok {
+				continue
+			}
+			for _, c := range conditions {
+				condition := c.(map[string]any)
+				if condition["type"] == "Accepted" {
+					return condition["status"] == "True", nil
+				}
 			}
 		}
 		return false, nil
