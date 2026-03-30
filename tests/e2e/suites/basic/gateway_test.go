@@ -219,8 +219,9 @@ func gatewayBackendTrafficPolicyTests() {
 	// Third is a Range entry (503-504)
 	code2 := statusCodes[2].(map[string]any)
 	Expect(code2["type"]).To(Equal("Range"))
-	Expect(code2["start"]).To(BeEquivalentTo(503))
-	Expect(code2["end"]).To(BeEquivalentTo(504))
+	code2Range := code2["range"].(map[string]any)
+	Expect(code2Range["start"]).To(BeEquivalentTo(503))
+	Expect(code2Range["end"]).To(BeEquivalentTo(504))
 
 	By("checking BackendTrafficPolicy response contentType=text/html and body references ConfigMap")
 	response := override["response"].(map[string]any)
