@@ -21,8 +21,9 @@ spec:
           {{- range $errorPages.statusCodes }}
           {{- if eq .type "Range" }}
           - type: Range
-            start: {{ .start }}
-            end: {{ .end }}
+            range:
+              start: {{ .range.start }}
+              end: {{ .range.end }}
           {{- else }}
           - type: Value
             value: {{ .value }}

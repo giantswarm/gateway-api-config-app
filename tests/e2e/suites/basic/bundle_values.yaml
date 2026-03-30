@@ -11,8 +11,9 @@ apps:
               - type: Value
                 value: 502
               - type: Range
-                start: 503
-                end: 504
+                range:
+                  start: 503
+                  end: 504
             contentType: "text/html"
             body: "<html><body><h1>Giant Swarm - Service Unavailable</h1></body></html>"
           gateways:

@@ -38,18 +38,25 @@
                                         "type": "string",
                                         "const": "Range"
                                     },
-                                    "start": {
-                                        "type": "integer",
-                                        "minimum": 100,
-                                        "maximum": 599
-                                    },
-                                    "end": {
-                                        "type": "integer",
-                                        "minimum": 100,
-                                        "maximum": 599
+                                    "range": {
+                                        "type": "object",
+                                        "properties": {
+                                            "start": {
+                                                "type": "integer",
+                                                "minimum": 100,
+                                                "maximum": 599
+                                            },
+                                            "end": {
+                                                "type": "integer",
+                                                "minimum": 100,
+                                                "maximum": 599
+                                            }
+                                        },
+                                        "required": ["start", "end"],
+                                        "additionalProperties": false
                                     }
                                 },
-                                "required": ["type", "start", "end"],
+                                "required": ["type", "range"],
                                 "additionalProperties": false
                             }
                         ]
@@ -153,18 +160,25 @@
                                                         "type": "string",
                                                         "const": "Range"
                                                     },
-                                                    "start": {
-                                                        "type": "integer",
-                                                        "minimum": 100,
-                                                        "maximum": 599
-                                                    },
-                                                    "end": {
-                                                        "type": "integer",
-                                                        "minimum": 100,
-                                                        "maximum": 599
+                                                    "range": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "start": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            },
+                                                            "end": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            }
+                                                        },
+                                                        "required": ["start", "end"],
+                                                        "additionalProperties": false
                                                     }
                                                 },
-                                                "required": ["type", "start", "end"],
+                                                "required": ["type", "range"],
                                                 "additionalProperties": false
                                             }
                                         ]

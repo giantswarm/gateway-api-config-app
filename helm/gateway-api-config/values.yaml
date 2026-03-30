@@ -12,6 +12,10 @@ kyvernoPolicies:
 errorPages:
   enabled: false
   statusCodes:
+    - type: Range
+      range:
+        start: 400
+        end: 404
     - type: Value
       value: 500
     - type: Value
