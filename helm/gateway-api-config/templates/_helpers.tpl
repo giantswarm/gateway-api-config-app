@@ -115,14 +115,14 @@ EnvoyProxy spec - shared spec output for EnvoyProxy resources
 Takes: envoyProxyValues (dict with all the envoyProxy configuration)
 */}}
 {{/*
-Resolve effective errorPages config by merging global defaults with per-gateway overrides.
-Per-gateway values take precedence over global values.
-Takes: dict with "global" ($.Values.errorPages) and "gateway" ($gateway.errorPages)
+Resolve effective errorPages config by merging gatewayClass defaults with per-gateway overrides.
+Per-gateway values take precedence over gatewayClass values.
+Takes: dict with "class" (gatewayClass.errorPages) and "gateway" ($gateway.errorPages)
 */}}
 {{- define "errorPages.effective" -}}
-{{- $global := .global }}
+{{- $class := .class }}
 {{- $gateway := .gateway }}
-{{- $effective := deepCopy $global }}
+{{- $effective := deepCopy $class }}
 {{- $effective = mergeOverwrite $effective (deepCopy $gateway) }}
 {{- $effective | toYaml }}
 {{- end -}}

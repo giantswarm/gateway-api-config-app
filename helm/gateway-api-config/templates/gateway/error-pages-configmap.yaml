@@ -1,6 +1,12 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
-{{- $errorPages := include "errorPages.effective" (dict "global" $.Values.errorPages "gateway" $gateway.errorPages) | fromYaml }}
+{{- $classErrorPages := dict }}
+{{- range $_, $class := $.Values.gatewayClasses }}
+{{- if eq $class.name $gateway.className }}
+{{- $classErrorPages = $class.errorPages | default dict }}
+{{- end }}
+{{- end }}
+{{- $errorPages := include "errorPages.effective" (dict "class" $classErrorPages "gateway" $gateway.errorPages) | fromYaml }}
 {{- if and $errorPages.enabled (not $errorPages.existingConfigMapName) }}
 ---
 apiVersion: v1
