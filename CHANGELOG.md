@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add optional `gateway.path.escapedSlashesAction` field to control handling of percent-encoded slashes (%2F) in URL paths via ClientTrafficPolicy.
+
 ## [1.8.0] - 2026-03-31
 
 ### Added

@@ -341,6 +341,14 @@
                         "overrideBaseDomain": {
                             "type": "string"
                         },
+                        "path": {
+                            "type": "object",
+                            "properties": {
+                                "escapedSlashesAction": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "provider": {
                             "type": "object",
                             "properties": {

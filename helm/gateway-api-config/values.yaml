@@ -93,6 +93,14 @@ gateways:
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
     errorPages: {}
+    # Path settings for ClientTrafficPolicy (optional)
+    # Uncomment to configure path handling behavior:
+    # path:
+    #   # How to handle escaped slashes in URL paths:
+    #   # - KeepUnchanged: preserve %2F as-is
+    #   # - DecodeAndMerge: decode %2F to / before route matching (default)
+    #   # - UnescapeAndRedirect: decode and redirect
+    #   escapedSlashesAction: DecodeAndMerge
     envoyProxy:
       enabled: true
       envoyDeployment: {}

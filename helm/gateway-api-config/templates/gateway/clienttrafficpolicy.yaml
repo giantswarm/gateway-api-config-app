@@ -18,6 +18,12 @@ spec:
     optional: false
   healthCheck:
     path: /healthz
+  {{- if $gateway.path }}
+  path:
+    {{- if $gateway.path.escapedSlashesAction }}
+    escapedSlashesAction: {{ $gateway.path.escapedSlashesAction }}
+    {{- end }}
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
