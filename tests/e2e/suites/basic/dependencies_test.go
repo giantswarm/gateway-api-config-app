@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/giantswarm/apptest-framework/v3/pkg/state"
-	"github.com/giantswarm/clustertest/v3/pkg/application"
-	"github.com/giantswarm/clustertest/v3/pkg/wait"
+	"github.com/giantswarm/apptest-framework/v4/pkg/state"
+	"github.com/giantswarm/clustertest/v4/pkg/application"
+	"github.com/giantswarm/clustertest/v4/pkg/wait"
 )
 
 const awsLBControllerBundleValues = `
