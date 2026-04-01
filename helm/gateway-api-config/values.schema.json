@@ -345,7 +345,8 @@
                             "type": "object",
                             "properties": {
                                 "escapedSlashesAction": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "enum": ["DecodeAndMerge", "UnescapeAndRedirect", "KeepUnchanged", "RejectRequest"]
                                 }
                             }
                         },
