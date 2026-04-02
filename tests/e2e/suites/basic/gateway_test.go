@@ -155,9 +155,11 @@ func gatewayClientTrafficPolicyTests() {
 		WithPolling(5 * time.Second).
 		Should(Succeed())
 
-	By("checking ClientTrafficPolicy targetRef name=giantswarm-default, kind=Gateway")
+	By("checking ClientTrafficPolicy targetRefs name=giantswarm-default, kind=Gateway")
 	ctpSpec := ctp.Object["spec"].(map[string]any)
-	targetRef := ctpSpec["targetRef"].(map[string]any)
+	targetRefs := ctpSpec["targetRefs"].([]any)
+	Expect(targetRefs).To(HaveLen(1))
+	targetRef := targetRefs[0].(map[string]any)
 	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
 	Expect(targetRef["kind"]).To(Equal("Gateway"))
 
@@ -193,9 +195,11 @@ func gatewayBackendTrafficPolicyTests() {
 		WithPolling(5 * time.Second).
 		Should(Succeed())
 
-	By("checking BackendTrafficPolicy targetRef name=giantswarm-default, kind=Gateway")
+	By("checking BackendTrafficPolicy targetRefs name=giantswarm-default, kind=Gateway")
 	btpSpec := btp.Object["spec"].(map[string]any)
-	targetRef := btpSpec["targetRef"].(map[string]any)
+	targetRefs := btpSpec["targetRefs"].([]any)
+	Expect(targetRefs).To(HaveLen(1))
+	targetRef := targetRefs[0].(map[string]any)
 	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
 	Expect(targetRef["kind"]).To(Equal("Gateway"))
 
