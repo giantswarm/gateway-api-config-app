@@ -90,6 +90,14 @@ gateways:
         tls:
           mode: Terminate
           certificateRefs: []
+    # ClientTrafficPolicy configures Envoy Gateway client traffic settings.
+    # When omitted, the policy is created automatically for CAPA gateways using
+    # an AWS NLB (with PROXY protocol and /healthz health check defaults).
+    # Set enabled: true to create the policy regardless of provider, or
+    # enabled: false to suppress creation even on CAPA+NLB.
+    # All other keys are passed directly to the ClientTrafficPolicy spec and
+    # override provider defaults. Available fields (see kubectl explain clienttrafficpolicy.spec):
+    clientTrafficPolicy: {}
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
     errorPages: {}

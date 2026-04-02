@@ -371,6 +371,15 @@
                                 }
                             }
                         },
+                        "clientTrafficPolicy": {
+                            "type": "object",
+                            "description": "ClientTrafficPolicy spec fields. 'enabled' controls resource creation (omit to auto-enable for CAPA+NLB). All other fields map directly to the ClientTrafficPolicy spec.",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "tlsIssuer": {
                             "type": "object",
                             "properties": {
