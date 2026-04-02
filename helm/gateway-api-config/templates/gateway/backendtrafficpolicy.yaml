@@ -17,10 +17,10 @@ metadata:
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: {{ $gateway.name }}
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: {{ $gateway.name }}
   responseOverride:
     - match:
         statusCodes:

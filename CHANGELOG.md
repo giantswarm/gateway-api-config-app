@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Migrate `targetRef` to `targetRefs` in `ClientTrafficPolicy` and `BackendTrafficPolicy` to fix deprecation warning.
+- Make ClientTrafficPolicy configurable via Gateway values.
+
 ## [1.8.0] - 2026-03-31
 
 ### Added
