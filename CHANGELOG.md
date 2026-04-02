@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-04-02
+
 ### Changed
 
 - Migrate `targetRef` to `targetRefs` in `ClientTrafficPolicy` and `BackendTrafficPolicy` to fix deprecation warning.
@@ -219,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.11...v1.8.0
 [1.7.11]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.10...v1.7.11
 [1.7.10]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.9...v1.7.10
