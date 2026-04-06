@@ -218,6 +218,22 @@
                                 }
                             }
                         },
+                        "separateListeners": {
+                            "type": "object",
+                            "properties": {
+                                "allowedListeners": {
+                                    "type": "object",
+                                    "properties": {
+                                        "namespacesFrom": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
                         "service": {
                             "type": "object",
                             "properties": {
