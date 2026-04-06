@@ -6,13 +6,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/giantswarm/apptest-framework/v3/pkg/state"
+	"github.com/giantswarm/apptest-framework/v4/pkg/state"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// gatewayClassPolicyTests verifies the Kyverno ClusterPolicy exists to automatically generate
+// PodMonitor and PodLogs for the gateway, ensuring monitoring resources are created when mergeGateways=false.
 func gatewayClassPolicyTests() {
 	By("checking ClusterPolicy generate-gateway-monitoring-giantswarm-default exists")
 	wcName := state.GetCluster().Name

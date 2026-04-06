@@ -1,6 +1,20 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
-{{- if and (eq $.Values.provider "capa") $gateway.provider.aws.useNetworkLoadBalancer }}
+{{- $ctp := $gateway.clientTrafficPolicy | default dict }}
+{{- $isNLB := and (eq $.Values.provider "capa") $gateway.provider.aws.useNetworkLoadBalancer }}
+{{- $shouldRender := ternary $ctp.enabled $isNLB (hasKey $ctp "enabled") }}
+{{- if $shouldRender }}
+
+{{- /* Build provider-specific defaults */}}
+{{- $defaults := dict }}
+{{- if $isNLB }}
+{{- $_ := set $defaults "proxyProtocol" (dict "optional" false) }}
+{{- $_ := set $defaults "healthCheck" (dict "path" "/healthz") }}
+{{- end }}
+
+{{- /* Merge user values on top of defaults (user values win) */}}
+{{- $spec := mergeOverwrite $defaults (deepCopy (omit $ctp "enabled")) }}
+
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
@@ -10,14 +24,13 @@ metadata:
   labels:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: Gateway
-    name: {{ $gateway.name }}
-  proxyProtocol:
-    optional: false
-  healthCheck:
-    path: /healthz
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: {{ $gateway.name }}
+  {{- with $spec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

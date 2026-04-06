@@ -11,6 +11,26 @@ gatewayClasses:
   default:
     enabled: true
     name: giantswarm-default
+    # Per-gatewayclass error pages configuration applied to all gateways in this class.
+    # Per-gateway errorPages settings override these defaults.
+    errorPages:
+      enabled: false
+      statusCodes:
+        - type: Range
+          range:
+            start: 400
+            end: 404
+        - type: Value
+          value: 500
+        - type: Value
+          value: 502
+        - type: Value
+          value: 503
+        - type: Value
+          value: 504
+      contentType: "text/html"
+      body: ""
+      existingConfigMapName: ""
     envoyProxy:
       enabled: true
       envoyDeployment: {}
@@ -74,6 +94,17 @@ gateways:
         tls:
           mode: Terminate
           certificateRefs: []
+    # ClientTrafficPolicy configures Envoy Gateway client traffic settings.
+    # When omitted, the policy is created automatically for CAPA gateways using
+    # an AWS NLB (with PROXY protocol and /healthz health check defaults).
+    # Set enabled: true to create the policy regardless of provider, or
+    # enabled: false to suppress creation even on CAPA+NLB.
+    # All other keys are passed directly to the ClientTrafficPolicy spec and
+    # override provider defaults. Available fields (see kubectl explain clienttrafficpolicy.spec):
+    clientTrafficPolicy: {}
+    # Per-gateway error pages override gatewayClass errorPages settings.
+    # Omit fields to inherit from gatewayClass config.
+    errorPages: {}
     envoyProxy:
       enabled: true
       envoyDeployment: {}

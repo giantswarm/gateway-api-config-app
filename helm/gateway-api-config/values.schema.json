@@ -14,6 +14,74 @@
                         "enabled": {
                             "type": "boolean"
                         },
+                        "errorPages": {
+                            "type": "object",
+                            "description": "Per-gatewayclass error pages configuration. Per-gateway errorPages override these defaults.",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "statusCodes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "oneOf": [
+                                            {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "const": "Value"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer",
+                                                        "minimum": 100,
+                                                        "maximum": 599
+                                                    }
+                                                },
+                                                "required": ["type", "value"],
+                                                "additionalProperties": false
+                                            },
+                                            {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "const": "Range"
+                                                    },
+                                                    "range": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "start": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            },
+                                                            "end": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            }
+                                                        },
+                                                        "required": ["start", "end"],
+                                                        "additionalProperties": false
+                                                    }
+                                                },
+                                                "required": ["type", "range"],
+                                                "additionalProperties": false
+                                            }
+                                        ]
+                                    }
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "string"
+                                },
+                                "existingConfigMapName": {
+                                    "type": "string"
+                                }
+                            }
+                        },
                         "envoyProxy": {
                             "type": "object",
                             "properties": {
@@ -58,6 +126,74 @@
                         },
                         "enabled": {
                             "type": "boolean"
+                        },
+                        "errorPages": {
+                            "type": "object",
+                            "description": "Per-gateway error pages overrides. All fields are optional and inherit from gatewayClass errorPages.",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "statusCodes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "oneOf": [
+                                            {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "const": "Value"
+                                                    },
+                                                    "value": {
+                                                        "type": "integer",
+                                                        "minimum": 100,
+                                                        "maximum": 599
+                                                    }
+                                                },
+                                                "required": ["type", "value"],
+                                                "additionalProperties": false
+                                            },
+                                            {
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "const": "Range"
+                                                    },
+                                                    "range": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "start": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            },
+                                                            "end": {
+                                                                "type": "integer",
+                                                                "minimum": 100,
+                                                                "maximum": 599
+                                                            }
+                                                        },
+                                                        "required": ["start", "end"],
+                                                        "additionalProperties": false
+                                                    }
+                                                },
+                                                "required": ["type", "range"],
+                                                "additionalProperties": false
+                                            }
+                                        ]
+                                    }
+                                },
+                                "contentType": {
+                                    "type": "string"
+                                },
+                                "body": {
+                                    "type": "string"
+                                },
+                                "existingConfigMapName": {
+                                    "type": "string"
+                                }
+                            }
                         },
                         "envoyProxy": {
                             "type": "object",
@@ -248,6 +384,15 @@
                                 },
                                 "loadBalancerClass": {
                                     "type": "string"
+                                }
+                            }
+                        },
+                        "clientTrafficPolicy": {
+                            "type": "object",
+                            "description": "ClientTrafficPolicy spec fields. 'enabled' controls resource creation (omit to auto-enable for CAPA+NLB). All other fields map directly to the ClientTrafficPolicy spec.",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
                                 }
                             }
                         },
