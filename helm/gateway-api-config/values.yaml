@@ -59,7 +59,7 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
-    separateListeners:
+    allowedListeners:
       enabled: true
       allowedListeners:
         namespacesFrom: All
