@@ -60,9 +60,11 @@ gateways:
       email: accounts@giantswarm.io
       gateway: giantswarm-default
     allowedListeners:
-      enabled: true
+      enabled: false
       allowedListeners:
-        namespacesFrom: All
+        namespaces:
+          from: All
+          selector: {}
     listeners:
       http:
         name: http
