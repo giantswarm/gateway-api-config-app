@@ -28,8 +28,8 @@ spec:
   {{- if $gateway.allowedListeners.enabled }}
   allowedListeners:
     namespaces:
-      from: {{ $gateway.allowedListeners.allowedListeners.namespaces.from }}
-      {{- with $gateway.allowedListeners.allowedListeners.namespaces.selector }}
+      from: {{ $gateway.allowedListeners.namespaces.from }}
+      {{- with $gateway.allowedListeners.namespaces.selector }}
       selector:
         {{- toYaml . | nindent 8 }}
       {{- end }}

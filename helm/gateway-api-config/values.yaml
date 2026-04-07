@@ -61,10 +61,9 @@ gateways:
       gateway: giantswarm-default
     allowedListeners:
       enabled: false
-      allowedListeners:
-        namespaces:
-          from: All
-          selector: {}
+      namespaces:
+        from: All
+        selector: {}
     listeners:
       http:
         name: http

@@ -92,24 +92,19 @@
                         "allowedListeners": {
                             "type": "object",
                             "properties": {
-                                "allowedListeners": {
-                                    "type": "object",
-                                    "properties": {
-                                        "namespaces": {
-                                            "type": "object",
-                                            "properties": {
-                                                "from": {
-                                                    "type": "string"
-                                                },
-                                                "selector": {
-                                                    "type": "object"
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
                                 "enabled": {
                                     "type": "boolean"
+                                },
+                                "namespaces": {
+                                    "type": "object",
+                                    "properties": {
+                                        "from": {
+                                            "type": "string"
+                                        },
+                                        "selector": {
+                                            "type": "object"
+                                        }
+                                    }
                                 }
                             }
                         },
