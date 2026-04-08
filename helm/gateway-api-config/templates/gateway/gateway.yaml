@@ -25,6 +25,15 @@ spec:
       name: gateway-{{ $gateway.name }}
       namespace: {{ $.Release.Namespace }}
   {{- end }}
+  {{- if $gateway.allowedListeners.enabled }}
+  allowedListeners:
+    namespaces:
+      from: {{ $gateway.allowedListeners.namespaces.from }}
+      {{- with $gateway.allowedListeners.namespaces.selector }}
+      selector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- end }}
   listeners:
     {{- range $k, $l:= $gateway.listeners }}
     - name: {{ $l.name }}

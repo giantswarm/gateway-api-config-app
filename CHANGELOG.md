@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add support for `allowedListeners` on Gateways enabling the attachment of externally managed `ListenerSets`.
+
 ## [1.9.0] - 2026-04-02
 
 ### Changed
