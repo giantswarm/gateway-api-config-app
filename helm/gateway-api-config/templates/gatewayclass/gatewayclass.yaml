@@ -10,10 +10,12 @@ metadata:
     {{- include "labels.common" $ | nindent 4 }}
 spec:
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  {{- if $class.envoyProxy.enabled }}
   parametersRef:
     group: gateway.envoyproxy.io
     kind: EnvoyProxy
     name: gatewayclass-{{ $class.name }}
     namespace: {{ $.Release.Namespace }}
+  {{- end }}
 {{- end }}
 {{- end }}
