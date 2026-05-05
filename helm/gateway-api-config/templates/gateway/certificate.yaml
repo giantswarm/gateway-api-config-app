@@ -13,11 +13,15 @@ metadata:
 spec:
   dnsNames:
   {{- $baseDomain := (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $)) -}}
-  {{- if or (not (hasPrefix "*." $listener.hostname)) $listener.certificate.wildcard }}
+  {{- if $listener.certificate.wildcard }}
+  - {{ printf "*.%s" $baseDomain | quote }}
+  {{- else }}
+  {{- if and (not (hasPrefix "*." $listener.hostname)) ($listener.hostname) }}
   - {{ tpl $listener.hostname $ | quote }}
   {{- else }}
   {{- if eq $baseDomain $.Values.baseDomain }}
   - {{ printf "%s.%s" $gateway.dnsName $baseDomain | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}
   {{- range $k, $v := $listener.subdomains }}

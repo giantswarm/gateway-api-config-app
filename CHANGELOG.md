@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Remove infrastructure ref in GatewayClass when EnvoyProxy is disabled.
+- Fix wildcard certificate DNS name: when `certificate.wildcard: true`, emit `*.{baseDomain}` instead of the raw listener hostname.
 
 ## [1.10.0] - 2026-04-08
 
