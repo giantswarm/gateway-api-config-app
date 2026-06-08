@@ -1,12 +1,9 @@
+{{/*
+Gateway-specific EnvoyProxy defaults. Intentionally empty: base defaults (HPA, PDB, image)
+live on the GatewayClass EnvoyProxy and are inherited via mergeType: StrategicMerge. This block
+is kept as a placeholder for future gateway-specific defaults.
+*/}}
 {{- define "gatewayEnvoyProxyValuesDefault" }}
-envoyPDB:
-  maxUnavailable: "25%"
-envoyHpa:
-  minReplicas: 2
-  maxReplicas: 10
-envoyDeployment:
-  container:
-    imageRepository: gsoci.azurecr.io/giantswarm/envoy
 {{- end }}
 
 {{- range $i, $gateway := .Values.gateways }}
@@ -24,6 +21,9 @@ envoyDeployment:
 {{- $shutdownDefaults := (include "gateway.shutdownDefaults" (dict "provider" $.Values.provider "gateway" $gateway)) | fromYaml -}}
 {{- if $shutdownDefaults -}}
 {{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}
+{{- end }}
+{{- if not $envoyProxyValues.mergeType -}}
+{{- $_ := set $envoyProxyValues "mergeType" "StrategicMerge" -}}
 {{- end }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1

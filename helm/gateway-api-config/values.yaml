@@ -33,6 +33,10 @@ gatewayClasses:
       existingConfigMapName: ""
     envoyProxy:
       enabled: true
+      # Controls how this GatewayClass-level EnvoyProxy merges with EnvoyGateway defaults
+      # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). Leave unset to fully
+      # replace EnvoyGateway defaults; set to StrategicMerge or JSONMerge to extend them.
+      mergeType: ""
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}
@@ -108,6 +112,12 @@ gateways:
     errorPages: {}
     envoyProxy:
       enabled: true
+      # Controls how this gateway-level EnvoyProxy merges onto the GatewayClass-level one
+      # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). StrategicMerge lets the
+      # gateway inherit GatewayClass base defaults (HPA, PDB, image) and only override deltas.
+      # A gateway referencing a className not managed by this chart will not inherit those
+      # base defaults. Defaults to StrategicMerge when left empty.
+      mergeType: StrategicMerge
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}
