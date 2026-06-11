@@ -89,47 +89,68 @@ func gatewayGatewayTests() {
 		Should(BeTrue())
 }
 
-// gatewayEnvoyProxyTests confirms EnvoyProxy is configured with Giant Swarm's image registry,
-// correct HPA autoscaling bounds (2-10 replicas), and PDB disruption budget to ensure availability during updates.
+// gatewayEnvoyProxyTests confirms the base defaults (Giant Swarm image registry, HPA bounds 2-10,
+// PDB disruption budget) live on the GatewayClass-level EnvoyProxy, and that the gateway-level
+// EnvoyProxy is configured with mergeType: StrategicMerge so it inherits those defaults instead of
+// replacing them.
 func gatewayEnvoyProxyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
-	By("checking EnvoyProxy gateway-giantswarm-default exists in envoy-gateway-system")
-	envoyProxy := &unstructured.Unstructured{}
-	envoyProxy.SetGroupVersionKind(schema.GroupVersionKind{
+	envoyProxyGVK := schema.GroupVersionKind{
 		Group:   "gateway.envoyproxy.io",
 		Version: "v1alpha1",
 		Kind:    "EnvoyProxy",
-	})
+	}
+
+	By("checking EnvoyProxy gatewayclass-giantswarm-default exists in envoy-gateway-system")
+	classProxy := &unstructured.Unstructured{}
+	classProxy.SetGroupVersionKind(envoyProxyGVK)
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
-			Name:      "gateway-giantswarm-default",
+			Name:      "gatewayclass-giantswarm-default",
 			Namespace: "envoy-gateway-system",
-		}, envoyProxy)
+		}, classProxy)
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(Succeed())
 
-	By("checking EnvoyProxy imageRepository starts with gsoci.azurecr.io/giantswarm/envoy")
-	envoySpec := envoyProxy.Object["spec"].(map[string]any)
-	provider := envoySpec["provider"].(map[string]any)
-	kubernetes := provider["kubernetes"].(map[string]any)
-	envoyDeployment := kubernetes["envoyDeployment"].(map[string]any)
+	By("checking GatewayClass EnvoyProxy imageRepository starts with gsoci.azurecr.io/giantswarm/envoy")
+	classSpec := classProxy.Object["spec"].(map[string]any)
+	classProvider := classSpec["provider"].(map[string]any)
+	classKubernetes := classProvider["kubernetes"].(map[string]any)
+	envoyDeployment := classKubernetes["envoyDeployment"].(map[string]any)
 	container := envoyDeployment["container"].(map[string]any)
 	imageRepo := container["imageRepository"].(string)
 	Expect(strings.HasPrefix(imageRepo, "gsoci.azurecr.io/giantswarm/envoy")).To(BeTrue(),
 		"expected imageRepository to start with gsoci.azurecr.io/giantswarm/envoy, got: %s", imageRepo)
 
-	By("checking EnvoyProxy HPA minReplicas=2, maxReplicas=10")
-	hpa := kubernetes["envoyHpa"].(map[string]any)
+	By("checking GatewayClass EnvoyProxy HPA minReplicas=2, maxReplicas=10")
+	hpa := classKubernetes["envoyHpa"].(map[string]any)
 	Expect(hpa["minReplicas"]).To(BeEquivalentTo(2))
 	Expect(hpa["maxReplicas"]).To(BeEquivalentTo(10))
 
-	By("checking EnvoyProxy PDB maxUnavailable=25%")
-	pdb := kubernetes["envoyPDB"].(map[string]any)
+	By("checking GatewayClass EnvoyProxy PDB maxUnavailable=25%")
+	pdb := classKubernetes["envoyPDB"].(map[string]any)
 	Expect(pdb["maxUnavailable"]).To(Equal("25%"))
+
+	By("checking EnvoyProxy gateway-giantswarm-default exists in envoy-gateway-system")
+	gatewayProxy := &unstructured.Unstructured{}
+	gatewayProxy.SetGroupVersionKind(envoyProxyGVK)
+	Eventually(func() error {
+		return wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default",
+			Namespace: "envoy-gateway-system",
+		}, gatewayProxy)
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+
+	By("checking gateway-level EnvoyProxy mergeType=StrategicMerge")
+	gatewaySpec := gatewayProxy.Object["spec"].(map[string]any)
+	Expect(gatewaySpec["mergeType"]).To(Equal("StrategicMerge"))
 }
 
 // gatewayClientTrafficPolicyTests validates ClientTrafficPolicy correctly targets the gateway,

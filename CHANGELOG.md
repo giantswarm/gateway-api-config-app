@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Set `mergeType: StrategicMerge` on the gateway-level `EnvoyProxy` so it inherits the GatewayClass-level base defaults (HPA, PDB, image) instead of replacing them. Base defaults are no longer duplicated on the gateway-level `EnvoyProxy`; it now carries only gateway-specific config (`envoyService`, `shutdown`) plus user overrides. `mergeType` is configurable per gateway and per GatewayClass via `envoyProxy.mergeType`.
+
 ## [1.10.1] - 2026-05-05
 
 ### Fixed
