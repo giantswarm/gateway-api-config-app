@@ -108,6 +108,9 @@
                                 }
                             }
                         },
+                        "backendTrafficPolicy": {
+                            "type": "object"
+                        },
                         "className": {
                             "type": "string"
                         },

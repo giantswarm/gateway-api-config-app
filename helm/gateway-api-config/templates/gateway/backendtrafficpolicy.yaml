@@ -7,12 +7,21 @@
 {{- end }}
 {{- end }}
 {{- $errorPages := include "errorPages.effective" (dict "class" $classErrorPages "gateway" $gateway.errorPages) | fromYaml }}
-{{- if $errorPages.enabled }}
+{{- /* Pass-through BackendTrafficPolicy spec fields (circuitBreaker, rateLimit, retry, ...). */}}
+{{- $btp := $gateway.backendTrafficPolicy | default dict }}
+{{- $spec := omit $btp "enabled" }}
+{{- /* Render a single policy when error pages are enabled or extra spec fields are set,
+       unless explicitly disabled via backendTrafficPolicy.enabled: false. */}}
+{{- $shouldRender := or $errorPages.enabled (gt (len $spec) 0) }}
+{{- if and (hasKey $btp "enabled") (not $btp.enabled) }}
+{{- $shouldRender = false }}
+{{- end }}
+{{- if $shouldRender }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: BackendTrafficPolicy
 metadata:
-  name: gateway-{{ $gateway.name }}-error-pages
+  name: gateway-{{ $gateway.name }}
   namespace: {{ $.Release.Namespace }}
   labels:
     {{- include "labels.common" $ | nindent 4 }}
@@ -21,6 +30,10 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ $gateway.name }}
+  {{- with $spec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- if $errorPages.enabled }}
   responseOverride:
     - match:
         statusCodes:
@@ -47,6 +60,7 @@ spec:
             {{- else }}
             name: gateway-{{ $gateway.name }}-error-pages
             {{- end }}
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

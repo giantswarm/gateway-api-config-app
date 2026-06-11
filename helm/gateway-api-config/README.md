@@ -38,6 +38,7 @@ Default configuration for Envoy Gateway
 | gateways.default.allowedListeners.enabled | bool | `false` |  |
 | gateways.default.allowedListeners.namespaces.from | string | `"All"` |  |
 | gateways.default.allowedListeners.namespaces.selector | object | `{}` |  |
+| gateways.default.backendTrafficPolicy | object | `{}` |  |
 | gateways.default.className | string | `"giantswarm-default"` |  |
 | gateways.default.clientTrafficPolicy | object | `{}` |  |
 | gateways.default.dnsName | string | `"gateway"` |  |

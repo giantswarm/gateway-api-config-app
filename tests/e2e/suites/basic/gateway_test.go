@@ -193,13 +193,14 @@ func gatewayClientTrafficPolicyTests() {
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
 }
 
-// gatewayBackendTrafficPolicyTests validates BackendTrafficPolicy is configured to return
-// custom error pages for 5xx status codes, targeting the default gateway.
+// gatewayBackendTrafficPolicyTests validates the BackendTrafficPolicy is configured to return
+// custom error pages for 5xx status codes and carries the configured circuit breaker,
+// targeting the default gateway.
 func gatewayBackendTrafficPolicyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
-	By("checking BackendTrafficPolicy gateway-giantswarm-default-error-pages exists in envoy-gateway-system")
+	By("checking BackendTrafficPolicy gateway-giantswarm-default exists in envoy-gateway-system")
 	btp := &unstructured.Unstructured{}
 	btp.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "gateway.envoyproxy.io",
@@ -208,7 +209,7 @@ func gatewayBackendTrafficPolicyTests() {
 	})
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
-			Name:      "gateway-giantswarm-default-error-pages",
+			Name:      "gateway-giantswarm-default",
 			Namespace: "envoy-gateway-system",
 		}, btp)
 	}).
@@ -223,6 +224,12 @@ func gatewayBackendTrafficPolicyTests() {
 	targetRef := targetRefs[0].(map[string]any)
 	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
 	Expect(targetRef["kind"]).To(Equal("Gateway"))
+
+	By("checking BackendTrafficPolicy carries the configured circuitBreaker")
+	circuitBreaker := btpSpec["circuitBreaker"].(map[string]any)
+	Expect(circuitBreaker["maxConnections"]).To(BeEquivalentTo(1024))
+	Expect(circuitBreaker["maxPendingRequests"]).To(BeEquivalentTo(1024))
+	Expect(circuitBreaker["maxParallelRequests"]).To(BeEquivalentTo(1024))
 
 	By("checking BackendTrafficPolicy responseOverride has Value and Range status codes")
 	responseOverride := btpSpec["responseOverride"].([]any)
@@ -260,7 +267,7 @@ func gatewayBackendTrafficPolicyTests() {
 	By("checking BackendTrafficPolicy is Accepted")
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
-			Name:      "gateway-giantswarm-default-error-pages",
+			Name:      "gateway-giantswarm-default",
 			Namespace: "envoy-gateway-system",
 		}, btp); err != nil {
 			return false, err
