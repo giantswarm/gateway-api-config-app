@@ -23,6 +23,11 @@ apps:
               dnsName: ingress
               errorPages:
                 body: "<html><body><h1>Giant Swarm - Service Unavailable</h1></body></html>"
+              backendTrafficPolicy:
+                circuitBreaker:
+                  maxConnections: 1024
+                  maxPendingRequests: 1024
+                  maxParallelRequests: 1024
               listeners:
                 http:
                   httpsRedirectEnabled: true
