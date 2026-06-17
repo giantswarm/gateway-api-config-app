@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-06-17
+
 ### Added
 
 - Add a per-gateway `backendTrafficPolicy` value whose keys pass through to the `BackendTrafficPolicy` spec (e.g. `circuitBreaker`, `rateLimit`, `retry`). It is merged into the same policy as the error-pages `responseOverride`, since Envoy Gateway allows only one `BackendTrafficPolicy` per Gateway.
@@ -243,7 +245,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.8.0...v1.9.0
