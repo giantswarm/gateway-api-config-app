@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Add `circuitBreaker` as an optional config field for the gateway's backendTrafficPolicy.
+
 ## [1.10.0] - 2026-04-08
 
 ### Added

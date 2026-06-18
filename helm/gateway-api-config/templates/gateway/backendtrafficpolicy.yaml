@@ -21,6 +21,13 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ $gateway.name }}
+  {{- if $gateway.circuitBreakers.enabled }}
+  circuitBreaker:
+    maxConnections: {{ $gateway.circuitBreakers.maxConnections }}
+    maxPendingRequests: {{ $gateway.circuitBreakers.maxPendingRequests }}
+    maxParallelRequests: {{ $gateway.circuitBreakers.maxParallelRequests }}
+    maxParallelRetries: {{ $gateway.circuitBreakers.maxParallelRetries }}
+  {{- end }}
   responseOverride:
     - match:
         statusCodes:

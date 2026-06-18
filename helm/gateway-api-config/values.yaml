@@ -64,6 +64,12 @@ gateways:
       namespaces:
         from: All
         selector: {}
+    circuitBreakers:
+      enabled: false
+      maxConnections: 8192
+      maxPendingRequests: 8192
+      maxParallelRequests: 8192
+      maxParallelRetries: 1024
     listeners:
       http:
         name: http
