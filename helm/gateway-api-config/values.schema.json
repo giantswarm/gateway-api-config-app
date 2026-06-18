@@ -34,6 +34,9 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "mergeType": {
+                                    "type": "string"
                                 }
                             }
                         },
@@ -111,6 +114,26 @@
                         "backendTrafficPolicy": {
                             "type": "object"
                         },
+                        "circuitBreakers": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "maxConnections": {
+                                    "type": "integer"
+                                },
+                                "maxParallelRequests": {
+                                    "type": "integer"
+                                },
+                                "maxParallelRetries": {
+                                    "type": "integer"
+                                },
+                                "maxPendingRequests": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
                         "className": {
                             "type": "string"
                         },
@@ -143,6 +166,9 @@
                                 },
                                 "envoyServiceAccount": {
                                     "type": "object"
+                                },
+                                "mergeType": {
+                                    "type": "string"
                                 }
                             }
                         },
