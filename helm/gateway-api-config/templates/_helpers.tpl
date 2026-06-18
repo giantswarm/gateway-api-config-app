@@ -177,4 +177,7 @@ mergeGateways: {{ .mergeGateways }}
 shutdown:
   {{- toYaml . | nindent 2 }}
 {{- end }}
+{{- if .mergeType }}
+mergeType: {{ .mergeType }}
+{{- end }}
 {{- end }}

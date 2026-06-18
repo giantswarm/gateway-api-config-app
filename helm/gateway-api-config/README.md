@@ -1,6 +1,6 @@
 # gateway-api-config
 
-![Version: 1.8.0](https://img.shields.io/badge/Version-1.8.0-informational?style=flat-square) ![AppVersion: 1.8.0](https://img.shields.io/badge/AppVersion-1.8.0-informational?style=flat-square)
+![Version: 1.10.1](https://img.shields.io/badge/Version-1.10.1-informational?style=flat-square) ![AppVersion: 1.10.1](https://img.shields.io/badge/AppVersion-1.10.1-informational?style=flat-square)
 
 Default configuration for Envoy Gateway
 
@@ -18,6 +18,7 @@ Default configuration for Envoy Gateway
 | gatewayClasses.default.envoyProxy.envoyPDB | object | `{}` |  |
 | gatewayClasses.default.envoyProxy.envoyService | object | `{}` |  |
 | gatewayClasses.default.envoyProxy.envoyServiceAccount | object | `{}` |  |
+| gatewayClasses.default.envoyProxy.mergeType | string | `""` |  |
 | gatewayClasses.default.errorPages.body | string | `""` |  |
 | gatewayClasses.default.errorPages.contentType | string | `"text/html"` |  |
 | gatewayClasses.default.errorPages.enabled | bool | `false` |  |
@@ -34,6 +35,10 @@ Default configuration for Envoy Gateway
 | gatewayClasses.default.errorPages.statusCodes[4].type | string | `"Value"` |  |
 | gatewayClasses.default.errorPages.statusCodes[4].value | int | `504` |  |
 | gatewayClasses.default.name | string | `"giantswarm-default"` |  |
+| gateways.default.allowedListeners.enabled | bool | `false` |  |
+| gateways.default.allowedListeners.namespaces.from | string | `"All"` |  |
+| gateways.default.allowedListeners.namespaces.selector | object | `{}` |  |
+| gateways.default.backendTrafficPolicy | object | `{}` |  |
 | gateways.default.className | string | `"giantswarm-default"` |  |
 | gateways.default.clientTrafficPolicy | object | `{}` |  |
 | gateways.default.dnsName | string | `"gateway"` |  |
@@ -44,6 +49,7 @@ Default configuration for Envoy Gateway
 | gateways.default.envoyProxy.envoyPDB | object | `{}` |  |
 | gateways.default.envoyProxy.envoyService | object | `{}` |  |
 | gateways.default.envoyProxy.envoyServiceAccount | object | `{}` |  |
+| gateways.default.envoyProxy.mergeType | string | `"StrategicMerge"` |  |
 | gateways.default.errorPages | object | `{}` |  |
 | gateways.default.listeners.http.allowedRoutes.namespaces.from | string | `"All"` |  |
 | gateways.default.listeners.http.httpsRedirectEnabled | bool | `false` |  |

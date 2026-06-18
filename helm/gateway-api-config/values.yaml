@@ -33,6 +33,10 @@ gatewayClasses:
       existingConfigMapName: ""
     envoyProxy:
       enabled: true
+      # Controls how this GatewayClass-level EnvoyProxy merges with EnvoyGateway defaults
+      # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). Leave unset to fully
+      # replace EnvoyGateway defaults; set to StrategicMerge or JSONMerge to extend them.
+      mergeType: ""
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}
@@ -112,8 +116,29 @@ gateways:
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
     errorPages: {}
+    # BackendTrafficPolicy configures Envoy Gateway backend traffic settings for
+    # this gateway. When omitted, a policy is created only if error pages are
+    # enabled (see errorPages). Any keys set here are passed directly to the
+    # BackendTrafficPolicy spec and are merged into the same policy as the error
+    # pages responseOverride (Envoy Gateway allows only one policy per Gateway).
+    # Set enabled: false to suppress the policy even when error pages are enabled.
+    # Available fields (see kubectl explain backendtrafficpolicy.spec): circuitBreaker,
+    # rateLimit, retry, loadBalancer, healthCheck, timeout, ...
+    # Example:
+    #   backendTrafficPolicy:
+    #     circuitBreaker:
+    #       maxConnections: 1024
+    #       maxPendingRequests: 1024
+    #       maxParallelRequests: 1024
+    backendTrafficPolicy: {}
     envoyProxy:
       enabled: true
+      # Controls how this gateway-level EnvoyProxy merges onto the GatewayClass-level one
+      # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). StrategicMerge lets the
+      # gateway inherit GatewayClass base defaults (HPA, PDB, image) and only override deltas.
+      # A gateway referencing a className not managed by this chart will not inherit those
+      # base defaults. Defaults to StrategicMerge when left empty.
+      mergeType: StrategicMerge
       envoyDeployment: {}
       envoyService: {}
       envoyHpa: {}

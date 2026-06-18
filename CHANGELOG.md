@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `circuitBreaker` as an optional config field for the gateway's backendTrafficPolicy.
 
+## [1.11.0] - 2026-06-17
+
+### Added
+
+- Add a per-gateway `backendTrafficPolicy` value whose keys pass through to the `BackendTrafficPolicy` spec (e.g. `circuitBreaker`, `rateLimit`, `retry`). It is merged into the same policy as the error-pages `responseOverride`, since Envoy Gateway allows only one `BackendTrafficPolicy` per Gateway.
+
+### Changed
+
+- Rename the per-gateway `BackendTrafficPolicy` from `gateway-{name}-error-pages` to `gateway-{name}`, as it now carries more than error pages. The error-pages `ConfigMap` keeps its `gateway-{name}-error-pages` name. On upgrade the old policy is replaced.
+- Set `mergeType: StrategicMerge` on the gateway-level `EnvoyProxy` so it inherits the GatewayClass-level base defaults (HPA, PDB, image) instead of replacing them. Base defaults are no longer duplicated on the gateway-level `EnvoyProxy`; it now carries only gateway-specific config (`envoyService`, `shutdown`) plus user overrides. `mergeType` is configurable per gateway and per GatewayClass via `envoyProxy.mergeType`.
+
+## [1.10.1] - 2026-05-05
+
+### Fixed
+
+- Remove infrastructure ref in GatewayClass when EnvoyProxy is disabled.
+- Fix wildcard certificate DNS name: when `certificate.wildcard: true`, emit `*.{baseDomain}` instead of the raw listener hostname.
+
 ## [1.10.0] - 2026-04-08
 
 ### Added
@@ -231,7 +249,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...v1.11.0
+[1.10.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.7.11...v1.8.0
