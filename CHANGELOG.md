@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - For CAPA gateways using an AWS NLB, set `karpenter.sh/do-not-disrupt: "true"` on the envoy proxy pod template to reduce voluntary Karpenter churn, and patch `terminationGracePeriodSeconds: 240` on the proxy Deployment so it stays above the drain timeout.
+- For CAPA gateways using an AWS NLB, add a preferred pod anti-affinity (`topologyKey: kubernetes.io/hostname`) on the proxy pod template so the proxy pods spread one-per-node, ensuring each NLB instance target maps to a single envoy.
 
 ## [1.11.0] - 2026-06-17
 

@@ -121,14 +121,27 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 
 {{/*
 Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
-For AWS NLBs this reduces voluntary Karpenter churn on gateway nodes and ensures the
-pod's terminationGracePeriodSeconds stays above the drain timeout.
+For AWS NLBs this reduces voluntary Karpenter churn on gateway nodes, ensures the
+pod's terminationGracePeriodSeconds stays above the drain timeout, and spreads the
+proxy pods one-per-node so each NLB instance target maps to a single envoy.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
 {{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
+{{- $pod := dict }}
 {{- /* Stop Karpenter consolidation/drift/expiry from churning gateway nodes */}}
-{{- $_ := set $envoyDeployment "pod" (dict "annotations" (dict "karpenter.sh/do-not-disrupt" "true")) }}
+{{- $_ := set $pod "annotations" (dict "karpenter.sh/do-not-disrupt" "true") }}
+{{- /* Prefer one proxy pod per node so each NLB instance target maps to a single
+       envoy, improving NLB health-checking and traffic distribution. Selects pods by
+       the owning-gateway labels Envoy Gateway stamps on the proxy pods. */}}
+{{- $podAffinityTerm := dict
+      "labelSelector" (dict "matchExpressions" (list
+        (dict "key" "gateway.envoyproxy.io/owning-gateway-name" "operator" "In" "values" (list .gateway.name))
+        (dict "key" "gateway.envoyproxy.io/owning-gateway-namespace" "operator" "In" "values" (list .namespace))
+      ))
+      "topologyKey" "kubernetes.io/hostname" }}
+{{- $_ := set $pod "affinity" (dict "podAntiAffinity" (dict "preferredDuringSchedulingIgnoredDuringExecution" (list (dict "weight" 100 "podAffinityTerm" $podAffinityTerm)))) }}
+{{- $_ := set $envoyDeployment "pod" $pod }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
        It must stay above shutdown.drainTimeout (170s). */}}
 {{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}
