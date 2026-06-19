@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-06-19
+
 ### Changed
 
 - Align the AWS NLB drain timers with the envoy graceful shutdown so the node always outlives the NLB connection drain, fixing Cloudflare 520 errors on node disruption (e.g. Karpenter). The gateway-level `EnvoyProxy` now sets `shutdown.minDrainDuration: 150s` and `shutdown.drainTimeout: 170s` (was 60s/180s), lowers the service `target_health_state.unhealthy.draining_interval_seconds` to `120` (was 200), and speeds up unhealthy-node detection via `aws-load-balancer-healthcheck-interval: 10` and `aws-load-balancer-healthcheck-unhealthy-threshold: 2`.
@@ -254,7 +256,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.1...HEAD
+[1.11.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.9.0...v1.10.0
