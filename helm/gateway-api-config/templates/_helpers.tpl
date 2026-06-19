@@ -43,13 +43,16 @@ Gateway Service annotations
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-healthcheck-port" "http-80" }}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-healthcheck-path" "/healthz" }}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold" "2" }}
+{{- /* Detect an unhealthy node quickly so the NLB drain starts well before envoy exits */}}
+{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval" "10" }}
+{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold" "2" }}
 
 {{- /* Make LB public by default */}}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-scheme" "internet-facing" }}
 
 {{- /* Configure attributes */}}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-attributes" "load_balancing.cross_zone.enabled=true" }}
-{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-target-group-attributes" "target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=200,preserve_client_ip.enabled=false" }}
+{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-target-group-attributes" "target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=120,preserve_client_ip.enabled=false" }}
 {{- end }}
 
 {{- $annotations = mergeOverwrite $annotations (deepCopy (default dict $service.annotations)) }}
@@ -103,11 +106,34 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 {{- define "gateway.shutdownDefaults" -}}
 {{- $shutdown := dict }}
 {{- /* Set defaults for AWS NLBs */}}
+{{- /*
+  Drain timers are aligned so the node always outlives the NLB connection drain.
+  With healthcheck detection (~20s) + draining_interval_seconds (120s) ~= 140s, a
+  minDrainDuration of 150s keeps envoy (and therefore the node) alive until all
+  in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
+*/}}
 {{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
-{{- $_ := set $shutdown "drainTimeout" "180s" }}
-{{- $_ := set $shutdown "minDrainDuration" "60s" }}
+{{- $_ := set $shutdown "drainTimeout" "170s" }}
+{{- $_ := set $shutdown "minDrainDuration" "150s" }}
 {{- end }}
 {{- $shutdown | toYaml }}
+{{- end }}
+
+{{/*
+Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
+For AWS NLBs this reduces voluntary Karpenter churn on gateway nodes and ensures the
+pod's terminationGracePeriodSeconds stays above the drain timeout.
+*/}}
+{{- define "gateway.envoyDeploymentDefaults" -}}
+{{- $envoyDeployment := dict }}
+{{- if and (eq .provider "capa") (.gateway.provider.aws.useNetworkLoadBalancer) }}
+{{- /* Stop Karpenter consolidation/drift/expiry from churning gateway nodes */}}
+{{- $_ := set $envoyDeployment "pod" (dict "annotations" (dict "karpenter.sh/do-not-disrupt" "true")) }}
+{{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
+       It must stay above shutdown.drainTimeout (170s). */}}
+{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}
+{{- end }}
+{{- $envoyDeployment | toYaml }}
 {{- end }}
 
 {{/*

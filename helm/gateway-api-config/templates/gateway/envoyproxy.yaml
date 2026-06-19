@@ -22,6 +22,10 @@ is kept as a placeholder for future gateway-specific defaults.
 {{- if $shutdownDefaults -}}
 {{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}
 {{- end }}
+{{- $envoyDeploymentDefaults := (include "gateway.envoyDeploymentDefaults" (dict "provider" $.Values.provider "gateway" $gateway)) | fromYaml -}}
+{{- if $envoyDeploymentDefaults -}}
+{{- $_ := set $envoyProxyValues "envoyDeployment" (mergeOverwrite $envoyDeploymentDefaults (deepCopy (default dict $envoyProxyValues.envoyDeployment))) -}}
+{{- end }}
 {{- if not $envoyProxyValues.mergeType -}}
 {{- $_ := set $envoyProxyValues "mergeType" "StrategicMerge" -}}
 {{- end }}
