@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Set `priorityClassName: giantswarm-critical` on the envoy proxy pods via the GatewayClass-level `EnvoyProxy` (inherited by all gateways), so the proxies are scheduled and protected as critical workloads.
+
 ## [1.11.1] - 2026-06-19
 
 ### Changed
