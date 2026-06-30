@@ -5,6 +5,8 @@ envoyHpa:
   minReplicas: 2
   maxReplicas: 10
 envoyDeployment:
+  pod:
+    priorityClassName: giantswarm-critical
   container:
     imageRepository: gsoci.azurecr.io/giantswarm/envoy
 {{- end }}

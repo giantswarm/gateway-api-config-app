@@ -124,6 +124,26 @@ func gatewayDeploymentTests() {
 		WithPolling(5 * time.Second).
 		Should(BeTrue())
 
+	By("checking envoy proxy pods use the giantswarm-critical priorityClassName")
+	Eventually(func() error {
+		proxyPods := &corev1.PodList{}
+		if err := wcClient.List(state.GetContext(), proxyPods, proxyPodsListOptions); err != nil {
+			return err
+		}
+		if len(proxyPods.Items) == 0 {
+			return fmt.Errorf("no proxy pods found")
+		}
+		for _, pod := range proxyPods.Items {
+			if pod.Spec.PriorityClassName != "giantswarm-critical" {
+				return fmt.Errorf("pod %s/%s has priorityClassName %q, expected giantswarm-critical", pod.Namespace, pod.Name, pod.Spec.PriorityClassName)
+			}
+		}
+		return nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(Succeed())
+
 	By("checking service has external-dns annotations for the default gateway")
 	Eventually(func() error {
 		svcList := &corev1.ServiceList{}
