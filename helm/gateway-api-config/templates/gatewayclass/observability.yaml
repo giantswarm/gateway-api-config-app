@@ -1,5 +1,5 @@
 {{- range $i, $class := .Values.gatewayClasses }}
-{{- if and $class.enabled $class.envoyProxy.mergeGateways }}
+{{- if and $class.enabled (dig "envoyProxy" "mergeGateways" false $class) }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor

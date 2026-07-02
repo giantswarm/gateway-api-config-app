@@ -17,7 +17,7 @@ metadata:
   {{- end }}
 spec:
   gatewayClassName: {{ $gateway.className }}
-  {{- if $gateway.envoyProxy.enabled }}
+  {{- if dig "envoyProxy" "enabled" true $gateway }}
   infrastructure:
     parametersRef:
       group: gateway.envoyproxy.io
@@ -25,11 +25,11 @@ spec:
       name: gateway-{{ $gateway.name }}
       namespace: {{ $.Release.Namespace }}
   {{- end }}
-  {{- if $gateway.allowedListeners.enabled }}
+  {{- if dig "allowedListeners" "enabled" false $gateway }}
   allowedListeners:
     namespaces:
-      from: {{ $gateway.allowedListeners.namespaces.from }}
-      {{- with $gateway.allowedListeners.namespaces.selector }}
+      from: {{ dig "allowedListeners" "namespaces" "from" "All" $gateway }}
+      {{- with (dig "allowedListeners" "namespaces" "selector" dict $gateway) }}
       selector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -49,9 +49,9 @@ spec:
       {{- with $l.tls }}
       tls:
         mode: {{ .mode }}
-        {{- if or (.certificateRefs) ($l.certificate.enabled) }}
+        {{- if or (.certificateRefs) (dig "certificate" "enabled" false $l) }}
         certificateRefs:
-        {{- if and (eq .mode "Terminate") ($l.certificate.enabled) }}
+        {{- if and (eq .mode "Terminate") (dig "certificate" "enabled" false $l) }}
         - kind: Secret
           name: {{ printf "gateway-%s-%s-tls" $gateway.name $l.name }}
         {{- end }}

@@ -1,7 +1,7 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
 {{- $ctp := $gateway.clientTrafficPolicy | default dict }}
-{{- $isNLB := and (eq $.Values.provider "capa") $gateway.provider.aws.useNetworkLoadBalancer }}
+{{- $isNLB := and (eq $.Values.provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false $gateway) }}
 {{- $shouldRender := ternary $ctp.enabled $isNLB (hasKey $ctp "enabled") }}
 {{- if $shouldRender }}
 
