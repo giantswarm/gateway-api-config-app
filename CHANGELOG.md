@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Render partial `gateways` and `gatewayClasses` entries without nil-pointer errors by accessing optional nested values with `dig`. Missing `envoyProxy.enabled` now defaults to `true`.
+- Render partial `gateways` and `gatewayClasses` entries without nil-pointer errors by accessing optional nested values with `dig`. Missing `envoyProxy.enabled` and `provider.aws.useNetworkLoadBalancer` now default to `true`.
 
 ## [1.11.1] - 2026-06-19
 

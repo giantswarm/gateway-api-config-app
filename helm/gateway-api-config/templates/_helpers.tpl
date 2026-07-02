@@ -35,7 +35,7 @@ Gateway Service annotations
 {{- $_ := set $annotations "giantswarm.io/external-dns" "managed" }}
 
 {{- /* Use AWS NLB */}}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false .gateway) }}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- /* Enable PROXY Protocol */}}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol" "*" }}
 
@@ -64,7 +64,7 @@ Gateway Service loadBalancerClass
 */}}
 {{- define "service.loadBalancerClass" -}}
 {{- $service := .gateway.service }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false .gateway) }}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- default "service.k8s.aws/nlb" $service.loadBalancerClass }}
 {{- else }}
 {{- default "" $service.loadBalancerClass }}
@@ -76,7 +76,7 @@ Gateway Service externalTrafficPolicy
 */}}
 {{- define "service.externalTrafficPolicy" -}}
 {{- $service := .gateway.service }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false .gateway) }}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- default "Local" $service.externalTrafficPolicy }}
 {{- else }}
 {{- default "Cluster" $service.externalTrafficPolicy }}
@@ -112,7 +112,7 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
   minDrainDuration of 150s keeps envoy (and therefore the node) alive until all
   in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
 */}}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false .gateway) }}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $_ := set $shutdown "drainTimeout" "170s" }}
 {{- $_ := set $shutdown "minDrainDuration" "150s" }}
 {{- end }}
@@ -127,7 +127,7 @@ proxy pods one-per-node so each NLB instance target maps to a single envoy.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" false .gateway) }}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $pod := dict }}
 {{- /* Stop Karpenter consolidation/drift/expiry from churning gateway nodes */}}
 {{- $_ := set $pod "annotations" (dict "karpenter.sh/do-not-disrupt" "true") }}
