@@ -12,7 +12,7 @@ envoyDeployment:
 {{- end }}
 
 {{- range $i, $class := .Values.gatewayClasses }}
-{{- if and $class.enabled $class.envoyProxy.enabled }}
+{{- if and $class.enabled (dig "envoyProxy" "enabled" true $class) }}
 {{- $envoyProxyValues := (include "gatewayClassEnvoyProxyValuesDefault" $ ) | fromYaml -}}
 {{- $customEnvoyProxyValues := $class.envoyProxy -}}
 {{- if $customEnvoyProxyValues -}}

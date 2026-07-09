@@ -68,7 +68,7 @@ rules:
   - list
   - watch
 ---
-{{- if not $class.envoyProxy.mergeGateways }}
+{{- if not (dig "envoyProxy" "mergeGateways" false $class) }}
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:

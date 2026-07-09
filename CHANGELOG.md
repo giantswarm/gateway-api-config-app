@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tag AWS NLBs with the owning gateway name and namespace via the `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags` annotation.
 - Set `priorityClassName: giantswarm-critical` on the envoy proxy pods via the GatewayClass-level `EnvoyProxy` (inherited by all gateways), so the proxies are scheduled and protected as critical workloads.
 
+### Fixed
+
+- Render partial `gateways` and `gatewayClasses` entries without nil-pointer errors by accessing optional nested values with `dig`. Missing `envoyProxy.enabled` and `provider.aws.useNetworkLoadBalancer` now default to `true`.
+
 ## [1.11.1] - 2026-06-19
 
 ### Changed
