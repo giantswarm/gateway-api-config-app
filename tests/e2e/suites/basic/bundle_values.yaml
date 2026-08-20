@@ -1,4 +1,10 @@
 apps:
+  gatewayApiCrds:
+    # Envoy Gateway 1.9 requires Gateway API v1.6 CRDs.
+    version: 1.9.1
+  envoyGateway:
+    # shutdown.healthCheckFailureDelay requires Envoy Gateway 1.9.
+    version: 1.10.0
   gatewayApiConfig:
     userConfig:
       configMap:
