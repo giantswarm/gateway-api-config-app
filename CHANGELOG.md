@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Render partial `gateways` and `gatewayClasses` entries without nil-pointer errors by accessing optional nested values with `dig`. Missing `envoyProxy.enabled` and `provider.aws.useNetworkLoadBalancer` now default to `true`.
+- Drop `namespace` from the `Gateway` `spec.infrastructure.parametersRef`. It is a local reference that accepts only `group`, `kind` and `name`, so the field was silently pruned by the API server.
 
 ## [1.11.1] - 2026-06-19
 
