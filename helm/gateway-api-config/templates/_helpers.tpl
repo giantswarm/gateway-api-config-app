@@ -111,13 +111,22 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 {{- /* Set defaults for AWS NLBs */}}
 {{- /*
   Drain timers are aligned so the node always outlives the NLB connection drain.
-  With healthcheck detection (~20s) + draining_interval_seconds (120s) ~= 140s, a
-  minDrainDuration of 150s keeps envoy (and therefore the node) alive until all
+
+  Listener drain starts at SIGTERM, but healthCheckFailureDelay holds /healthz up
+  for 30s first. With externalTrafficPolicy: Local, failing it immediately makes
+  the pod non-ready while the NLB still forwards flows to the node, leaving it
+  without a serving local endpoint until the NLB notices. The delay covers that
+  window, so the NLB stops sending new flows before the endpoint goes away.
+
+  The delay pushes every later step back by the same 30s: healthcheck detection
+  (~20s) lands at ~50s and draining_interval_seconds (120s) then ends at ~170s, so
+  a minDrainDuration of 180s keeps envoy (and therefore the node) alive until all
   in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
 */}}
 {{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
-{{- $_ := set $shutdown "drainTimeout" "170s" }}
-{{- $_ := set $shutdown "minDrainDuration" "150s" }}
+{{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
+{{- $_ := set $shutdown "drainTimeout" "200s" }}
+{{- $_ := set $shutdown "minDrainDuration" "180s" }}
 {{- end }}
 {{- $shutdown | toYaml }}
 {{- end }}
@@ -146,7 +155,7 @@ proxy pods one-per-node so each NLB instance target maps to a single envoy.
 {{- $_ := set $pod "affinity" (dict "podAntiAffinity" (dict "preferredDuringSchedulingIgnoredDuringExecution" (list (dict "weight" 100 "podAffinityTerm" $podAffinityTerm)))) }}
 {{- $_ := set $envoyDeployment "pod" $pod }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
-       It must stay above shutdown.drainTimeout (170s). */}}
+       It must stay above shutdown.drainTimeout (200s). */}}
 {{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}
