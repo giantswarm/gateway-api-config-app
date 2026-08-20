@@ -23,7 +23,6 @@ spec:
       group: gateway.envoyproxy.io
       kind: EnvoyProxy
       name: gateway-{{ $gateway.name }}
-      namespace: {{ $.Release.Namespace }}
   {{- end }}
   {{- if dig "allowedListeners" "enabled" false $gateway }}
   allowedListeners:

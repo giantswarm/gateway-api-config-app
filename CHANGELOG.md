@@ -11,10 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tag AWS NLBs with the owning gateway name and namespace via the `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags` annotation.
 - Set `priorityClassName: giantswarm-critical` on the envoy proxy pods via the GatewayClass-level `EnvoyProxy` (inherited by all gateways), so the proxies are scheduled and protected as critical workloads.
+- For CAPA gateways using an AWS NLB, hold `/healthz` up for `shutdown.healthCheckFailureDelay: 30s` after drain starts, so the proxy stays ready until the NLB stops forwarding new flows to the node. With `externalTrafficPolicy: Local`, failing it immediately left the node without a serving local endpoint. Requires Envoy Gateway 1.9.
+
+### Changed
+
+- Shift the AWS NLB drain timers by the new health check failure delay: `shutdown.minDrainDuration` `150s` to `180s` and `shutdown.drainTimeout` `170s` to `200s`, keeping envoy alive past the NLB connection drain. `terminationGracePeriodSeconds` stays at `240s`.
 
 ### Fixed
 
 - Render partial `gateways` and `gatewayClasses` entries without nil-pointer errors by accessing optional nested values with `dig`. Missing `envoyProxy.enabled` and `provider.aws.useNetworkLoadBalancer` now default to `true`.
+- Drop `namespace` from the `Gateway` `spec.infrastructure.parametersRef`. It is a local reference that accepts only `group`, `kind` and `name`, so the field was silently pruned by the API server.
 
 ## [1.11.1] - 2026-06-19
 
