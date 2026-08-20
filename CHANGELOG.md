@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-08-20
+
 ### Added
 
 - Tag AWS NLBs with the owning gateway name and namespace via the `service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags` annotation.
@@ -271,7 +273,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.1...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.2...HEAD
+[1.11.2]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.0...v1.10.1
