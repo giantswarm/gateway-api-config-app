@@ -18,7 +18,8 @@ import (
 
 const (
 	// doNotDisruptAnnotation tells Karpenter not to voluntarily drain the node a
-	// pod runs on. The chart sets it on the proxy pods of AWS NLB gateways.
+	// pod runs on. The chart must not set it on the proxy pods: it stalls
+	// consolidation and node rollouts.
 	doNotDisruptAnnotation = "karpenter.sh/do-not-disrupt"
 	// karpenterNodePoolLabel is only present on nodes Karpenter provisioned, so it
 	// distinguishes them from the ASG-backed nodes of a regular node pool.
@@ -63,23 +64,23 @@ func gatewayKarpenterNodeTests() {
 
 // gatewayKarpenterProxyPodTests validates the Karpenter-related scheduling and
 // shutdown settings the chart puts on the envoy proxy pods of an AWS NLB gateway.
-// These keep Karpenter from churning gateway nodes and give envoy enough time to
-// drain when a node does go away.
+// These let Karpenter disrupt gateway nodes while giving envoy enough time to
+// drain when a node goes away.
 func gatewayKarpenterProxyPodTests() {
 	wcClient, _ := state.GetFramework().WC(state.GetCluster().Name)
 
-	By("checking envoy proxy pods opt out of Karpenter disruption")
+	By("checking envoy proxy pods do not opt out of Karpenter disruption")
 	Eventually(func() error {
 		proxyPods, err := gatewayProxyPods(wcClient)
 		if err != nil {
 			return err
 		}
 		for _, pod := range proxyPods.Items {
-			if got := pod.Annotations[doNotDisruptAnnotation]; got != "true" {
-				return fmt.Errorf("pod %s/%s has annotation %s=%q, expected \"true\"", pod.Namespace, pod.Name, doNotDisruptAnnotation, got)
+			if got, ok := pod.Annotations[doNotDisruptAnnotation]; ok {
+				return fmt.Errorf("pod %s/%s has annotation %s=%q, expected it to be absent", pod.Namespace, pod.Name, doNotDisruptAnnotation, got)
 			}
 		}
-		logger.Log("All (%d) envoy proxy pods carry %s=true", len(proxyPods.Items), doNotDisruptAnnotation)
+		logger.Log("None of the (%d) envoy proxy pods carry %s", len(proxyPods.Items), doNotDisruptAnnotation)
 		return nil
 	}).
 		WithTimeout(5 * time.Minute).

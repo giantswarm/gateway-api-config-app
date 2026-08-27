@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Run the e2e tests on a cluster with mixed ASG and Karpenter node pools, and assert the Karpenter integration of the envoy proxy pods.
 
+### Removed
+
+- Remove the `karpenter.sh/do-not-disrupt` annotation from the envoy proxy pods.
+
 ## [1.11.2] - 2026-08-20
 
 ### Added
