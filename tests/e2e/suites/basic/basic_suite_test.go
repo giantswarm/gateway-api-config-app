@@ -59,6 +59,10 @@ func TestBasic(t *testing.T) {
 				gatewayMonitoringTests()
 				gatewayKyvernoRegenerationTest()
 			})
+			It("should have the gateway integrated with karpenter", func() {
+				gatewayKarpenterNodeTests()
+				gatewayKarpenterProxyPodTests()
+			})
 		}).
 		Run(t, "Gateway-API Config Test")
 }
