@@ -133,16 +133,14 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 
 {{/*
 Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
-For AWS NLBs this reduces voluntary Karpenter churn on gateway nodes, ensures the
-pod's terminationGracePeriodSeconds stays above the drain timeout, and spreads the
-proxy pods one-per-node so each NLB instance target maps to a single envoy.
+For AWS NLBs this ensures the pod's terminationGracePeriodSeconds stays above the
+drain timeout, and spreads the proxy pods one-per-node so each NLB instance target
+maps to a single envoy.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
 {{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $pod := dict }}
-{{- /* Stop Karpenter consolidation/drift/expiry from churning gateway nodes */}}
-{{- $_ := set $pod "annotations" (dict "karpenter.sh/do-not-disrupt" "true") }}
 {{- /* Prefer one proxy pod per node so each NLB instance target maps to a single
        envoy, improving NLB health-checking and traffic distribution. Selects pods by
        the owning-gateway labels Envoy Gateway stamps on the proxy pods. */}}
