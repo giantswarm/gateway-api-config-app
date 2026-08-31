@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-08-31
+
 ### Added
 
 - Run the e2e tests on a cluster with mixed ASG and Karpenter node pools, and assert the Karpenter integration of the envoy proxy pods.
@@ -281,7 +283,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.2...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.3...HEAD
+[1.11.3]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.2...v1.11.3
 [1.11.2]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.10.1...v1.11.0
