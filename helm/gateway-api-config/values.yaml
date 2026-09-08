@@ -106,7 +106,22 @@ gateways:
     # enabled: false to suppress creation even on CAPA+NLB.
     # All other keys are passed directly to the ClientTrafficPolicy spec and
     # override provider defaults. Available fields (see kubectl explain clienttrafficpolicy.spec):
-    clientTrafficPolicy: {}
+    #
+    # trustedProxies and untrustedClientHeaders are not part of the spec.
+    # trustedProxies lists the CIDRs of a proxy sitting in front of the gateway (e.g.
+    # Cloudflare) that is allowed to supply X-Forwarded-For. When set, envoy trusts XFF
+    # only for connections originating from those CIDRs and takes the first non-trusted
+    # address from the right; connections from anywhere else fall back to the connection
+    # source address, so bypassing the proxy gains nothing.
+    # When trustedProxies is empty, envoy is the edge: untrustedClientHeaders are dropped
+    # at the listener before envoy reads them, so X-Forwarded-For is rebuilt from the
+    # connection source address that the PROXY protocol has set to the real client IP.
+    # Set untrustedClientHeaders to [] to forward client-supplied values instead.
+    clientTrafficPolicy:
+      trustedProxies: []
+      untrustedClientHeaders:
+        - x-forwarded-for
+        - x-real-ip
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
     errorPages: {}

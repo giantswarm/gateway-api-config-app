@@ -1,6 +1,6 @@
 # gateway-api-config
 
-![Version: 1.10.1](https://img.shields.io/badge/Version-1.10.1-informational?style=flat-square) ![AppVersion: 1.10.1](https://img.shields.io/badge/AppVersion-1.10.1-informational?style=flat-square)
+![Version: 1.11.3](https://img.shields.io/badge/Version-1.11.3-informational?style=flat-square) ![AppVersion: 1.11.3](https://img.shields.io/badge/AppVersion-1.11.3-informational?style=flat-square)
 
 Default configuration for Envoy Gateway
 
@@ -40,7 +40,9 @@ Default configuration for Envoy Gateway
 | gateways.default.allowedListeners.namespaces.selector | object | `{}` |  |
 | gateways.default.backendTrafficPolicy | object | `{}` |  |
 | gateways.default.className | string | `"giantswarm-default"` |  |
-| gateways.default.clientTrafficPolicy | object | `{}` |  |
+| gateways.default.clientTrafficPolicy.trustedProxies | list | `[]` |  |
+| gateways.default.clientTrafficPolicy.untrustedClientHeaders[0] | string | `"x-forwarded-for"` |  |
+| gateways.default.clientTrafficPolicy.untrustedClientHeaders[1] | string | `"x-real-ip"` |  |
 | gateways.default.dnsName | string | `"gateway"` |  |
 | gateways.default.enabled | bool | `true` |  |
 | gateways.default.envoyProxy.enabled | bool | `true` |  |
