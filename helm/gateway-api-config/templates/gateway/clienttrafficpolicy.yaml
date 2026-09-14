@@ -12,8 +12,22 @@
 {{- $_ := set $defaults "healthCheck" (dict "path" "/healthz") }}
 {{- end }}
 
+{{- /* Client IP detection: a client-supplied X-Forwarded-For is never trusted.
+       With a trusted proxy in front (e.g. Cloudflare), trust XFF only for connections
+       coming from its CIDRs and take the first non-trusted address from the right.
+       Otherwise envoy is the real edge: drop the untrusted client headers at the listener
+       so envoy rebuilds X-Forwarded-For from the connection source address, which the
+       PROXY protocol has already set to the real client IP. */}}
+{{- $trustedProxies := $ctp.trustedProxies | default list }}
+{{- $untrustedClientHeaders := $ctp.untrustedClientHeaders | default list }}
+{{- if $trustedProxies }}
+{{- $_ := set $defaults "clientIPDetection" (dict "xForwardedFor" (dict "trustedCIDRs" $trustedProxies)) }}
+{{- else if and $isNLB $untrustedClientHeaders }}
+{{- $_ := set $defaults "headers" (dict "earlyRequestHeaders" (dict "remove" $untrustedClientHeaders)) }}
+{{- end }}
+
 {{- /* Merge user values on top of defaults (user values win) */}}
-{{- $spec := mergeOverwrite $defaults (deepCopy (omit $ctp "enabled")) }}
+{{- $spec := mergeOverwrite $defaults (deepCopy (omit $ctp "enabled" "trustedProxies" "untrustedClientHeaders")) }}
 
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1

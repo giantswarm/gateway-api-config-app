@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `clientTrafficPolicy.trustedProxies` to the gateway values. When set to the CIDRs of a proxy sitting in front of the gateway (e.g. Cloudflare), envoy trusts `X-Forwarded-For` only for connections originating from those CIDRs, via `clientIPDetection.xForwardedFor.trustedCIDRs`, and takes the first non-trusted address from the right. Connections that bypass the proxy fall back to the connection source address, so they gain nothing by forging the header.
+- Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead.
+
+### Changed
+
+- For CAPA gateways using an AWS NLB, drop `x-forwarded-for` and `x-real-ip` from incoming requests via `headers.earlyRequestHeaders`, so envoy rebuilds `X-Forwarded-For` from the connection source address that the PROXY protocol has already set to the real client IP. Previously a client-supplied `X-Forwarded-For` was forwarded verbatim with the real address appended after it, letting a client dictate the first entry and, through it, whatever a backend derives from the header.
+
 ## [1.11.3] - 2026-08-31
 
 ### Added
