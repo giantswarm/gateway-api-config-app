@@ -1,0 +1,33 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- $isNLB := include "gateway.isNLB" (dict "gateway" $gateway "root" $) }}
+{{- $parentEnabled := include "gateway.clientTrafficPolicyEnabled" (dict "gateway" $gateway "root" $) }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- $ctp := $ls.clientTrafficPolicy | default dict }}
+{{- /* A Gateway-level policy without sectionName does not reliably cascade to
+       ListenerSet listeners (envoyproxy/gateway#9409), so each listener set gets its own
+       policy whenever the parent gateway has one. */}}
+{{- $shouldRender := ternary $ctp.enabled (ne $parentEnabled "") (hasKey $ctp "enabled") }}
+{{- if $shouldRender }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: {{ printf "gateway-%s-%s" $gateway.name $lsKey }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: {{ include "listenerSet.name" (dict "gateway" $gateway "listenerSetKey" $lsKey "listenerSet" $ls) }}
+  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB)) }}
+  {{- . | nindent 2 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -149,6 +149,9 @@
                         "errorPages": {
                             "type": "object"
                         },
+                        "listenerSets": {
+                            "type": "object"
+                        },
                         "listeners": {
                             "type": "object",
                             "properties": {

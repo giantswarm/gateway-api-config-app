@@ -408,3 +408,67 @@ Returns empty when there is nothing to render, so callers can guard with "with".
 {{- toYaml $spec }}
 {{- end }}
 {{- end -}}
+
+{{/*
+Name of a chart-managed ListenerSet resource. HTTPRoutes attach to this name, so it is
+user-overridable; the supporting per-listener resources stay keyed on the listener set
+key instead, which is unique within the gateway regardless of any name override.
+Takes: dict with "gateway", "listenerSetKey" and "listenerSet"
+*/}}
+{{- define "listenerSet.name" -}}
+{{- .listenerSet.name | default (printf "%s-%s" .gateway.name .listenerSetKey) -}}
+{{- end -}}
+
+{{/*
+Effective errorPages for a listener set: gatewayClass defaults, then the gateway's
+overrides, then the listener set's own.
+Takes: dict with "gateway", "listenerSet" (the entry, not the key) and "root"
+Returns: YAML, consume with fromYaml
+*/}}
+{{- define "listenerSet.errorPages" -}}
+{{- $gatewayErrorPages := include "gateway.errorPages" (dict "gateway" .gateway "root" .root) | fromYaml }}
+{{- include "errorPages.effective" (dict "class" $gatewayErrorPages "gateway" .listenerSet.errorPages) }}
+{{- end -}}
+
+{{/*
+Whether a gateway's own ClientTrafficPolicy renders. Listener sets inherit this decision:
+the NLB proxy-protocol annotation is per-Service, not per-port, so a listener set behind an
+NLB needs the same proxyProtocol settings or it receives PROXY bytes it cannot parse.
+Takes: dict with "gateway" and "root"
+*/}}
+{{- define "gateway.clientTrafficPolicyEnabled" -}}
+{{- $ctp := .gateway.clientTrafficPolicy | default dict -}}
+{{- $isNLB := include "gateway.isNLB" . -}}
+{{- if ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Fail when the gateway's listener sets collide with each other or with the gateway's own
+listeners. The CRD's CEL rules only enforce uniqueness within a single resource, so a
+duplicate port/protocol/hostname across resources would only surface at runtime as a
+Conflicted condition on the merged Gateway.
+Takes: dict with "gateway" and "root"
+*/}}
+{{- define "gateway.validateListeners" -}}
+{{- $gateway := .gateway -}}
+{{- $root := .root -}}
+{{- $seen := dict -}}
+{{- range $k, $l := $gateway.listeners -}}
+{{- $key := printf "%v/%v/%v" $l.port $l.protocol (tpl ($l.hostname | default "") $root) -}}
+{{- $_ := set $seen $key (printf "gateway listener %q" $l.name) -}}
+{{- end -}}
+{{- range $lsKey, $ls := $gateway.listenerSets -}}
+{{- if $ls.enabled -}}
+{{- range $k, $l := $ls.listeners -}}
+{{- $key := printf "%v/%v/%v" $l.port $l.protocol (tpl ($l.hostname | default "") $root) -}}
+{{- $where := printf "listener set %q listener %q" $lsKey $l.name -}}
+{{- if hasKey $seen $key -}}
+{{- fail (printf "gateway %q: %s collides with %s on port/protocol/hostname %q. Envoy Gateway would mark one of them Conflicted." $gateway.name $where (get $seen $key) $key) -}}
+{{- end -}}
+{{- $_ := set $seen $key $where -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
