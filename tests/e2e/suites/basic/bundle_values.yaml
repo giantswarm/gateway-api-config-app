@@ -27,6 +27,35 @@ apps:
           gateways:
             default:
               dnsName: ingress
+              allowedListeners:
+                enabled: true
+                namespaces:
+                  from: All
+              listenerSets:
+                extra:
+                  enabled: true
+                  errorPages:
+                    body: "<html><body><h1>ListenerSet Error Page</h1></body></html>"
+                  listeners:
+                    https:
+                      name: https
+                      protocol: HTTPS
+                      port: 443
+                      hostname: 'lset-chart.{{ $.Values.baseDomain }}'
+                      allowedRoutes:
+                        namespaces:
+                          from: All
+                      certificate:
+                        enabled: true
+                        issuer:
+                          kind: ClusterIssuer
+                          name: letsencrypt-giantswarm
+                      dnsEndpoints:
+                        # DNS comes from the HTTPRoute via the external-dns
+                        # gateway-httproute source, not from a DNSEndpoint.
+                        enabled: false
+                      tls:
+                        mode: Terminate
               errorPages:
                 body: "<html><body><h1>Giant Swarm - Service Unavailable</h1></body></html>"
               backendTrafficPolicy:
