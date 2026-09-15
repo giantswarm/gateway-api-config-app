@@ -51,9 +51,9 @@ apps:
                           kind: ClusterIssuer
                           name: letsencrypt-giantswarm
                       dnsEndpoints:
-                        enabled: true
-                        annotations:
-                          giantswarm.io/external-dns: managed
+                        # DNS comes from the HTTPRoute via the external-dns
+                        # gateway-httproute source, not from a DNSEndpoint.
+                        enabled: false
                       tls:
                         mode: Terminate
               errorPages:

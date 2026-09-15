@@ -48,20 +48,25 @@ func listenerSetChartResourceTests() {
 	Expect(ls.Spec.Listeners[0].Hostname).NotTo(BeNil())
 	Expect(string(*ls.Spec.Listeners[0].Hostname)).To(Equal(chartListenerSetHostname()))
 
-	By("checking the chart rendered the ListenerSet Certificate and DNSEndpoint")
+	By("checking the chart rendered the ListenerSet Certificate")
 	cert := &cmv1.Certificate{}
 	Expect(wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: gatewayNamespace}, cert)).To(Succeed())
 	Expect(cert.Spec.DNSNames).To(ConsistOf(chartListenerSetHostname()))
 	Expect(cert.Spec.SecretName).To(Equal(chartListenerSetPrefix + "-https-tls"))
 
+	By("checking no DNSEndpoint shadows the record external-dns derives from the ListenerSet")
+	// The suite deliberately runs both fixtures through the gateway-httproute
+	// source. A DNSEndpoint for the same hostname would write the record from the
+	// crd source instead, and the ListenerSet walk would never be exercised.
 	dnsEndpoint := &unstructured.Unstructured{}
 	dnsEndpoint.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "externaldns.k8s.io",
 		Version: "v1alpha1",
 		Kind:    "DNSEndpoint",
 	})
-	Expect(wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: gatewayNamespace}, dnsEndpoint)).To(Succeed())
-	Expect(dnsEndpoint.GetAnnotations()).To(HaveKeyWithValue("giantswarm.io/external-dns", "managed"))
+	err := wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: gatewayNamespace}, dnsEndpoint)
+	Expect(errors.IsNotFound(err)).To(BeTrue(),
+		"expected no DNSEndpoint for the chart ListenerSet, check dnsEndpoints.enabled in bundle_values.yaml, got err=%v", err)
 
 	By("waiting for the chart ListenerSet to be Accepted and Programmed")
 	expectListenerSetReady(chartListenerSetName, gatewayNamespace, "https", 15*time.Minute)

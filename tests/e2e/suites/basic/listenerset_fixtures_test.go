@@ -256,11 +256,11 @@ func createTenantCertificate() {
 func createFixtureRoutes() {
 	By("creating the HTTPRoutes for the gateway, the chart ListenerSet and the tenant ListenerSet")
 
-	// Only the tenant route carries the external-dns annotation. The other two
-	// hostnames already have records (the envoy Service annotation for the gateway
-	// apex, the chart DNSEndpoint for the chart ListenerSet), and letting the
-	// gateway-httproute source claim them too would put two sources on the same
-	// name with different record types.
+	// Both ListenerSet routes carry the external-dns annotation: their records are
+	// what proves external-dns reads the Gateway API resources directly. The
+	// gateway apex route does not, because ingress.<baseDomain> already has a
+	// record from the envoy Service, and a second source claiming the same name
+	// would write a different record type for it.
 	createIfMissing(httpbinRoute(
 		"httpbin-gateway",
 		gatewayHostname(),
@@ -274,7 +274,7 @@ func createFixtureRoutes() {
 		chartListenerSetHostname(),
 		"lset-chart",
 		gatewayv1.Kind("ListenerSet"), chartListenerSetName, gatewayNamespace,
-		false,
+		true,
 	))
 
 	createIfMissing(httpbinRoute(
