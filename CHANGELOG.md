@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Move the shared listener rendering into chart helpers: listener entry, base domain, `Certificate`, `DNSEndpoint`, `ClientTrafficPolicy` spec and the gatewayClass error pages lookup. Rendered output is unchanged.
+
+### Fixed
+
+- Fail rendering with a clear error when a listener certificate has no derivable DNS name, instead of emitting an invalid `Certificate`.
+
 ## [1.11.3] - 2026-08-31
 
 ### Added

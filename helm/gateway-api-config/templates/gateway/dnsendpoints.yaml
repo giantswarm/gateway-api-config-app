@@ -2,32 +2,14 @@
 {{- if and $gateway.enabled }}
 {{- range $j, $listener := $gateway.listeners }}
 {{- if and $listener.dnsEndpoints $listener.dnsEndpoints.enabled }}
+{{- $baseDomain := include "listener.baseDomain" (dict "gateway" $gateway "listener" $listener "root" $) }}
 {{- $subdomains := list }}
 {{- range $k, $subdomain := $listener.subdomains }}
-{{- $subdomains = append $subdomains (printf "%s.%s" $subdomain (trimPrefix "*." (tpl ($gateway.overrideBaseDomain | default $listener.hostname) $))) -}}
+{{- $subdomains = append $subdomains (printf "%s.%s" $subdomain $baseDomain) -}}
 {{- end }}
 {{- if $subdomains }}
 ---
-apiVersion: externaldns.k8s.io/v1alpha1
-kind: DNSEndpoint
-metadata:
-  name: {{ printf "gateway-%s-%s" $gateway.name $listener.name }}
-  namespace: {{ $.Release.Namespace }}
-  {{- with $listener.dnsEndpoints.annotations }}
-  annotations:
-    {{- . | toYaml | nindent 4}}
-  {{- end }}
-  labels:
-    {{- include "labels.common" $ | nindent 4 }}
-spec:
-  endpoints:
-  {{- range $subdomains }}
-  - dnsName: {{ . | quote }}
-    recordTTL: 300
-    recordType: CNAME
-    targets:
-    - {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $.Values.baseDomain }}
-  {{- end }}
+{{ include "listener.dnsEndpoint" (dict "gateway" $gateway "listener" $listener "root" $ "records" $subdomains) }}
 {{- end }}
 {{- end }}
 {{- end }}
