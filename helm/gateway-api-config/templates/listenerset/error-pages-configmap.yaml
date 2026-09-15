@@ -1,0 +1,21 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if and $ls.enabled $ls.errorPages }}
+{{- $errorPages := include "listenerSet.errorPages" (dict "gateway" $gateway "listenerSet" $ls "root" $) | fromYaml }}
+{{- if and $errorPages.enabled (not $errorPages.existingConfigMapName) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "gateway-%s-%s-error-pages" $gateway.name $lsKey }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+data:
+  response.body: {{ $errorPages.body | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

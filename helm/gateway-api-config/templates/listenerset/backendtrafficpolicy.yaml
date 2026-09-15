@@ -1,0 +1,63 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- $errorPages := include "listenerSet.errorPages" (dict "gateway" $gateway "listenerSet" $ls "root" $) | fromYaml }}
+{{- $btp := $ls.backendTrafficPolicy | default dict }}
+{{- $spec := omit $btp "enabled" }}
+{{- $shouldRender := or $errorPages.enabled (gt (len $spec) 0) }}
+{{- if and (hasKey $btp "enabled") (not $btp.enabled) }}
+{{- $shouldRender = false }}
+{{- end }}
+{{- if $shouldRender }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: {{ printf "gateway-%s-%s" $gateway.name $lsKey }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: ListenerSet
+      name: {{ include "listenerSet.name" (dict "gateway" $gateway "listenerSetKey" $lsKey "listenerSet" $ls) }}
+  {{- with $spec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- if $errorPages.enabled }}
+  responseOverride:
+    - match:
+        statusCodes:
+          {{- range $errorPages.statusCodes }}
+          {{- if eq .type "Range" }}
+          - type: Range
+            range:
+              start: {{ .range.start }}
+              end: {{ .range.end }}
+          {{- else }}
+          - type: Value
+            value: {{ .value }}
+          {{- end }}
+          {{- end }}
+      response:
+        contentType: {{ $errorPages.contentType | quote }}
+        body:
+          type: ValueRef
+          valueRef:
+            group: ""
+            kind: ConfigMap
+            {{- if $errorPages.existingConfigMapName }}
+            name: {{ $errorPages.existingConfigMapName }}
+            {{- else if $ls.errorPages }}
+            name: {{ printf "gateway-%s-%s-error-pages" $gateway.name $lsKey }}
+            {{- else }}
+            name: gateway-{{ $gateway.name }}-error-pages
+            {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

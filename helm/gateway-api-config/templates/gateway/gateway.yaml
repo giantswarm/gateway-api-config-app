@@ -24,10 +24,29 @@ spec:
       kind: EnvoyProxy
       name: gateway-{{ $gateway.name }}
   {{- end }}
-  {{- if dig "allowedListeners" "enabled" false $gateway }}
+  {{- $allowedEnabled := dig "allowedListeners" "enabled" false $gateway }}
+  {{- $allowedFrom := dig "allowedListeners" "namespaces" "from" "All" $gateway }}
+  {{- $hasListenerSets := false }}
+  {{- range $_, $ls := $gateway.listenerSets }}
+  {{- if $ls.enabled }}
+  {{- $hasListenerSets = true }}
+  {{- end }}
+  {{- end }}
+  {{- if $hasListenerSets }}
+  {{- if eq $allowedFrom "None" }}
+  {{- fail (printf "gateway %q defines listenerSets but sets allowedListeners.namespaces.from to None, so none of them could attach." $gateway.name) }}
+  {{- end }}
+  {{- /* Chart-managed listener sets live in the release namespace. Opening the gateway to
+         every namespace is a separate, deliberate opt-in via allowedListeners.enabled. */}}
+  {{- if not $allowedEnabled }}
+  {{- $allowedEnabled = true }}
+  {{- $allowedFrom = "Same" }}
+  {{- end }}
+  {{- end }}
+  {{- if $allowedEnabled }}
   allowedListeners:
     namespaces:
-      from: {{ dig "allowedListeners" "namespaces" "from" "All" $gateway }}
+      from: {{ $allowedFrom }}
       {{- with (dig "allowedListeners" "namespaces" "selector" dict $gateway) }}
       selector:
         {{- toYaml . | nindent 8 }}

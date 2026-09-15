@@ -1,0 +1,14 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- range $j, $listener := $ls.listeners }}
+{{- if and $listener.certificate $listener.certificate.enabled (eq $listener.protocol "HTTPS") }}
+---
+{{ include "listener.certificate" (dict "gateway" $gateway "listenerSet" $lsKey "listener" $listener "root" $) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

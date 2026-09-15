@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
+
 ### Changed
 
 - Move the shared listener rendering into chart helpers: listener entry, base domain, `Certificate`, `DNSEndpoint`, `ClientTrafficPolicy` spec and the gatewayClass error pages lookup. Rendered output is unchanged.
