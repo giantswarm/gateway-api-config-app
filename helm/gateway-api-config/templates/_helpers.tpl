@@ -230,3 +230,245 @@ shutdown:
 mergeType: {{ .mergeType }}
 {{- end }}
 {{- end }}
+
+{{/*
+Resolve effective errorPages for a gateway by looking up its gatewayClass by name
+and merging the class defaults with the per-gateway overrides.
+Takes: dict with "gateway" and "root"
+Returns: YAML, consume with fromYaml
+*/}}
+{{- define "gateway.errorPages" -}}
+{{- $gateway := .gateway }}
+{{- $classErrorPages := dict }}
+{{- range $_, $class := .root.Values.gatewayClasses }}
+{{- if eq $class.name $gateway.className }}
+{{- $classErrorPages = $class.errorPages | default dict }}
+{{- end }}
+{{- end }}
+{{- include "errorPages.effective" (dict "class" $classErrorPages "gateway" $gateway.errorPages) }}
+{{- end -}}
+
+{{/*
+Name shared by the per-listener resources (Certificate, DNSEndpoint, TLS Secret).
+Takes: dict with "gateway", "listener" and optionally "listenerSet" (the key of a
+gateways.<k>.listenerSets entry). The listener set segment keeps names unique across
+gateways, since a listener set key is only unique within its own gateway.
+*/}}
+{{- define "listener.resourceName" -}}
+{{- if .listenerSet -}}
+{{- printf "gateway-%s-%s-%s" .gateway.name .listenerSet .listener.name -}}
+{{- else -}}
+{{- printf "gateway-%s-%s" .gateway.name .listener.name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Base domain for a listener: the gateway's overrideBaseDomain when set, otherwise the
+listener hostname with any wildcard prefix stripped.
+Takes: dict with "gateway", "listener" and "root"
+*/}}
+{{- define "listener.baseDomain" -}}
+{{- trimPrefix "*." (tpl (.gateway.overrideBaseDomain | default .listener.hostname) .root) -}}
+{{- end -}}
+
+{{/*
+A single Gateway API listener entry. The schema is identical for Gateway.spec.listeners
+and ListenerSet.spec.listeners, so both render through this.
+Takes: dict with "gateway", "listener", "root" and optionally "listenerSet"
+Emits at zero indent, callers apply nindent.
+*/}}
+{{- define "gatewayapi.listener" -}}
+{{- $l := .listener -}}
+- name: {{ $l.name }}
+  protocol: {{ $l.protocol }}
+  port: {{ $l.port }}
+  {{- with $l.allowedRoutes }}
+  allowedRoutes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $l.hostname }}
+  hostname: {{ tpl (. | quote) $.root }}
+  {{- end }}
+  {{- with $l.tls }}
+  tls:
+    mode: {{ .mode }}
+    {{- if or (.certificateRefs) (dig "certificate" "enabled" false $l) }}
+    certificateRefs:
+    {{- if and (eq .mode "Terminate") (dig "certificate" "enabled" false $l) }}
+    - kind: Secret
+      name: {{ printf "%s-tls" (include "listener.resourceName" $) }}
+    {{- end }}
+    {{- range .certificateRefs }}
+    - kind: Secret
+      name: {{ .name }}
+      {{- if .namespace }}
+      namespace: {{ .namespace }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+cert-manager Certificate for a listener.
+Takes: dict with "gateway", "listener", "root" and optionally "listenerSet"
+*/}}
+{{- define "listener.certificate" -}}
+{{- $gateway := .gateway -}}
+{{- $listener := .listener -}}
+{{- $root := .root -}}
+{{- $name := include "listener.resourceName" . -}}
+{{- $baseDomain := include "listener.baseDomain" . -}}
+{{- $dnsNames := list -}}
+{{- if $listener.certificate.wildcard -}}
+{{- $dnsNames = append $dnsNames (printf "*.%s" $baseDomain) -}}
+{{- else if and $listener.hostname (not (hasPrefix "*." $listener.hostname)) -}}
+{{- $dnsNames = append $dnsNames (tpl $listener.hostname $root) -}}
+{{- else if and $gateway.dnsName (eq $baseDomain $root.Values.baseDomain) -}}
+{{- $dnsNames = append $dnsNames (printf "%s.%s" $gateway.dnsName $baseDomain) -}}
+{{- end -}}
+{{- range $k, $v := $listener.subdomains -}}
+{{- $dnsNames = append $dnsNames (printf "%s.%s" $v $baseDomain) -}}
+{{- end -}}
+{{- if not $dnsNames -}}
+{{- fail (printf "gateway %q listener %q: certificate.enabled is true but no DNS name can be derived. Set the listener hostname, or the gateway dnsName together with a matching baseDomain." $gateway.name $listener.name) -}}
+{{- end -}}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $name }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $root | nindent 4 }}
+spec:
+  dnsNames:
+  {{- range $dnsNames }}
+  - {{ . | quote }}
+  {{- end }}
+  issuerRef:
+    group: cert-manager.io
+    kind: {{ dig "issuer" "kind" "" $listener.certificate | default "Issuer" }}
+    name: {{ dig "issuer" "name" "" $listener.certificate | default (dig "tlsIssuer" "name" "" $gateway) }}
+  secretName: {{ printf "%s-tls" $name }}
+{{- end -}}
+
+{{/*
+external-dns DNSEndpoint for a listener, one CNAME per record pointing at the gateway apex.
+Takes: dict with "gateway", "listener", "root", "records" (list of FQDNs) and optionally "listenerSet"
+*/}}
+{{- define "listener.dnsEndpoint" -}}
+{{- $gateway := .gateway -}}
+{{- $listener := .listener -}}
+{{- $root := .root -}}
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "listener.resourceName" . }}
+  namespace: {{ $root.Release.Namespace }}
+  {{- with $listener.dnsEndpoints.annotations }}
+  annotations:
+    {{- . | toYaml | nindent 4}}
+  {{- end }}
+  labels:
+    {{- include "labels.common" $root | nindent 4 }}
+spec:
+  endpoints:
+  {{- range .records }}
+  - dnsName: {{ . | quote }}
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - {{ $gateway.dnsName }}.{{ $gateway.overrideBaseDomain | default $root.Values.baseDomain }}
+  {{- end }}
+{{- end -}}
+
+{{/*
+Whether a gateway fronts an AWS NLB, which drives the ClientTrafficPolicy defaults.
+Takes: dict with "gateway" and "root"
+*/}}
+{{- define "gateway.isNLB" -}}
+{{- if and (eq .root.Values.provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+ClientTrafficPolicy spec body: NLB defaults with the user's values merged on top.
+Takes: dict with "clientTrafficPolicy" (the user block) and "isNLB"
+Returns empty when there is nothing to render, so callers can guard with "with".
+*/}}
+{{- define "clientTrafficPolicy.spec" -}}
+{{- $defaults := dict }}
+{{- if .isNLB }}
+{{- $_ := set $defaults "proxyProtocol" (dict "optional" false) }}
+{{- $_ := set $defaults "healthCheck" (dict "path" "/healthz") }}
+{{- end }}
+{{- $spec := mergeOverwrite $defaults (deepCopy (omit (.clientTrafficPolicy | default dict) "enabled")) }}
+{{- if $spec }}
+{{- toYaml $spec }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Name of a chart-managed ListenerSet resource. HTTPRoutes attach to this name, so it is
+user-overridable; the supporting per-listener resources stay keyed on the listener set
+key instead, which is unique within the gateway regardless of any name override.
+Takes: dict with "gateway", "listenerSetKey" and "listenerSet"
+*/}}
+{{- define "listenerSet.name" -}}
+{{- .listenerSet.name | default (printf "%s-%s" .gateway.name .listenerSetKey) -}}
+{{- end -}}
+
+{{/*
+Effective errorPages for a listener set: gatewayClass defaults, then the gateway's
+overrides, then the listener set's own.
+Takes: dict with "gateway", "listenerSet" (the entry, not the key) and "root"
+Returns: YAML, consume with fromYaml
+*/}}
+{{- define "listenerSet.errorPages" -}}
+{{- $gatewayErrorPages := include "gateway.errorPages" (dict "gateway" .gateway "root" .root) | fromYaml }}
+{{- include "errorPages.effective" (dict "class" $gatewayErrorPages "gateway" .listenerSet.errorPages) }}
+{{- end -}}
+
+{{/*
+Whether a gateway's own ClientTrafficPolicy renders. Listener sets inherit this decision:
+the NLB proxy-protocol annotation is per-Service, not per-port, so a listener set behind an
+NLB needs the same proxyProtocol settings or it receives PROXY bytes it cannot parse.
+Takes: dict with "gateway" and "root"
+*/}}
+{{- define "gateway.clientTrafficPolicyEnabled" -}}
+{{- $ctp := .gateway.clientTrafficPolicy | default dict -}}
+{{- $isNLB := include "gateway.isNLB" . -}}
+{{- if ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+Fail when the gateway's listener sets collide with each other or with the gateway's own
+listeners. The CRD's CEL rules only enforce uniqueness within a single resource, so a
+duplicate port/protocol/hostname across resources would only surface at runtime as a
+Conflicted condition on the merged Gateway.
+Takes: dict with "gateway" and "root"
+*/}}
+{{- define "gateway.validateListeners" -}}
+{{- $gateway := .gateway -}}
+{{- $root := .root -}}
+{{- $seen := dict -}}
+{{- range $k, $l := $gateway.listeners -}}
+{{- $key := printf "%v/%v/%v" $l.port $l.protocol (tpl ($l.hostname | default "") $root) -}}
+{{- $_ := set $seen $key (printf "gateway listener %q" $l.name) -}}
+{{- end -}}
+{{- range $lsKey, $ls := $gateway.listenerSets -}}
+{{- if $ls.enabled -}}
+{{- range $k, $l := $ls.listeners -}}
+{{- $key := printf "%v/%v/%v" $l.port $l.protocol (tpl ($l.hostname | default "") $root) -}}
+{{- $where := printf "listener set %q listener %q" $lsKey $l.name -}}
+{{- if hasKey $seen $key -}}
+{{- fail (printf "gateway %q: %s collides with %s on port/protocol/hostname %q. Envoy Gateway would mark one of them Conflicted." $gateway.name $where (get $seen $key) $key) -}}
+{{- end -}}
+{{- $_ := set $seen $key $where -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - For CAPA gateways using an AWS NLB, drop `x-forwarded-for` and `x-real-ip` from incoming requests via `headers.earlyRequestHeaders`, so envoy rebuilds `X-Forwarded-For` from the connection source address that the PROXY protocol has already set to the real client IP. Previously a client-supplied `X-Forwarded-For` was forwarded verbatim with the real address appended after it, letting a client dictate the first entry and, through it, whatever a backend derives from the header.
+- Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
+
+### Changed
+
+- Move the shared listener rendering into chart helpers: listener entry, base domain, `Certificate`, `DNSEndpoint`, `ClientTrafficPolicy` spec and the gatewayClass error pages lookup. Rendered output is unchanged.
+
+### Fixed
+
+- Fail rendering with a clear error when a listener certificate has no derivable DNS name, instead of emitting an invalid `Certificate`.
 
 ## [1.11.3] - 2026-08-31
 

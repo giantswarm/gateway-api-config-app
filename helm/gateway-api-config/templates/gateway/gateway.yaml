@@ -24,45 +24,37 @@ spec:
       kind: EnvoyProxy
       name: gateway-{{ $gateway.name }}
   {{- end }}
-  {{- if dig "allowedListeners" "enabled" false $gateway }}
+  {{- $allowedEnabled := dig "allowedListeners" "enabled" false $gateway }}
+  {{- $allowedFrom := dig "allowedListeners" "namespaces" "from" "All" $gateway }}
+  {{- $hasListenerSets := false }}
+  {{- range $_, $ls := $gateway.listenerSets }}
+  {{- if $ls.enabled }}
+  {{- $hasListenerSets = true }}
+  {{- end }}
+  {{- end }}
+  {{- if $hasListenerSets }}
+  {{- if eq $allowedFrom "None" }}
+  {{- fail (printf "gateway %q defines listenerSets but sets allowedListeners.namespaces.from to None, so none of them could attach." $gateway.name) }}
+  {{- end }}
+  {{- /* Chart-managed listener sets live in the release namespace. Opening the gateway to
+         every namespace is a separate, deliberate opt-in via allowedListeners.enabled. */}}
+  {{- if not $allowedEnabled }}
+  {{- $allowedEnabled = true }}
+  {{- $allowedFrom = "Same" }}
+  {{- end }}
+  {{- end }}
+  {{- if $allowedEnabled }}
   allowedListeners:
     namespaces:
-      from: {{ dig "allowedListeners" "namespaces" "from" "All" $gateway }}
+      from: {{ $allowedFrom }}
       {{- with (dig "allowedListeners" "namespaces" "selector" dict $gateway) }}
       selector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
   {{- end }}
   listeners:
-    {{- range $k, $l:= $gateway.listeners }}
-    - name: {{ $l.name }}
-      protocol: {{ $l.protocol }}
-      port: {{ $l.port }}
-      {{- with $l.allowedRoutes }}
-      allowedRoutes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $l.hostname }}
-      hostname: {{ tpl (. | quote) $ }}
-      {{- end }}
-      {{- with $l.tls }}
-      tls:
-        mode: {{ .mode }}
-        {{- if or (.certificateRefs) (dig "certificate" "enabled" false $l) }}
-        certificateRefs:
-        {{- if and (eq .mode "Terminate") (dig "certificate" "enabled" false $l) }}
-        - kind: Secret
-          name: {{ printf "gateway-%s-%s-tls" $gateway.name $l.name }}
-        {{- end }}
-        {{- range .certificateRefs }}
-        - kind: Secret
-          name: {{ .name }}
-          {{- if .namespace }}
-          namespace: {{ .namespace }}
-          {{- end }}
-        {{- end }}
-        {{- end }}
-      {{- end }}
+    {{- range $k, $l := $gateway.listeners }}
+    {{- include "gatewayapi.listener" (dict "gateway" $gateway "listener" $l "root" $) | nindent 4 }}
     {{- end }}
 {{- end }}
 {{- end }}

@@ -63,11 +63,39 @@ gateways:
       name: letsencrypt-giantswarm-gateway
       email: accounts@giantswarm.io
       gateway: giantswarm-default
+    # Controls whether externally managed ListenerSets, for example ones created by a
+    # tenant in their own namespace, may attach to this gateway. Chart-managed listener
+    # sets (see listenerSets below) do not need this: they enable attachment from the
+    # release namespace on their own.
     allowedListeners:
       enabled: false
       namespaces:
         from: All
         selector: {}
+    # Chart-managed ListenerSets, rendered in the release namespace alongside the gateway.
+    # Each entry adds listeners to this gateway beyond the 64 the Gateway itself can hold,
+    # with its own Certificate, DNS records and traffic policies. Listeners use the same
+    # schema as gateways.<k>.listeners.
+    # The ListenerSet is named <gateway.name>-<key> unless name is set; supporting
+    # resources are always named gateway-<gateway.name>-<key>-<listener>.
+    # Example:
+    #   listenerSets:
+    #     extra:
+    #       enabled: true
+    #       listeners:
+    #         https:
+    #           name: https
+    #           protocol: HTTPS
+    #           port: 443
+    #           hostname: 'extra.{{ $.Values.baseDomain }}'
+    #           certificate:
+    #             enabled: true
+    #             issuer:
+    #               kind: ClusterIssuer
+    #               name: letsencrypt-giantswarm
+    #           tls:
+    #             mode: Terminate
+    listenerSets: {}
     listeners:
       http:
         name: http

@@ -1,0 +1,34 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- include "gateway.validateListeners" (dict "gateway" $gateway "root" $) }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if $ls.enabled }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ListenerSet
+metadata:
+  name: {{ include "listenerSet.name" (dict "gateway" $gateway "listenerSetKey" $lsKey "listenerSet" $ls) }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "labels.common" $ | nindent 4 }}
+    {{- with $ls.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $ls.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- /* Same namespace as the parent, so parentRef.namespace is left to default. */}}
+  parentRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ $gateway.name }}
+  listeners:
+    {{- range $k, $l := $ls.listeners }}
+    {{- include "gatewayapi.listener" (dict "gateway" $gateway "listenerSet" $lsKey "listener" $l "root" $) | nindent 4 }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -52,6 +52,7 @@ Default configuration for Envoy Gateway
 | gateways.default.envoyProxy.envoyServiceAccount | object | `{}` |  |
 | gateways.default.envoyProxy.mergeType | string | `"StrategicMerge"` |  |
 | gateways.default.errorPages | object | `{}` |  |
+| gateways.default.listenerSets | object | `{}` |  |
 | gateways.default.listeners.http.allowedRoutes.namespaces.from | string | `"All"` |  |
 | gateways.default.listeners.http.httpsRedirectEnabled | bool | `false` |  |
 | gateways.default.listeners.http.name | string | `"http"` |  |

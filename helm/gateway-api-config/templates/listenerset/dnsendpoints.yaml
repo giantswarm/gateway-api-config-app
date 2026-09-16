@@ -1,0 +1,26 @@
+{{- range $i, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- range $lsKey, $ls := $gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- range $j, $listener := $ls.listeners }}
+{{- if and $listener.dnsEndpoints $listener.dnsEndpoints.enabled }}
+{{- $baseDomain := include "listener.baseDomain" (dict "gateway" $gateway "listener" $listener "root" $) }}
+{{- /* Unlike a Gateway listener, a ListenerSet hostname has no envoy Service annotation
+       carrying it, so it needs its own record alongside any subdomains. */}}
+{{- $records := list }}
+{{- with $listener.hostname }}
+{{- $records = append $records (tpl . $) }}
+{{- end }}
+{{- range $k, $subdomain := $listener.subdomains }}
+{{- $records = append $records (printf "%s.%s" $subdomain $baseDomain) -}}
+{{- end }}
+{{- if $records }}
+---
+{{ include "listener.dnsEndpoint" (dict "gateway" $gateway "listenerSet" $lsKey "listener" $listener "root" $ "records" $records) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

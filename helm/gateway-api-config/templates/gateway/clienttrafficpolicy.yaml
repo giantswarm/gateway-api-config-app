@@ -1,8 +1,8 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
 {{- $ctp := $gateway.clientTrafficPolicy | default dict }}
-{{- $isNLB := and (eq $.Values.provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true $gateway) }}
-{{- $shouldRender := ternary $ctp.enabled $isNLB (hasKey $ctp "enabled") }}
+{{- $isNLB := include "gateway.isNLB" (dict "gateway" $gateway "root" $) }}
+{{- $shouldRender := ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") }}
 {{- if $shouldRender }}
 
 {{- /* Build provider-specific defaults */}}
@@ -40,8 +40,8 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ $gateway.name }}
-  {{- with $spec }}
-  {{- toYaml . | nindent 2 }}
+  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB)) }}
+  {{- . | nindent 2 }}
   {{- end }}
 {{- end }}
 {{- end }}
