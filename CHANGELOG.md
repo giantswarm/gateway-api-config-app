@@ -9,8 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `clientTrafficPolicy.trustedProxies` to the gateway values. When set to the CIDRs of a proxy sitting in front of the gateway (e.g. Cloudflare), envoy trusts `X-Forwarded-For` only for connections originating from those CIDRs, via `clientIPDetection.xForwardedFor.trustedCIDRs`, and takes the first non-trusted address from the right. Connections that bypass the proxy fall back to the connection source address, so they gain nothing by forging the header.
-- Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead.
+- Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead, which a gateway fronted by a CDN needs.
 
 ### Changed
 
