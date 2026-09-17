@@ -41,7 +41,12 @@ apps:
                       name: https
                       protocol: HTTPS
                       port: 443
-                      hostname: 'lset-chart.{{ $.Values.baseDomain }}'
+                      # Escaped on purpose: the bundle chart runs tpl over these
+                      # user values with its own context, where baseDomain is the
+                      # installation base domain rather than the cluster's. The
+                      # escape leaves the template for gateway-api-config to render
+                      # from its own cluster-values.
+                      hostname: 'lset-chart.{{ "{{ $.Values.baseDomain }}" }}'
                       allowedRoutes:
                         namespaces:
                           from: All

@@ -68,26 +68,37 @@ func TestBasic(t *testing.T) {
 			// ACME order and DNS record have been in flight since the app was
 			// installed, so by now they are effectively free, and the namespace and
 			// routes they add must not perturb the assertions above.
-			It("should have the chart-managed listenerset configured and accepted", func() {
-				listenerSetChartResourceTests()
-				createTenantNamespace()
-				deployHttpbin()
-				// The tenant ListenerSet is created here, and its Certificate only in
-				// the next block, so the TLS Secret genuinely arrives after the
-				// ListenerSet. That ordering is the envoyproxy/gateway#9614 regression.
-				createTenantListenerSet()
-				createFixtureRoutes()
-				listenerSetExternalDNSConfigTests()
-			})
-			It("should have both listenersets serving traffic end to end", func() {
-				listenerSetTenantCertTests()
-				listenerSetCertificateContentTests()
-				listenerSetDNSTests()
-				listenerSetTrafficTests()
-				listenerSetPolicyCascadeTests()
-			})
-			It("should reload a rotated listenerset certificate", func() {
-				listenerSetCertRotationTests()
+			//
+			// Ordered so the fixtures live in a BeforeAll and a failure skips the rest
+			// of the block. Left inside a spec, a timeout on the first assertion would
+			// leave the later specs waiting out every Eventually against objects that
+			// were never created.
+			Describe("listenersets", Ordered, func() {
+				BeforeAll(func() {
+					createTenantNamespace()
+					deployHttpbin()
+					// The tenant ListenerSet is created here, and its Certificate only
+					// in listenerSetTenantCertTests, so the TLS Secret genuinely
+					// arrives after the ListenerSet. That ordering is the
+					// envoyproxy/gateway#9614 regression.
+					createTenantListenerSet()
+					createFixtureRoutes()
+				})
+
+				It("should have the chart-managed listenerset configured and accepted", func() {
+					listenerSetChartResourceTests()
+					listenerSetExternalDNSConfigTests()
+				})
+				It("should have both listenersets serving traffic end to end", func() {
+					listenerSetTenantCertTests()
+					listenerSetCertificateContentTests()
+					listenerSetDNSTests()
+					listenerSetTrafficTests()
+					listenerSetPolicyCascadeTests()
+				})
+				It("should reload a rotated listenerset certificate", func() {
+					listenerSetCertRotationTests()
+				})
 			})
 		}).
 		Run(t, "Gateway-API Config Test")

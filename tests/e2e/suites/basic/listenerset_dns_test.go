@@ -94,6 +94,20 @@ func listenerSetDNSTests() {
 	Expect(err).To(HaveOccurred(),
 		"%s resolved to %v, so this zone has a wildcard record and no DNS assertion here proves anything", nonce, addrs)
 
+	// A wildcard CNAME whose target lives outside the zone (what
+	// dns-operator-route53 writes for wildcard-cname-target) answers with the CNAME
+	// alone, and the authoritative nameserver above does not recurse, so the lookup
+	// fails and the check above passes on a zone that does have a wildcard. Ask for
+	// the CNAME itself as well. resolveInZone chases those hops manually, so
+	// expectResolvesToGatewayLB below would otherwise succeed for any name at all.
+	ctx, cancel = context.WithTimeout(state.GetContext(), dnsQueryTimeout)
+	cname, cnameErr := resolver.LookupCNAME(ctx, nonce)
+	cancel()
+	if cnameErr == nil {
+		Expect(strings.TrimSuffix(cname, ".")).To(Equal(strings.TrimSuffix(nonce, ".")),
+			"%s is a CNAME for %s, so this zone has a wildcard record and no DNS assertion here proves anything", nonce, cname)
+	}
+
 	lbAddrs := gatewayLBAddresses()
 	logger.Log("Gateway load balancer addresses: %v", lbAddrs)
 
@@ -227,8 +241,12 @@ func authoritativeResolver(zone string) (*net.Resolver, error) {
 		ctx, cancel := context.WithTimeout(state.GetContext(), dnsQueryTimeout)
 		nameservers, err := net.DefaultResolver.LookupNS(ctx, name)
 		cancel()
-		if err != nil || len(nameservers) == 0 {
+		if err != nil {
 			lastErr = err
+			continue
+		}
+		if len(nameservers) == 0 {
+			lastErr = fmt.Errorf("%s has an empty NS record set", name)
 			continue
 		}
 
@@ -245,6 +263,9 @@ func authoritativeResolver(zone string) (*net.Resolver, error) {
 		return resolver, nil
 	}
 
+	if lastErr == nil {
+		return nil, fmt.Errorf("no authoritative nameserver found for %s", zone)
+	}
 	return nil, fmt.Errorf("no authoritative nameserver found for %s: %w", zone, lastErr)
 }
 

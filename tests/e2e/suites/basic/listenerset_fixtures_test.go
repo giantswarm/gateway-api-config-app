@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
-	"github.com/giantswarm/clustertest/v5/pkg/application"
 	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
@@ -22,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -58,15 +58,37 @@ const (
 	listenerSetErrorPageMarker = "ListenerSet Error Page"
 )
 
-// wcZone returns the workload cluster's DNS zone, which is what the chart is
-// installed with as .Values.baseDomain.
-func wcZone() string {
-	values := &application.ClusterValues{}
-	err := state.GetFramework().MC().GetHelmValues(state.GetCluster().Name, state.GetCluster().GetNamespace(), values)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(values.BaseDomain).NotTo(BeEmpty(), "baseDomain missing from cluster helm values")
+// cachedZone memoises wcZone, which every hostname helper below calls.
+var cachedZone string
 
-	return fmt.Sprintf("%s.%s", state.GetCluster().Name, values.BaseDomain)
+// wcZone returns the workload cluster's DNS zone. It is read from the
+// cluster-values ConfigMap rather than recomputed from the cluster app's
+// global.connectivity.baseDomain, because that ConfigMap is what the chart
+// resolves .Values.baseDomain from. Reconstructing it here would mean guessing at
+// how the installation derives a cluster zone from its base domain, and a wrong
+// guess turns into a hostname mismatch rather than a real failure.
+func wcZone() string {
+	if cachedZone != "" {
+		return cachedZone
+	}
+
+	cluster := state.GetCluster()
+	name := fmt.Sprintf("%s-cluster-values", cluster.Name)
+
+	configMap := &corev1.ConfigMap{}
+	Expect(state.GetFramework().MC().Get(state.GetContext(), cr.ObjectKey{
+		Name:      name,
+		Namespace: cluster.GetNamespace(),
+	}, configMap)).To(Succeed())
+
+	var values struct {
+		BaseDomain string `json:"baseDomain"`
+	}
+	Expect(yaml.Unmarshal([]byte(configMap.Data["values"]), &values)).To(Succeed())
+	Expect(values.BaseDomain).NotTo(BeEmpty(), "baseDomain missing from ConfigMap %s", name)
+
+	cachedZone = values.BaseDomain
+	return cachedZone
 }
 
 func chartListenerSetHostname() string  { return fmt.Sprintf("%s.%s", chartListenerSetHost, wcZone()) }

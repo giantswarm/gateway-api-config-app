@@ -20,17 +20,51 @@ import (
 )
 
 // listenerSetCertificateContentTests checks each ListenerSet really got its own
-// publicly trusted certificate.
+// publicly trusted certificate, and that Envoy serves that certificate.
 //
-// The exact-SAN assertion is the load-bearing one: the gateway's *.<baseDomain>
-// wildcard also matches these single-label hostnames, so without it the suite
-// would pass even if the ListenerSet certificate were never used.
+// Both halves are needed. The gateway's *.<baseDomain> wildcard also matches these
+// single-label hostnames, so an Envoy Gateway that ignored the ListenerSet
+// certificateRefs and fell back to the gateway listener would still hand out a
+// certificate that validates: the Secret would be intact, the handshake in
+// listenerSetTrafficTests would succeed, and nothing else in the suite would
+// notice. Comparing what is served against what cert-manager issued is what closes
+// that gap.
 func listenerSetCertificateContentTests() {
 	By("checking the chart ListenerSet certificate covers exactly its own hostname")
 	assertPubliclyIssuedFor(gatewayNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
 
+	By("checking Envoy serves the chart ListenerSet certificate for its own hostname")
+	expectServedCertificateFromSecret(gatewayNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
+
 	By("checking the tenant ListenerSet certificate covers exactly its own hostname")
 	assertPubliclyIssuedFor(tenantNamespace, tenantSecretName, tenantListenerSetHostname())
+
+	By("checking Envoy serves the tenant ListenerSet certificate for its own hostname")
+	expectServedCertificateFromSecret(tenantNamespace, tenantSecretName, tenantListenerSetHostname())
+}
+
+// expectServedCertificateFromSecret asserts the leaf Envoy presents for hostname is
+// the one in the given cert-manager Secret, identified by serial number. It dials
+// the load balancer with that SNI, so it does not wait on DNS.
+func expectServedCertificateFromSecret(namespace, secretName, hostname string) {
+	want, err := leafFromSecret(namespace, secretName)
+	Expect(err).NotTo(HaveOccurred())
+
+	Eventually(func() error {
+		got, err := servedCertificate(hostname)
+		if err != nil {
+			return err
+		}
+		if got.SerialNumber.Cmp(want.SerialNumber) != 0 {
+			return fmt.Errorf("SNI %s is served certificate %s for %v, not certificate %s from %s/%s",
+				hostname, got.SerialNumber, got.DNSNames, want.SerialNumber, namespace, secretName)
+		}
+		logger.Log("SNI %s is served certificate %s from %s/%s", hostname, got.SerialNumber, namespace, secretName)
+		return nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(10 * time.Second).
+		Should(Succeed())
 }
 
 // assertPubliclyIssuedFor reads a cert-manager TLS Secret and asserts the leaf is a
