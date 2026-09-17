@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead, which a gateway fronted by a CDN needs.
 - Assert in the e2e tests that the `ClientTrafficPolicy` drops the client identity headers and is Accepted by Envoy Gateway.
+- Add an e2e test that sends a forged `X-Forwarded-For` through the gateway LoadBalancer to a probe backend and asserts envoy rebuilt the header from the connection source address instead of forwarding what the client sent.
 
 ### Changed
 

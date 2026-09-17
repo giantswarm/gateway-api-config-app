@@ -56,6 +56,7 @@ func TestBasic(t *testing.T) {
 				gatewayHPAAndPDBTests()
 				gatewayHTTPRedirectBehaviorTest()
 				gatewayHealthCheckBehaviorTest()
+				gatewayClientIPBehaviorTest()
 				gatewayMonitoringTests()
 				gatewayKyvernoRegenerationTest()
 			})
