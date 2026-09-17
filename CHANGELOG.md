@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead, which a gateway fronted by a CDN needs.
+- Assert in the e2e tests that the `ClientTrafficPolicy` drops the client identity headers and is Accepted by Envoy Gateway.
 
 ### Changed
 

@@ -154,7 +154,9 @@ func gatewayEnvoyProxyTests() {
 }
 
 // gatewayClientTrafficPolicyTests validates ClientTrafficPolicy correctly targets the gateway,
-// enforces PROXY protocol handling, and defines health check path for AWS NLB to detect healthy proxies.
+// enforces PROXY protocol handling, defines the health check path for AWS NLB to detect healthy
+// proxies, and drops the client identity headers so envoy rebuilds X-Forwarded-For from the
+// connection source address instead of trusting what the client sent.
 func gatewayClientTrafficPolicyTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
@@ -191,6 +193,56 @@ func gatewayClientTrafficPolicyTests() {
 	By("checking ClientTrafficPolicy healthCheck.path=/healthz")
 	healthCheck := ctpSpec["healthCheck"].(map[string]any)
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
+
+	By("checking ClientTrafficPolicy drops the client identity headers at the listener")
+	headers := ctpSpec["headers"].(map[string]any)
+	earlyRequestHeaders := headers["earlyRequestHeaders"].(map[string]any)
+	Expect(earlyRequestHeaders["remove"]).To(ConsistOf("x-forwarded-for", "x-real-ip"))
+
+	// Envoy Gateway reports a policy it could not translate as not Accepted rather than
+	// failing the apply, so without this the assertions above would pass on a policy that
+	// never reached the proxies.
+	By("checking ClientTrafficPolicy is Accepted")
+	Eventually(func() (bool, error) {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+			Name:      "gateway-giantswarm-default",
+			Namespace: "envoy-gateway-system",
+		}, ctp); err != nil {
+			return false, err
+		}
+		status, ok := ctp.Object["status"].(map[string]any)
+		if !ok {
+			return false, nil
+		}
+		ancestors, ok := status["ancestors"].([]any)
+		if !ok {
+			return false, nil
+		}
+		for _, a := range ancestors {
+			ancestor := a.(map[string]any)
+			ancestorRef, ok := ancestor["ancestorRef"].(map[string]any)
+			if !ok {
+				continue
+			}
+			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != "giantswarm-default" {
+				continue
+			}
+			conditions, ok := ancestor["conditions"].([]any)
+			if !ok {
+				continue
+			}
+			for _, c := range conditions {
+				condition := c.(map[string]any)
+				if condition["type"] == "Accepted" {
+					return condition["status"] == "True", nil
+				}
+			}
+		}
+		return false, nil
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
+		Should(BeTrue())
 }
 
 // gatewayBackendTrafficPolicyTests validates the BackendTrafficPolicy is configured to return
