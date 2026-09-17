@@ -195,8 +195,12 @@ func gatewayClientTrafficPolicyTests() {
 	Expect(healthCheck["path"]).To(Equal("/healthz"))
 
 	By("checking ClientTrafficPolicy drops the client identity headers at the listener")
-	headers := ctpSpec["headers"].(map[string]any)
-	earlyRequestHeaders := headers["earlyRequestHeaders"].(map[string]any)
+	headers, ok := ctpSpec["headers"].(map[string]any)
+	Expect(ok).To(BeTrue(),
+		"ClientTrafficPolicy carries no headers block, so nothing drops the client identity headers: %v", ctpSpec)
+	earlyRequestHeaders, ok := headers["earlyRequestHeaders"].(map[string]any)
+	Expect(ok).To(BeTrue(),
+		"ClientTrafficPolicy headers carry no earlyRequestHeaders block: %v", headers)
 	Expect(earlyRequestHeaders["remove"]).To(ConsistOf("x-forwarded-for", "x-real-ip"))
 
 	// Envoy Gateway reports a policy it could not translate as not Accepted rather than

@@ -5,28 +5,6 @@
 {{- $shouldRender := ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") }}
 {{- if $shouldRender }}
 
-{{- /* Build provider-specific defaults */}}
-{{- $defaults := dict }}
-{{- if $isNLB }}
-{{- $_ := set $defaults "proxyProtocol" (dict "optional" false) }}
-{{- $_ := set $defaults "healthCheck" (dict "path" "/healthz") }}
-{{- end }}
-
-{{- /* A client-supplied X-Forwarded-For is never trusted. Envoy terminates the
-       connection from the NLB, which the PROXY protocol has already set to the real
-       client IP, so it is the edge: drop the untrusted client headers at the listener
-       before envoy reads them and it rebuilds X-Forwarded-For from that address alone.
-       A gateway fronted by a CDN needs a different answer, because the CDN legitimately
-       supplies these headers. Configure that per gateway once the trust boundary that
-       proves a request really came through the CDN is in place. */}}
-{{- $untrustedClientHeaders := $ctp.untrustedClientHeaders | default list }}
-{{- if and $isNLB $untrustedClientHeaders }}
-{{- $_ := set $defaults "headers" (dict "earlyRequestHeaders" (dict "remove" $untrustedClientHeaders)) }}
-{{- end }}
-
-{{- /* Merge user values on top of defaults (user values win) */}}
-{{- $spec := mergeOverwrite $defaults (deepCopy (omit $ctp "enabled" "untrustedClientHeaders")) }}
-
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
@@ -40,7 +18,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ $gateway.name }}
-  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB)) }}
+  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB "untrustedClientHeaders" ($ctp.untrustedClientHeaders | default list))) }}
   {{- . | nindent 2 }}
   {{- end }}
 {{- end }}

@@ -5,6 +5,9 @@
 {{- range $lsKey, $ls := $gateway.listenerSets }}
 {{- if $ls.enabled }}
 {{- $ctp := $ls.clientTrafficPolicy | default dict }}
+{{- /* A listener set terminates client connections on the same NLB as its parent, so it
+       inherits the gateway's untrusted client headers unless it names its own. */}}
+{{- $untrustedClientHeaders := dig "clientTrafficPolicy" "untrustedClientHeaders" (dig "clientTrafficPolicy" "untrustedClientHeaders" list $gateway) $ls }}
 {{- /* A Gateway-level policy without sectionName does not reliably cascade to
        ListenerSet listeners (envoyproxy/gateway#9409), so each listener set gets its own
        policy whenever the parent gateway has one. */}}
@@ -23,7 +26,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: ListenerSet
       name: {{ include "listenerSet.name" (dict "gateway" $gateway "listenerSetKey" $lsKey "listenerSet" $ls) }}
-  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB)) }}
+  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB "untrustedClientHeaders" $untrustedClientHeaders)) }}
   {{- . | nindent 2 }}
   {{- end }}
 {{- end }}
