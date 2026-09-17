@@ -1,6 +1,7 @@
 package basic
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
+	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -49,6 +51,7 @@ echo "Content-Type: text/plain"
 echo
 echo "x-forwarded-for=${HTTP_X_FORWARDED_FOR}"
 echo "x-real-ip=${HTTP_X_REAL_IP}"
+env | grep '^HTTP_'
 EOS
 chmod +x /tmp/www/cgi-bin/echo
 exec httpd -f -v -p 8080 -h /tmp/www
@@ -86,6 +89,15 @@ func gatewayClientIPBehaviorTest() {
 		}
 	})
 
+	// Registered last so it runs first: whether the strip reached the proxies at all is
+	// only answerable from the live listener config, and the probe teardown above would
+	// not affect it, but the ordering keeps the dump next to the failure in the output.
+	DeferCleanup(func() {
+		if CurrentSpecReport().Failed() {
+			dumpClientIPDiagnostics(wcClient)
+		}
+	})
+
 	By("waiting for the probe backend to become ready")
 	Eventually(func() (int32, error) {
 		probe := &appsv1.Deployment{}
@@ -104,6 +116,7 @@ func gatewayClientIPBehaviorTest() {
 	By("sending a request with a forged X-Forwarded-For through the gateway LoadBalancer")
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 	observed := map[string]string{}
+	rawBody := ""
 	Eventually(func() error {
 		hostname, err := getGatewayLBHostname(wcClient)
 		if err != nil {
@@ -130,28 +143,115 @@ func gatewayClientIPBehaviorTest() {
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("expected 200 from the probe, got %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
-		observed = parseProbeResponse(string(body))
+		rawBody = string(body)
+		observed = parseProbeResponse(rawBody)
 		return nil
 	}).
 		WithTimeout(10 * time.Minute).
 		WithPolling(15 * time.Second).
 		Should(Succeed())
 
-	logger.Log("Probe backend received x-forwarded-for=%q x-real-ip=%q",
-		observed["x-forwarded-for"], observed["x-real-ip"])
+	logger.Log("Probe backend received:\n%s", strings.TrimSpace(rawBody))
 
-	By("checking envoy rebuilt X-Forwarded-For from the connection source address")
-	addresses := strings.Split(observed["x-forwarded-for"], ",")
-	Expect(addresses).To(HaveLen(1),
-		"expected a single address in X-Forwarded-For, got %q", observed["x-forwarded-for"])
+	xff := observed["x-forwarded-for"]
+	addresses := []string{}
+	for _, address := range strings.Split(xff, ",") {
+		addresses = append(addresses, strings.TrimSpace(address))
+	}
 
-	clientIP := strings.TrimSpace(addresses[0])
-	Expect(clientIP).NotTo(Equal(forgedClientIP), "the forged X-Forwarded-For reached the backend")
-	Expect(net.ParseIP(clientIP)).NotTo(BeNil(),
-		"expected X-Forwarded-For to hold an IP address, got %q", clientIP)
-
-	By("checking the forged X-Real-IP was dropped")
+	// Assert the forged value first. It is the property the chart actually guarantees, and
+	// checking the count first reports "expected a single address" for what is really
+	// "the strip did not happen", which sends the next reader down the wrong path.
+	By("checking the forged client identity headers did not reach the backend")
+	Expect(addresses).NotTo(ContainElement(forgedClientIP),
+		"the forged X-Forwarded-For reached the backend, so the header was appended to rather than rebuilt: %q", xff)
 	Expect(observed["x-real-ip"]).To(BeEmpty(), "the forged X-Real-IP reached the backend")
+
+	// Everything the client sent is dropped, including any hop a forward proxy in front of
+	// the test added, so envoy's own append is the only address left.
+	By("checking envoy rebuilt X-Forwarded-For from the connection source address")
+	Expect(addresses).To(HaveLen(1),
+		"expected a single address in X-Forwarded-For, got %q", xff)
+	Expect(net.ParseIP(addresses[0])).NotTo(BeNil(),
+		"expected X-Forwarded-For to hold an IP address, got %q", addresses[0])
+}
+
+// dumpClientIPDiagnostics logs what determines whether the header strip was programmed onto
+// the proxies at all: the policy as stored and as reconciled, and whether the live listener
+// config carries the early header mutation the chart asks for. A policy can report Accepted
+// while its settings never reach the listener, so the CR alone does not answer this.
+func dumpClientIPDiagnostics(wcClient *client.Client) {
+	ctp := &unstructured.Unstructured{}
+	ctp.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "gateway.envoyproxy.io",
+		Version: "v1alpha1",
+		Kind:    "ClientTrafficPolicy",
+	})
+	if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
+		Name:      "gateway-giantswarm-default",
+		Namespace: clientIPProbeNamespace,
+	}, ctp); err != nil {
+		logger.Log("Diagnostics: could not read the ClientTrafficPolicy: %v", err)
+	} else {
+		spec, _ := json.Marshal(ctp.Object["spec"])
+		status, _ := json.Marshal(ctp.Object["status"])
+		logger.Log("Diagnostics: ClientTrafficPolicy spec: %s", spec)
+		logger.Log("Diagnostics: ClientTrafficPolicy status: %s", status)
+	}
+
+	proxyPods, err := gatewayProxyPods(wcClient)
+	if err != nil {
+		logger.Log("Diagnostics: could not list the envoy proxy pods: %v", err)
+		return
+	}
+
+	pod := proxyPods.Items[0]
+	container := ""
+	for _, c := range pod.Spec.Containers {
+		if strings.HasPrefix(c.Image, "gsoci.azurecr.io/giantswarm/envoy") {
+			container = c.Name
+			break
+		}
+	}
+	if container == "" {
+		logger.Log("Diagnostics: no envoy container found in pod %s/%s", pod.Namespace, pod.Name)
+		return
+	}
+
+	// The admin interface listens on localhost only, so the dump has to be fetched from
+	// inside the container. Fall back to wget in case the image carries no curl.
+	dumpURL := "http://localhost:19000/config_dump?resource=dynamic_listeners"
+	stdout, stderr, err := wcClient.ExecInPod(state.GetContext(), pod.Name, pod.Namespace, container,
+		[]string{"sh", "-c", fmt.Sprintf("curl -s '%s' || wget -q -O - '%s'", dumpURL, dumpURL)})
+	if err != nil {
+		logger.Log("Diagnostics: could not dump the envoy config from %s/%s: %v (stderr: %s)",
+			pod.Namespace, pod.Name, err, strings.TrimSpace(stderr))
+		return
+	}
+
+	logger.Log("Diagnostics: listener config from %s/%s is %d bytes, earlyHeaderMutation present: %t, useRemoteAddress present: %t",
+		pod.Namespace, pod.Name, len(stdout),
+		strings.Contains(stdout, "early_header_mutation") || strings.Contains(stdout, "earlyHeaderMutation"),
+		strings.Contains(stdout, "use_remote_address") || strings.Contains(stdout, "useRemoteAddress"))
+
+	for _, marker := range []string{"earlyHeaderMutation", "early_header_mutation", "useRemoteAddress", "use_remote_address"} {
+		if excerpt := configExcerpt(stdout, marker, 600); excerpt != "" {
+			logger.Log("Diagnostics: listener config around %q:\n%s", marker, excerpt)
+			break
+		}
+	}
+}
+
+// configExcerpt returns a window of the config dump around the first occurrence of marker,
+// so the log carries the relevant part of a dump that runs to megabytes.
+func configExcerpt(dump, marker string, window int) string {
+	index := strings.Index(dump, marker)
+	if index < 0 {
+		return ""
+	}
+	start := max(index-window, 0)
+	end := min(index+window, len(dump))
+	return dump[start:end]
 }
 
 // parseProbeResponse turns the probe's "key=value" lines into a map.
