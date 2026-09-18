@@ -160,20 +160,25 @@ func gatewayKarpenterProxyPodTests() {
 	workers, err := readyWorkerNodes(wcClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	// The anti-affinity is a preference, not a requirement, so the spread can only
-	// be asserted when there are at least as many worker nodes as proxy pods.
-	// Otherwise the scheduler has no choice but to stack them.
-	if len(workers) < len(proxyPods.Items) {
-		logger.Log("Skipping spread check: %d ready worker nodes for %d proxy pods", len(workers), len(proxyPods.Items))
-		return
-	}
-
 	nodesByName := map[string]int{}
 	for _, pod := range proxyPods.Items {
 		nodesByName[pod.Spec.NodeName]++
 	}
 	logger.Log("%d envoy proxy pods spread over %d of %d worker nodes", len(proxyPods.Items), len(nodesByName), len(workers))
-	Expect(nodesByName).To(HaveLen(len(proxyPods.Items)), "expected each envoy proxy pod on its own node")
+
+	// Reported, not asserted. The chart asks for one proxy per node with a
+	// preferred anti-affinity term, which the spec assertion above pins, but the
+	// scheduler is free to stack the pods: it does so whenever the nodes it would
+	// spread over are not schedulable yet, which is the normal case here since
+	// Karpenter provisions its node after the proxies are already placed, and
+	// nothing moves them afterwards. Failing on the outcome would make this spec
+	// depend on node timing rather than on anything the chart controls.
+	if len(nodesByName) < len(proxyPods.Items) {
+		entry := fmt.Sprintf("%d envoy proxy pods on %d nodes (%v), with %d ready workers",
+			len(proxyPods.Items), len(nodesByName), nodesByName, len(workers))
+		logger.Log("Envoy proxy pods are not spread one per node: %s", entry)
+		AddReportEntry("envoy proxy pod spread", entry)
+	}
 }
 
 // gatewayProxyPods returns the envoy proxy pods of the giantswarm-default gateway.
