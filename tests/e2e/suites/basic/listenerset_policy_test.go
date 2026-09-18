@@ -18,11 +18,16 @@ import (
 // targets a Gateway, with no sectionName, also applies to listeners contributed by
 // a ListenerSet.
 //
-// Envoy Gateway does not cascade today: envoyproxy/gateway#9409 and #9242 are both
-// open. This is pinned rather than merely logged so that an Envoy Gateway bump that
+// It does, as observed on Envoy Gateway 1.10: every 443 listener collapses into a
+// single Envoy listener and the gateway-wide response override lands on all of it,
+// while a ListenerSet that carries its own policy still serves its own error page.
+// envoyproxy/gateway#9409 and #9242 are both still open, but they describe policies
+// attaching through routes, which is a different question from this one.
+//
+// This is pinned rather than merely logged so that an Envoy Gateway bump that
 // changes the behaviour fails loudly, because the answer decides whether customers
 // need one policy per ListenerSet or can rely on a gateway-wide one.
-const gatewayPolicyCascadesToListenerSets = false
+const gatewayPolicyCascadesToListenerSets = true
 
 // listenerSetPolicyCascadeTests sends the same /status/503 request through three
 // listeners and compares the error page each one produces. Only the listener
