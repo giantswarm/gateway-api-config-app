@@ -12,7 +12,9 @@ import (
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -37,6 +39,23 @@ const (
 // assertions below would pass on an ASG-only cluster and prove nothing.
 func gatewayKarpenterNodeTests() {
 	wcClient, _ := state.GetFramework().WC(state.GetCluster().Name)
+
+	// Waiting 20 minutes for nodes that can never appear is the wrong failure. A
+	// cluster built without the Karpenter node pool, which is what happens when the
+	// suite runs against a pre-built cluster (E2E_WC_NAME/E2E_WC_NAMESPACE) instead
+	// of standing one up from test_data/cluster_values.yaml, has no NodePool at all.
+	By("checking the cluster declares a Karpenter node pool")
+	nodePools := &unstructured.UnstructuredList{}
+	nodePools.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "karpenter.sh",
+		Version: "v1",
+		Kind:    "NodePoolList",
+	})
+	err := wcClient.List(state.GetContext(), nodePools)
+	Expect(err).NotTo(HaveOccurred(),
+		"cannot list Karpenter NodePools, so Karpenter is not installed on this cluster")
+	Expect(nodePools.Items).NotTo(BeEmpty(),
+		"the cluster has no Karpenter NodePool, check the karpenter node pool in test_data/cluster_values.yaml was applied")
 
 	By("checking the cluster has Karpenter-provisioned nodes")
 	Eventually(func() error {
