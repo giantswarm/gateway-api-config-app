@@ -78,6 +78,8 @@ gateways:
     # schema as gateways.<k>.listeners.
     # The ListenerSet is named <gateway.name>-<key> unless name is set; supporting
     # resources are always named gateway-<gateway.name>-<key>-<listener>.
+    # Each entry accepts errorPages and backendTrafficPolicy of its own, which override
+    # the gateway-wide ones for its listeners; without them the gateway policy applies.
     # Example:
     #   listenerSets:
     #     extra:
@@ -144,6 +146,10 @@ gateways:
     # BackendTrafficPolicy spec and are merged into the same policy as the error
     # pages responseOverride (Envoy Gateway allows only one policy per Gateway).
     # Set enabled: false to suppress the policy even when error pages are enabled.
+    # The policy also covers listeners contributed by ListenerSets attached to this
+    # gateway, so a gateway-wide policy does not have to be repeated per listener set.
+    # A listener set that sets its own backendTrafficPolicy or errorPages overrides it
+    # for its own listeners.
     # Available fields (see kubectl explain backendtrafficpolicy.spec): circuitBreaker,
     # rateLimit, retry, loadBalancer, healthCheck, timeout, ...
     # Example:

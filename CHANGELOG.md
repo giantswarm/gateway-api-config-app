@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Document that a gateway-wide `BackendTrafficPolicy` also covers listener set listeners.
 - Move the shared listener rendering into chart helpers: listener entry, base domain, `Certificate`, `DNSEndpoint`, `ClientTrafficPolicy` spec and the gatewayClass error pages lookup. Rendered output is unchanged.
 
 ### Fixed
