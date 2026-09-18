@@ -394,7 +394,8 @@ true
 
 {{/*
 ClientTrafficPolicy spec body: NLB defaults with the user's values merged on top.
-Takes: dict with "clientTrafficPolicy" (the user block) and "isNLB"
+Takes: dict with "clientTrafficPolicy" (the user block), "isNLB" and
+"untrustedClientHeaders" (the effective list, which callers resolve).
 Returns empty when there is nothing to render, so callers can guard with "with".
 */}}
 {{- define "clientTrafficPolicy.spec" -}}
@@ -402,8 +403,15 @@ Returns empty when there is nothing to render, so callers can guard with "with".
 {{- if .isNLB }}
 {{- $_ := set $defaults "proxyProtocol" (dict "optional" false) }}
 {{- $_ := set $defaults "healthCheck" (dict "path" "/healthz") }}
+{{- /* A client-supplied X-Forwarded-For is never trusted. Behind an NLB envoy terminates
+       the client connection itself, and the PROXY protocol has already set its source to
+       the real client IP, so drop the untrusted client headers at the listener before
+       envoy reads them and it rebuilds X-Forwarded-For from that address alone. */}}
+{{- if .untrustedClientHeaders }}
+{{- $_ := set $defaults "headers" (dict "earlyRequestHeaders" (dict "remove" .untrustedClientHeaders)) }}
 {{- end }}
-{{- $spec := mergeOverwrite $defaults (deepCopy (omit (.clientTrafficPolicy | default dict) "enabled")) }}
+{{- end }}
+{{- $spec := mergeOverwrite $defaults (deepCopy (omit (.clientTrafficPolicy | default dict) "enabled" "untrustedClientHeaders")) }}
 {{- if $spec }}
 {{- toYaml $spec }}
 {{- end }}

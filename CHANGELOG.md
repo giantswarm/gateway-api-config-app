@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener. Set it to `[]` to forward client-supplied values instead, which a gateway fronted by a CDN needs.
+- Assert in the e2e tests that the `ClientTrafficPolicy` drops the client identity headers and is Accepted by Envoy Gateway.
+- Add an e2e test that sends a forged `X-Forwarded-For` through the gateway LoadBalancer to a probe backend and asserts envoy rebuilt the header from the connection source address instead of forwarding what the client sent.
+
+### Changed
+
+- For CAPA gateways using an AWS NLB, drop `x-forwarded-for` and `x-real-ip` from incoming requests via `headers.earlyRequestHeaders`, so envoy rebuilds `X-Forwarded-For` from the connection source address that the PROXY protocol has already set to the real client IP. Previously a client-supplied `X-Forwarded-For` was forwarded verbatim with the real address appended after it, letting a client dictate the first entry and, through it, whatever a backend derives from the header.
 - Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
 - Cover `ListenerSets` in the e2e suite: a chart-managed and a tenant-owned one, their cert-manager and external-dns integration, end-to-end HTTPS, and whether a gateway policy cascades to listener set listeners.
 
