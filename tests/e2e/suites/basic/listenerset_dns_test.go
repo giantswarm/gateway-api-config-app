@@ -77,69 +77,74 @@ func externalDNSArgs() []string {
 func listenerSetDNSTests() {
 	zone := wcZone()
 
-	// Without this the assertions below would pass on any hostname at all. A
-	// wildcard in the zone (dns-operator-route53 creates one for clusters with an
-	// ingress controller or a wildcard-cname-target annotation) makes the whole
-	// section vacuous, so fail loudly rather than pass silently.
-	By("checking the zone has no wildcard record that would make DNS assertions vacuous")
 	// Resolve the nameservers first: a failure to reach them must surface as its
-	// own error, not as a nonce that "did not resolve".
+	// own error, not as a hostname that "did not resolve".
 	resolver, err := authoritativeResolver(zone)
 	Expect(err).NotTo(HaveOccurred())
 
-	nonce := fmt.Sprintf("e2e-no-such-record-%d.%s", time.Now().UnixNano(), zone)
-	ctx, cancel := context.WithTimeout(state.GetContext(), dnsQueryTimeout)
-	addrs, err := resolver.LookupHost(ctx, nonce)
-	cancel()
-	Expect(err).To(HaveOccurred(),
-		"%s resolved to %v, so this zone has a wildcard record and no DNS assertion here proves anything", nonce, addrs)
-
-	// A wildcard CNAME whose target lives outside the zone (what
-	// dns-operator-route53 writes for wildcard-cname-target) answers with the CNAME
-	// alone, and the authoritative nameserver above does not recurse, so the lookup
-	// fails and the check above passes on a zone that does have a wildcard. Ask for
-	// the CNAME itself as well. resolveInZone chases those hops manually, so
-	// expectResolvesToGatewayLB below would otherwise succeed for any name at all.
-	ctx, cancel = context.WithTimeout(state.GetContext(), dnsQueryTimeout)
-	cname, cnameErr := resolver.LookupCNAME(ctx, nonce)
-	cancel()
-	if cnameErr == nil {
-		Expect(strings.TrimSuffix(cname, ".")).To(Equal(strings.TrimSuffix(nonce, ".")),
-			"%s is a CNAME for %s, so this zone has a wildcard record and no DNS assertion here proves anything", nonce, cname)
+	// Every Giant Swarm cluster zone has a wildcard: dns-operator-route53 writes
+	// *.<zone> as a CNAME to ingress.<zone>, which is this gateway's own load
+	// balancer. "Resolves to the gateway load balancer" is therefore true of every
+	// name in the zone and proves nothing on its own. Ask the wildcard what it
+	// answers, and require each hostname below to answer with a record of its own.
+	By("checking what the zone wildcard answers, so the assertions below stay meaningful")
+	wildcard := zoneWildcardAnswer(resolver, zone)
+	if wildcard.target != "" {
+		logger.Log("Zone %s has a wildcard answering with CNAME %s", zone, wildcard.target)
 	}
+	Expect(wildcard.target != "" || len(wildcard.addrs) == 0).To(BeTrue(),
+		"the zone wildcard answers %v without a CNAME, so a record of its own is indistinguishable from the wildcard and no DNS assertion here proves anything", wildcard.addrs)
 
 	lbAddrs := gatewayLBAddresses()
 	logger.Log("Gateway load balancer addresses: %v", lbAddrs)
 
 	// The gateway apex is the control request of the policy cascade matrix, so
-	// check it here where a DNS failure reads as a DNS failure.
+	// check it here where a DNS failure reads as a DNS failure. It is also the
+	// wildcard's own target, so there is nothing to distinguish it from.
 	By("checking the gateway apex resolves to the gateway load balancer")
-	expectResolvesToGatewayLB(zone, gatewayHostname(), lbAddrs)
+	expectResolvesToGatewayLB(zone, gatewayHostname(), lbAddrs, wildcard.target)
 
 	By("checking the chart ListenerSet hostname resolves to the gateway load balancer")
-	expectResolvesToGatewayLB(zone, chartListenerSetHostname(), lbAddrs)
+	expectResolvesToGatewayLB(zone, chartListenerSetHostname(), lbAddrs, wildcard.target)
 
 	By("checking the tenant ListenerSet hostname resolves to the gateway load balancer")
-	expectResolvesToGatewayLB(zone, tenantListenerSetHostname(), lbAddrs)
+	expectResolvesToGatewayLB(zone, tenantListenerSetHostname(), lbAddrs, wildcard.target)
 
 	// The registry record shape depends on installation-level txtPrefix/txtOwnerId
 	// and on whether the legacy or the new TXT format is in use, so it is logged
 	// for diagnosis rather than asserted.
-	logTXTRegistryRecords(zone, chartListenerSetHostname())
-	logTXTRegistryRecords(zone, tenantListenerSetHostname())
+	logTXTRegistryRecords(zone, chartListenerSetHostname(), wildcard.target)
+	logTXTRegistryRecords(zone, tenantListenerSetHostname(), wildcard.target)
 }
 
 // expectResolvesToGatewayLB waits until host resolves to an address set that
-// intersects the gateway load balancer's own addresses.
+// intersects the gateway load balancer's own addresses, through a record of its
+// own rather than through the zone wildcard.
 //
-// Intersection rather than a CNAME comparison: external-dns' AWS provider writes a
-// Route53 ALIAS A record for an in-account ELB (a CNAME only with
-// --aws-prefer-cname), and alias records flatten, so LookupCNAME just echoes the
+// Intersection rather than a CNAME comparison for the addresses: external-dns' AWS
+// provider writes a Route53 ALIAS A record for an in-account ELB (a CNAME only with
+// --aws-prefer-cname), and alias records flatten, so the canonical name is just the
 // queried name back. Matching on addresses covers both shapes, and it is the
 // stronger claim: it proves external-dns walked ListenerSet -> parentRef ->
 // Gateway -> Service to compute the target.
-func expectResolvesToGatewayLB(zone, host string, lbAddrs []string) {
+//
+// wildcardTarget is what the zone wildcard resolves to, or "" when the zone has no
+// wildcard. A name the wildcard answers for has that as its canonical name, while a
+// name external-dns manages resolves to the load balancer directly, so the two are
+// told apart without asking Route53 for its record set. The wildcard's own target
+// is exempt: it is a real record, and it is what everything else is compared to.
+func expectResolvesToGatewayLB(zone, host string, lbAddrs []string, wildcardTarget string) {
 	Eventually(func() error {
+		if wildcardTarget != "" && !equalHost(host, wildcardTarget) {
+			canonical, err := canonicalName(zone, host)
+			if err != nil {
+				return err
+			}
+			if equalHost(canonical, wildcardTarget) {
+				return fmt.Errorf("%s is answered by the zone wildcard (canonical name %s), so external-dns has not created a record of its own for it", host, canonical)
+			}
+		}
+
 		addrs, err := resolveInZone(zone, host)
 		if err != nil {
 			return err
@@ -157,6 +162,59 @@ func expectResolvesToGatewayLB(zone, host string, lbAddrs []string) {
 		WithTimeout(dnsRecordTimeout).
 		WithPolling(dnsRecordPolling).
 		Should(Succeed())
+}
+
+// wildcardAnswer is what an arbitrary unused name in the zone resolves to: the
+// canonical name a wildcard sends it to, and the addresses it ends up with. Both
+// are empty when the zone has no wildcard.
+type wildcardAnswer struct {
+	target string
+	addrs  []string
+}
+
+// zoneWildcardAnswer probes the zone with a name that cannot exist.
+func zoneWildcardAnswer(resolver *net.Resolver, zone string) wildcardAnswer {
+	nonce := fmt.Sprintf("e2e-no-such-record-%d.%s", time.Now().UnixNano(), zone)
+
+	answer := wildcardAnswer{}
+
+	ctx, cancel := context.WithTimeout(state.GetContext(), dnsQueryTimeout)
+	cname, err := resolver.LookupCNAME(ctx, nonce)
+	cancel()
+	if err == nil && !equalHost(cname, nonce) {
+		answer.target = strings.TrimSuffix(cname, ".")
+	}
+
+	ctx, cancel = context.WithTimeout(state.GetContext(), dnsQueryTimeout)
+	addrs, err := resolver.LookupHost(ctx, nonce)
+	cancel()
+	if err == nil {
+		answer.addrs = addrs
+	}
+
+	return answer
+}
+
+// canonicalName returns the name host ends up at after any CNAME the zone's own
+// nameservers return, which is host itself for an ALIAS or plain A record.
+func canonicalName(zone, host string) (string, error) {
+	resolver, err := authoritativeResolver(zone)
+	if err != nil {
+		return "", err
+	}
+
+	ctx, cancel := context.WithTimeout(state.GetContext(), dnsQueryTimeout)
+	defer cancel()
+	cname, err := resolver.LookupCNAME(ctx, host)
+	if err != nil {
+		return "", fmt.Errorf("looking up the canonical name of %s: %w", host, err)
+	}
+	return strings.TrimSuffix(cname, "."), nil
+}
+
+// equalHost compares two host names ignoring case and the root dot.
+func equalHost(a, b string) bool {
+	return strings.EqualFold(strings.TrimSuffix(a, "."), strings.TrimSuffix(b, "."))
 }
 
 // gatewayLBAddresses resolves the gateway's AWS load balancer hostname through the
@@ -277,7 +335,7 @@ func inZone(host, zone string) bool {
 
 // logTXTRegistryRecords records whatever external-dns left in its TXT registry for
 // a hostname. Logged only, never asserted, see listenerSetDNSTests.
-func logTXTRegistryRecords(zone, host string) {
+func logTXTRegistryRecords(zone, host, wildcardTarget string) {
 	resolver, err := authoritativeResolver(zone)
 	if err != nil {
 		logger.Log("Could not look up TXT registry records for %s: %v", host, err)
@@ -290,6 +348,13 @@ func logTXTRegistryRecords(zone, host string) {
 		cancel()
 		if err != nil || len(records) == 0 {
 			continue
+		}
+		// The zone wildcard answers every name, so without this the records of the
+		// wildcard's target would be logged as if they belonged to this hostname.
+		if wildcardTarget != "" && !equalHost(name, wildcardTarget) {
+			if canonical, err := canonicalName(zone, name); err == nil && equalHost(canonical, wildcardTarget) {
+				continue
+			}
 		}
 		logger.Log("external-dns TXT registry %s: %v", name, records)
 		AddReportEntry("external-dns TXT registry "+name, strings.Join(records, " "))
