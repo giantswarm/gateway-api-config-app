@@ -144,9 +144,9 @@ gateways:
     # supplies these headers: set untrustedClientHeaders to [] there and configure
     # clientIPDetection for it explicitly.
     clientTrafficPolicy:
-      untrustedClientHeaders:
-        - x-forwarded-for
-        - x-real-ip
+      untrustedClientHeaders: []
+        # - x-forwarded-for
+        # - x-real-ip
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
     errorPages: {}
