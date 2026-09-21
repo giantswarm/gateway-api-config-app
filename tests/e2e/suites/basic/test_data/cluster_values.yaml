@@ -1,6 +1,18 @@
 # Values provided here merge on top of the default CAPA values found in
 # https://github.com/giantswarm/cluster-standup-teardown
 global:
+  apps:
+    externalDns:
+      values:
+        # gateway-httproute + --gateway-listener-sets let external-dns walk
+        # ListenerSet -> parentRef -> Gateway -> Service, which is what the
+        # tenant-owned ListenerSet fixture exercises. Not a KaaS default yet.
+        sources:
+          - service
+          - crd
+          - gateway-httproute
+        enableGatewayListenerSets: true
+
   connectivity:
     certManager:
       useDnsChallenges: true
