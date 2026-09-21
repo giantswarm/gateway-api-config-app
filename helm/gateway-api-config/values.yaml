@@ -142,9 +142,12 @@ gateways:
     # rebuilt from the connection source address that the PROXY protocol has set to the
     # real client IP. Only applied to CAPA gateways using an AWS NLB, where envoy
     # terminates the client connection itself.
-    # A gateway fronted by a CDN needs a different setup, since the CDN legitimately
-    # supplies these headers: set untrustedClientHeaders to [] there and configure
-    # clientIPDetection for it explicitly.
+    # Empty by default, because dropping these headers changes what every backend behind
+    # the gateway sees. Set it on installations where envoy is the only edge: a client can
+    # otherwise dictate the first X-Forwarded-For entry and, through it, whatever a backend
+    # derives from the header.
+    # Leave it empty for a gateway fronted by a CDN, which legitimately supplies these
+    # headers, and configure clientIPDetection for it explicitly instead.
     clientTrafficPolicy:
       untrustedClientHeaders: []
         # - x-forwarded-for

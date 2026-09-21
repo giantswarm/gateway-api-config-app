@@ -27,6 +27,12 @@ apps:
           gateways:
             default:
               dnsName: ingress
+              # Opt in to the header strip: it ships empty so existing installations keep
+              # forwarding what the client sent, so the suite has to ask for it to cover it.
+              clientTrafficPolicy:
+                untrustedClientHeaders:
+                  - x-forwarded-for
+                  - x-real-ip
               allowedListeners:
                 enabled: true
                 namespaces:
