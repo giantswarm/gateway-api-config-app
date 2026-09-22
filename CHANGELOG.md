@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Chart metadata: add `io.giantswarm.application.managed` annotation (`"true"`).
+- Chart metadata: add `keywords`.
 - Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
 - Cover `ListenerSets` in the e2e suite: a chart-managed and a tenant-owned one, their cert-manager and external-dns integration, end-to-end HTTPS, and whether a gateway policy cascades to listener set listeners.
 
