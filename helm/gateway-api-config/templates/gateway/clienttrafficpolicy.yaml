@@ -4,6 +4,7 @@
 {{- $isNLB := include "gateway.isNLB" (dict "gateway" $gateway "root" $) }}
 {{- $shouldRender := ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") }}
 {{- if $shouldRender }}
+
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: ClientTrafficPolicy
@@ -17,7 +18,7 @@ spec:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: {{ $gateway.name }}
-  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB)) }}
+  {{- with (include "clientTrafficPolicy.spec" (dict "clientTrafficPolicy" $ctp "isNLB" $isNLB "untrustedClientHeaders" ($ctp.untrustedClientHeaders | default list))) }}
   {{- . | nindent 2 }}
   {{- end }}
 {{- end }}

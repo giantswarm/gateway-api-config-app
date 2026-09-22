@@ -40,7 +40,7 @@ Default configuration for Envoy Gateway
 | gateways.default.allowedListeners.namespaces.selector | object | `{}` |  |
 | gateways.default.backendTrafficPolicy | object | `{}` |  |
 | gateways.default.className | string | `"giantswarm-default"` |  |
-| gateways.default.clientTrafficPolicy | object | `{}` |  |
+| gateways.default.clientTrafficPolicy.untrustedClientHeaders | list | `[]` |  |
 | gateways.default.dnsName | string | `"gateway"` |  |
 | gateways.default.enabled | bool | `true` |  |
 | gateways.default.envoyProxy.enabled | bool | `true` |  |

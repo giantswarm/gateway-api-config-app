@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener before envoy reads them, so envoy rebuilds `X-Forwarded-For` from the connection source address that the PROXY protocol has already set to the real client IP. Without it a client-supplied `X-Forwarded-For` is forwarded verbatim with the real address appended after it, letting a client dictate the first entry and, through it, whatever a backend derives from the header. Empty by default, so existing installations are unaffected until they opt in; applied only to CAPA gateways using an AWS NLB, and inherited by a listener set from its parent gateway unless it names its own list.
+- Assert in the e2e tests that the `ClientTrafficPolicy` drops the client identity headers and is Accepted by Envoy Gateway.
+- Add an e2e test that sends a forged `X-Forwarded-For` through the gateway LoadBalancer to a probe backend and asserts envoy rebuilt the header from the connection source address instead of forwarding what the client sent.
+
+### Changed
+
 - Chart metadata: add `io.giantswarm.application.managed` annotation (`"true"`).
 - Chart metadata: add `keywords`.
 - Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
