@@ -11,6 +11,12 @@ apps:
         values:
           gatewayClasses:
             default:
+              # Overrides a provider default the chart also computes for each gateway, so the
+              # suite covers the class value being inherited instead of overridden by it.
+              envoyProxy:
+                envoyService:
+                  annotations:
+                    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "3"
               errorPages:
                 enabled: true
                 statusCodes:

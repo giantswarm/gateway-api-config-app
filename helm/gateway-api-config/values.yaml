@@ -36,6 +36,9 @@ gatewayClasses:
       # Controls how this GatewayClass-level EnvoyProxy merges with EnvoyGateway defaults
       # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). Leave unset to fully
       # replace EnvoyGateway defaults; set to StrategicMerge or JSONMerge to extend them.
+      # Settings here take precedence over the provider defaults the chart computes for each
+      # gateway of this class (e.g. AWS NLB annotations, externalTrafficPolicy, shutdown), as
+      # long as the gateway EnvoyProxy merges onto this one. Gateway values still win.
       mergeType: ""
       envoyDeployment: {}
       envoyService: {}

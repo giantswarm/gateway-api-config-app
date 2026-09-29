@@ -46,6 +46,7 @@ func TestBasic(t *testing.T) {
 			It("should have the gateway resources correctly configured", func() {
 				gatewayGatewayTests()
 				gatewayEnvoyProxyTests()
+				gatewayEnvoyProxyInheritanceTests()
 				gatewayClientTrafficPolicyTests()
 				gatewayBackendTrafficPolicyTests()
 				gatewayIssuerTests()
@@ -54,6 +55,7 @@ func TestBasic(t *testing.T) {
 			})
 			It("should have the gateway correctly deployed", func() {
 				gatewayDeploymentTests()
+				gatewayServiceInheritanceTests()
 				gatewayHPAAndPDBTests()
 				gatewayHTTPRedirectBehaviorTest()
 				gatewayHealthCheckBehaviorTest()

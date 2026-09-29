@@ -58,6 +58,10 @@ Gateway Service annotations
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags" (printf "gateway.envoyproxy.io/owning-gateway-name=%s,gateway.envoyproxy.io/owning-gateway-namespace=%s" .gateway.name .root.Release.Namespace) }}
 {{- end }}
 
+{{- /* Leave out the defaults the GatewayClass EnvoyProxy already sets, so they are inherited */}}
+{{- range $k, $_ := dig "envoyService" "annotations" dict (.inherited | default dict) }}
+{{- $_ := unset $annotations $k }}
+{{- end }}
 {{- $annotations = mergeOverwrite $annotations (deepCopy (default dict $service.annotations)) }}
 {{- $annotations | toYaml }}
 {{- end }}
@@ -67,10 +71,10 @@ Gateway Service loadBalancerClass
 */}}
 {{- define "service.loadBalancerClass" -}}
 {{- $service := .gateway.service }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
-{{- default "service.k8s.aws/nlb" $service.loadBalancerClass }}
-{{- else }}
-{{- default "" $service.loadBalancerClass }}
+{{- if $service.loadBalancerClass }}
+{{- $service.loadBalancerClass }}
+{{- else if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) (not (dig "envoyService" "loadBalancerClass" "" (.inherited | default dict))) }}
+{{- "service.k8s.aws/nlb" }}
 {{- end }}
 {{- end }}
 
@@ -79,10 +83,10 @@ Gateway Service externalTrafficPolicy
 */}}
 {{- define "service.externalTrafficPolicy" -}}
 {{- $service := .gateway.service }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
-{{- default "Local" $service.externalTrafficPolicy }}
-{{- else }}
-{{- default "Cluster" $service.externalTrafficPolicy }}
+{{- if $service.externalTrafficPolicy }}
+{{- $service.externalTrafficPolicy }}
+{{- else if not (dig "envoyService" "externalTrafficPolicy" "" (.inherited | default dict)) }}
+{{- ternary "Local" "Cluster" (and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway)) }}
 {{- end }}
 {{- end }}
 
@@ -95,7 +99,10 @@ Gateway EnvoyService defaults - computes provider-specific envoyService configur
 {{- if $loadBalancerClass }}
 {{- $_ := set $envoyService "loadBalancerClass" $loadBalancerClass }}
 {{- end }}
-{{- $_ := set $envoyService "externalTrafficPolicy" (include "service.externalTrafficPolicy" .) }}
+{{- $externalTrafficPolicy := (include "service.externalTrafficPolicy" .) }}
+{{- if $externalTrafficPolicy }}
+{{- $_ := set $envoyService "externalTrafficPolicy" $externalTrafficPolicy }}
+{{- end }}
 {{- $_ := set $envoyService "annotations" ((include "service.annotations" .) | fromYaml) }}
 {{- if .gateway.service.labels }}
 {{- $_ := set $envoyService "labels" ((tpl (.gateway.service.labels | toYaml | toString) .root) | fromYaml) }}
@@ -128,6 +135,9 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 {{- $_ := set $shutdown "drainTimeout" "200s" }}
 {{- $_ := set $shutdown "minDrainDuration" "180s" }}
 {{- end }}
+{{- range $k, $_ := dig "shutdown" dict (.inherited | default dict) }}
+{{- $_ := unset $shutdown $k }}
+{{- end }}
 {{- $shutdown | toYaml }}
 {{- end }}
 
@@ -150,14 +160,36 @@ maps to a single envoy.
         (dict "key" "gateway.envoyproxy.io/owning-gateway-namespace" "operator" "In" "values" (list .namespace))
       ))
       "topologyKey" "kubernetes.io/hostname" }}
+{{- if not (dig "envoyDeployment" "pod" "affinity" nil (.inherited | default dict)) }}
 {{- $_ := set $pod "affinity" (dict "podAntiAffinity" (dict "preferredDuringSchedulingIgnoredDuringExecution" (list (dict "weight" 100 "podAffinityTerm" $podAffinityTerm)))) }}
 {{- $_ := set $envoyDeployment "pod" $pod }}
+{{- end }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
        It must stay above shutdown.drainTimeout (200s). */}}
 {{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}
 {{- end }}
+
+{{/*
+EnvoyProxy values a gateway inherits from its GatewayClass EnvoyProxy: the user values of
+the chart-managed class it references, when the gateway EnvoyProxy merges onto it. The
+gateway provider defaults leave out whatever these set, so the class value is not
+overridden by a default. Returns empty when the gateway does not inherit.
+Takes: dict with "gateway" and "root"
+Returns: YAML, consume with fromYaml
+*/}}
+{{- define "gateway.inheritedEnvoyProxy" -}}
+{{- $gateway := .gateway }}
+{{- $mergeType := dig "envoyProxy" "mergeType" "" $gateway | default "StrategicMerge" }}
+{{- if has $mergeType (list "StrategicMerge" "JSONMerge") }}
+{{- range $_, $class := .root.Values.gatewayClasses }}
+{{- if and $class.enabled (dig "envoyProxy" "enabled" true $class) (eq $class.name $gateway.className) }}
+{{- omit ($class.envoyProxy | default dict) "enabled" "mergeType" | toYaml }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}
 
 {{/*
 EnvoyProxy spec - shared spec output for EnvoyProxy resources

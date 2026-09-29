@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Gateway EnvoyProxy provider defaults no longer override settings made on the GatewayClass EnvoyProxy, so service annotations, `externalTrafficPolicy`, `loadBalancerClass`, shutdown and pod affinity set on the class are inherited by its gateways. Gateway values still take precedence.
 - Chart metadata: add `io.giantswarm.application.managed` annotation (`"true"`).
 - Chart metadata: add `keywords`.
 - Support chart-managed `ListenerSets` per gateway, each with its own certificate, DNS records and traffic policies, to add listeners beyond the limit a single `Gateway` can hold.
