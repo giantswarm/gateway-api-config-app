@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-29
+
 ### Fixed
 
 - The `helm.sh/chart` label is valid for long chart versions: the 63-character cut trims the whole trailing run of `-`, `.` and `_`.
@@ -310,7 +312,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.3...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.3...v1.12.0
 [1.11.3]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.2...v1.11.3
 [1.11.2]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.0...v1.11.1
