@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The `helm.sh/chart` label is valid for long chart versions: the 63-character cut trims the whole trailing run of `-`, `.` and `_`.
+
 ### Added
 
 - Add `clientTrafficPolicy.untrustedClientHeaders` to the gateway values, listing the client identity headers dropped at the listener before envoy reads them, so envoy rebuilds `X-Forwarded-For` from the connection source address that the PROXY protocol has already set to the real client IP. Without it a client-supplied `X-Forwarded-For` is forwarded verbatim with the real address appended after it, letting a client dictate the first entry and, through it, whatever a backend derives from the header. Empty by default, so existing installations are unaffected until they opt in; applied only to CAPA gateways using an AWS NLB, and inherited by a listener set from its parent gateway unless it names its own list.
