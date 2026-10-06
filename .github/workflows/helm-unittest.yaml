@@ -1,0 +1,29 @@
+name: helm-unittest
+
+on:
+  pull_request:
+    branches:
+      - main
+  merge_group: {}
+
+permissions: {}
+
+jobs:
+  helm-unittest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: Install helm-unittest
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.2.1 --verify=false
+
+      - name: Run unit tests
+        run: make test-unit

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `helm-unittest` suites for the gateway and GatewayClass `EnvoyProxy` defaults, run with `make test-unit` and in CI on each pull request.
+
 ## [1.12.0] - 2026-09-29
 
 ### Fixed

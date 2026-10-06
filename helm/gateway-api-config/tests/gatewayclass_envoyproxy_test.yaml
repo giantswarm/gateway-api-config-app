@@ -1,0 +1,37 @@
+suite: GatewayClass EnvoyProxy base defaults
+templates:
+  - templates/gatewayclass/envoyproxy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: sets the HPA, PDB, priority class and image defaults
+    asserts:
+      - isKind:
+          of: EnvoyProxy
+      - equal:
+          path: metadata.name
+          value: gatewayclass-giantswarm-default
+      - equal:
+          path: spec.provider.kubernetes.envoyHpa.minReplicas
+          value: 2
+      - equal:
+          path: spec.provider.kubernetes.envoyPDB.maxUnavailable
+          value: 25%
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.priorityClassName
+          value: giantswarm-critical
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.container.imageRepository
+          value: gsoci.azurecr.io/giantswarm/envoy
+
+  - it: lets values override the base defaults
+    set:
+      gatewayClasses.default.envoyProxy.envoyHpa.minReplicas: 3
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyHpa.minReplicas
+          value: 3
+      - equal:
+          path: spec.provider.kubernetes.envoyHpa.maxReplicas
+          value: 10
