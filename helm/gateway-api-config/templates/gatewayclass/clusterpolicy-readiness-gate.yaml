@@ -3,14 +3,31 @@ Label the namespace the proxy pods run in with the AWS Load Balancer Controller 
 readiness gate label. In IP target mode, the controller then injects a readiness gate
 into new proxy pods, so a pod becomes Ready only once the NLB reports its target
 healthy, and a rollout cannot remove the last healthy targets before their
-replacements serve. In instance target mode (the chart default) the label has no effect.
+replacements serve. The gate only exists for IP targets, so this renders only when an
+enabled gateway or GatewayClass sets
+service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip. Instance targets
+(the chart default) get nothing.
 
 No chart owns the namespace (Flux creates it), so a Kyverno mutate-existing rule adds
 the label: once when the policy is created, and again whenever the namespace is updated.
 The +() anchor only adds the label when it is missing, so a value set by someone else
 is left alone.
 */}}
-{{- if eq .Values.provider "capa" }}
+{{- $targetTypeKey := "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" }}
+{{- $ipTargets := false }}
+{{- range $_, $gateway := .Values.gateways }}
+{{- if $gateway.enabled }}
+{{- if or (eq (dig "service" "annotations" $targetTypeKey "" $gateway | toString) "ip") (eq (dig "envoyProxy" "envoyService" "annotations" $targetTypeKey "" $gateway | toString) "ip") }}
+{{- $ipTargets = true }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- range $_, $class := .Values.gatewayClasses }}
+{{- if and $class.enabled (eq (dig "envoyProxy" "envoyService" "annotations" $targetTypeKey "" $class | toString) "ip") }}
+{{- $ipTargets = true }}
+{{- end }}
+{{- end }}
+{{- if and (eq .Values.provider "capa") $ipTargets }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

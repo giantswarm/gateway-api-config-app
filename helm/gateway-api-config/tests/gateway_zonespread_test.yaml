@@ -14,7 +14,7 @@ tests:
           value:
             - maxSkew: 1
               topologyKey: topology.kubernetes.io/zone
-              whenUnsatisfiable: DoNotSchedule
+              whenUnsatisfiable: ScheduleAnyway
               nodeTaintsPolicy: Honor
               labelSelector:
                 matchLabels:
@@ -25,6 +25,9 @@ tests:
       - equal:
           path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].nodeTaintsPolicy
           value: Honor
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].whenUnsatisfiable
+          value: ScheduleAnyway
 
   - it: selects the pods of the gateway it renders for
     set:

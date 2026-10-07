@@ -152,9 +152,9 @@ Each pod default is left out when the GatewayClass EnvoyProxy sets the same fiel
 pod default still applies. The zone spread is also left out with
 provider.aws.zoneSpread: false. The caller merges the gateway values over these
 defaults, so a non-empty topologySpreadConstraints list there replaces the zone spread.
-The zone spread uses nodeTaintsPolicy: Honor, which keeps zones that only have nodes the
-proxies cannot run on (for example tainted control-plane nodes) out of the skew, so the
-pods do not stay Pending on clusters whose workers are in fewer zones.
+The zone spread is ScheduleAnyway, so it never keeps a proxy pod Pending, and uses
+nodeTaintsPolicy: Honor, so zones that only have nodes the proxies cannot run on (for
+example tainted control-plane nodes) do not count.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
@@ -174,19 +174,17 @@ pods do not stay Pending on clusters whose workers are in fewer zones.
       "topologyKey" "kubernetes.io/hostname" }}
 {{- $_ := set $pod "affinity" (dict "podAntiAffinity" (dict "preferredDuringSchedulingIgnoredDuringExecution" (list (dict "weight" 100 "podAffinityTerm" $podAffinityTerm)))) }}
 {{- end }}
-{{- /* Spread the proxy pods evenly across zones. DoNotSchedule keeps a pod Pending
-       rather than stacking it in a zone that already has more than its share.
-       matchLabelKeys counts only the pods of the same ReplicaSet, so the old pods of
-       a rollout do not skew the placement of the new ones. With a single zone the
-       skew is always 0, so single-AZ clusters are unaffected. nodeTaintsPolicy Honor
-       keeps zones that only have nodes the proxies cannot run on (for example tainted
-       control-plane nodes) out of the skew, so the pods do not stay Pending on
-       clusters whose workers are in fewer zones. */}}
+{{- /* Prefer an even spread of the proxy pods across zones. ScheduleAnyway only
+       scores the placement, so a zone without free capacity cannot keep a pod
+       Pending and stall an HPA scale-out. matchLabelKeys counts only the pods of the
+       same ReplicaSet, so the old pods of a rollout do not skew the placement of the
+       new ones. nodeTaintsPolicy Honor keeps zones that only have nodes the proxies
+       cannot run on (for example tainted control-plane nodes) out of the skew. */}}
 {{- if and (dig "provider" "aws" "zoneSpread" true .gateway) (not (dig "envoyDeployment" "pod" "topologySpreadConstraints" nil $inherited)) }}
 {{- $zoneSpread := dict
       "maxSkew" 1
       "topologyKey" "topology.kubernetes.io/zone"
-      "whenUnsatisfiable" "DoNotSchedule"
+      "whenUnsatisfiable" "ScheduleAnyway"
       "nodeTaintsPolicy" "Honor"
       "labelSelector" (dict "matchLabels" (dict
         "gateway.envoyproxy.io/owning-gateway-name" .gateway.name
