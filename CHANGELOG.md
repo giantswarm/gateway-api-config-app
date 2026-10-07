@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `helm-unittest` suites for the gateway and GatewayClass `EnvoyProxy` defaults, run with `make test-unit` and in CI on each pull request.
+- Spread the proxy pods of CAPA gateways with an AWS NLB evenly across availability zones (`nodeTaintsPolicy: Honor`, so tainted control-plane zones do not count). Turn off with `provider.aws.zoneSpread: false`.
+- On CAPA, a Kyverno policy labels `envoy-gateway-system` with `elbv2.k8s.aws/pod-readiness-gate-inject: enabled`, for the NLB pod readiness gate in IP target mode.
+- Assert in the e2e tests that the proxy pods carry the zone spread constraint, run in at least two zones when the nodes allow it, and that the proxy namespace has the readiness gate label.
+
+### Changed
+
+- Upgrading restarts all proxy pods. In IP target mode, new proxy pods only become Ready once the NLB reports their target healthy.
 
 ## [1.12.0] - 2026-09-29
 

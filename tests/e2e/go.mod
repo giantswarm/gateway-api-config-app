@@ -6,6 +6,7 @@ require (
 	github.com/cert-manager/cert-manager v1.21.2
 	github.com/giantswarm/apptest-framework/v5 v5.3.0
 	github.com/giantswarm/clustertest/v5 v5.6.0
+	github.com/go-logr/logr v1.4.4
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
 	k8s.io/api v0.37.1
@@ -65,7 +66,6 @@ require (
 	github.com/go-git/go-billy/v5 v5.9.1 // indirect
 	github.com/go-git/go-git/v5 v5.19.2 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
-	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.1 // indirect
 	github.com/go-openapi/jsonreference v1.0.2 // indirect

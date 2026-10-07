@@ -40,7 +40,7 @@ tests:
                       operator: In
                       values:
                         - envoy-gateway-system
-      - notExists:
+      - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
 
   - it: keeps terminationGracePeriodSeconds above the drain timeout on CAPA with an NLB
@@ -139,7 +139,7 @@ tests:
                       - eu-central-1a
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment.pod
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.patch
 

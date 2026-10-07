@@ -74,6 +74,7 @@ Default configuration for Envoy Gateway
 | gateways.default.name | string | `"giantswarm-default"` |  |
 | gateways.default.overrideBaseDomain | string | `""` |  |
 | gateways.default.provider.aws.useNetworkLoadBalancer | bool | `true` |  |
+| gateways.default.provider.aws.zoneSpread | bool | `true` |  |
 | gateways.default.service.annotations | object | `{}` |  |
 | gateways.default.service.externalTrafficPolicy | string | `""` |  |
 | gateways.default.service.labels | object | `{}` |  |
