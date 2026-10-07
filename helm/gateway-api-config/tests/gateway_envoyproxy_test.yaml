@@ -1,0 +1,169 @@
+suite: gateway EnvoyProxy provider defaults
+templates:
+  - templates/gateway/envoyproxy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: renders one EnvoyProxy for the default gateway
+    set:
+      provider: capa
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: EnvoyProxy
+      - equal:
+          path: metadata.name
+          value: gateway-giantswarm-default
+      - equal:
+          path: spec.mergeType
+          value: StrategicMerge
+
+  - it: prefers one proxy pod per node on CAPA with an NLB
+    set:
+      provider: capa
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+          value:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: gateway.envoyproxy.io/owning-gateway-name
+                      operator: In
+                      values:
+                        - giantswarm-default
+                    - key: gateway.envoyproxy.io/owning-gateway-namespace
+                      operator: In
+                      values:
+                        - envoy-gateway-system
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+
+  - it: keeps terminationGracePeriodSeconds above the drain timeout on CAPA with an NLB
+    set:
+      provider: capa
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: StrategicMerge
+            value:
+              spec:
+                template:
+                  spec:
+                    terminationGracePeriodSeconds: 240
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            drainTimeout: 200s
+            minDrainDuration: 180s
+
+  - it: sets the NLB service defaults on CAPA
+    set:
+      provider: capa
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyService.loadBalancerClass
+          value: service.k8s.aws/nlb
+      - equal:
+          path: spec.provider.kubernetes.envoyService.externalTrafficPolicy
+          value: Local
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-scheme"]
+          value: internet-facing
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags"]
+          value: gateway.envoyproxy.io/owning-gateway-name=giantswarm-default,gateway.envoyproxy.io/owning-gateway-namespace=envoy-gateway-system
+      - notExists:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+
+  - it: lets gateway service annotations override the NLB defaults
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+        service.beta.kubernetes.io/aws-load-balancer-subnets: subnet-a,subnet-b
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-scheme"]
+          value: internal
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: subnet-a,subnet-b
+
+  - it: adds no NLB defaults on CAPA when the NLB is disabled
+    set:
+      provider: capa
+      gateways.default.provider.aws.useNetworkLoadBalancer: false
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+      - notExists:
+          path: spec.shutdown
+      - notExists:
+          path: spec.provider.kubernetes.envoyService.loadBalancerClass
+      - equal:
+          path: spec.provider.kubernetes.envoyService.externalTrafficPolicy
+          value: Cluster
+
+  - it: adds no AWS defaults on other providers
+    set:
+      provider: capz
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+      - notExists:
+          path: spec.shutdown
+      - notExists:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-scheme"]
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["external-dns.alpha.kubernetes.io/hostname"]
+          value: gateway.example.com
+
+  - it: leaves out the anti-affinity default when the GatewayClass EnvoyProxy sets affinity
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.pod.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values:
+                      - eu-central-1a
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: merges gateway affinity values over the anti-affinity default
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.pod.affinity.nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: topology.kubernetes.io/zone
+                  operator: In
+                  values:
+                    - eu-central-1a
+    asserts:
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.nodeAffinity
+
+  - it: renders nothing when the gateway is disabled
+    set:
+      provider: capa
+      gateways.default.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
