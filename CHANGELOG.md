@@ -13,10 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prefer an even spread of the proxy pods of CAPA gateways with an AWS NLB across availability zones (`ScheduleAnyway`, `nodeTaintsPolicy: Honor`). Turn off with `provider.aws.zoneSpread: false`.
 - On CAPA, when a gateway or GatewayClass uses NLB IP targets, a Kyverno policy labels `envoy-gateway-system` with `elbv2.k8s.aws/pod-readiness-gate-inject: enabled`.
 - Assert in the e2e tests that the proxy pods carry the zone spread constraint, and log their zones.
+- README: the NLB subnet list must cover every AZ that runs proxy pods, with a `nodeAffinity` example for clusters that keep the NLB in fewer AZs.
 
 ### Changed
 
 - Upgrading restarts all proxy pods. In IP target mode, new proxy pods only become Ready once the NLB reports their target healthy.
+- **Behaviour change:** the render fails if `aws-load-balancer-subnets` has an empty entry (`a,`, `a,,b`) or an empty value. This stops upgrades with bad values; see the fleet scan in giantswarm/giantswarm#38041.
 
 ## [1.12.0] - 2026-09-29
 
