@@ -1,0 +1,222 @@
+suite: aws-load-balancer-subnets validation
+templates:
+  - templates/gateway/envoyproxy.yaml
+  - templates/gatewayclass/envoyproxy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  # Gateway level: gateways.<name>.service.annotations
+
+  - it: fails on a trailing comma in the gateway service annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "AWSCNISubnetEuCentral1a,"
+    asserts:
+      - failedTemplate:
+          errorMessage: 'gateway "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "AWSCNISubnetEuCentral1a," has an empty entry. Remove the extra comma, and list one subnet for each availability zone that can run proxy pods.'
+
+  - it: fails on a double comma in the gateway service annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,,b"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'gateway "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "a,,b" has an empty entry'
+
+  - it: fails on a leading comma in the gateway service annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: ",a"
+    asserts:
+      - failedTemplate:
+          errorPattern: '",a" has an empty entry'
+
+  - it: fails on a blank entry in the gateway service annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a, ,b"
+    asserts:
+      - failedTemplate:
+          errorPattern: '"a, ,b" has an empty entry'
+
+  - it: fails on an empty value in the gateway service annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: 'gateway "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "" is empty. Remove the annotation, or list one subnet for each availability zone that can run proxy pods.'
+
+  - it: fails on a bad value in the gateway envoyProxy.envoyService annotations
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'gateway "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "a," has an empty entry'
+
+  - it: fails on a bad value on a non-CAPA provider
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capz
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,"
+    asserts:
+      - failedTemplate:
+          errorPattern: '"a," has an empty entry'
+
+  - it: renders a single subnet
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: a
+
+  - it: renders a subnet list
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,b,c"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: a,b,c
+
+  - it: renders a subnet list with spaces after the commas
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a, b"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: a, b
+
+  - it: renders without the annotation
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+    asserts:
+      - notFailedTemplate: {}
+      - notExists:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+
+  - it: renders a good subnet list on a non-CAPA provider
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capz
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,b"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: a,b
+
+  # GatewayClass level: gatewayClasses.<name>.envoyProxy.envoyService.annotations
+
+  - it: fails on a trailing comma in the GatewayClass annotations
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "AWSCNISubnetEuCentral1a,"
+    asserts:
+      - failedTemplate:
+          errorMessage: 'GatewayClass "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "AWSCNISubnetEuCentral1a," has an empty entry. Remove the extra comma, and list one subnet for each availability zone that can run proxy pods.'
+
+  - it: fails on a double comma in the GatewayClass annotations
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,,b"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'GatewayClass "giantswarm-default": service.beta.kubernetes.io/aws-load-balancer-subnets "a,,b" has an empty entry'
+
+  - it: fails on a leading comma in the GatewayClass annotations
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: ",a"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'GatewayClass "giantswarm-default": .* ",a" has an empty entry'
+
+  - it: fails on a blank entry in the GatewayClass annotations
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a, ,b"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'GatewayClass "giantswarm-default": .* "a, ,b" has an empty entry'
+
+  - it: fails on an empty value in the GatewayClass annotations
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: 'GatewayClass "giantswarm-default": .* "" is empty'
+
+  - it: fails on a bad GatewayClass value on a non-CAPA provider
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,"
+    asserts:
+      - failedTemplate:
+          errorPattern: 'GatewayClass "giantswarm-default": .* "a," has an empty entry'
+
+  - it: renders a good GatewayClass subnet list
+    template: templates/gatewayclass/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a, b"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
+          value: a, b
+
+  - it: leaves the inherited GatewayClass subnet list off the gateway EnvoyProxy
+    template: templates/gateway/envoyproxy.yaml
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.mergeType: StrategicMerge
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: "a,b,c"
+    asserts:
+      - notFailedTemplate: {}
+      - notExists:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
