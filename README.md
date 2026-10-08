@@ -109,6 +109,35 @@ On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
 - **Local external traffic policy**: Preserves the source IP at the node level and avoids extra network hops, reducing latency.
 - **Graceful shutdown (180s drain, 60s min drain)**: Allows in-flight requests to complete during pod termination, aligning with NLB's deregistration delay for zero-downtime deployments.
 
+##### Choosing the NLB subnets
+
+The `service.beta.kubernetes.io/aws-load-balancer-subnets` annotation pins the NLB to a list of subnets, one for each availability zone (AZ). If you set it, the list must cover **every AZ that can run proxy pods**. With `externalTrafficPolicy: Local`, the NLB sends no traffic to a proxy pod in an AZ that is not on the list.
+
+The chart fails the render when the list has an empty entry, such as `subnet-a,` or `subnet-a,,subnet-b`. The AWS Load Balancer Controller ignores empty entries, so the NLB would silently lose an AZ. Remove the extra comma.
+
+To keep the NLB in fewer AZs than the cluster has, keep the proxy pods in the same AZs. Add a `nodeAffinity` on `topology.kubernetes.io/zone`. It is merged with the default `podAntiAffinity`, which stays in place:
+
+```yaml
+gateways:
+  default:
+    service:
+      annotations:
+        service.beta.kubernetes.io/aws-load-balancer-subnets: subnet-0aaa1111,subnet-0bbb2222  # eu-central-1a, eu-central-1b
+    envoyProxy:
+      envoyDeployment:
+        pod:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: topology.kubernetes.io/zone
+                        operator: In
+                        values:
+                          - eu-central-1a
+                          - eu-central-1b
+```
+
 ## Credit
 
 - [Giant Swarm Catalog](https://github.com/giantswarm/giantswarm-catalog)

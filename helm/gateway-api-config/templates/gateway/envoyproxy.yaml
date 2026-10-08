@@ -19,6 +19,8 @@ is kept as a placeholder for future gateway-specific defaults.
 {{- $inherited := (include "gateway.inheritedEnvoyProxy" (dict "gateway" $gateway "root" $)) | fromYaml -}}
 {{- $envoyServiceDefaults := (include "gateway.envoyServiceDefaults" (dict "provider" $.Values.provider "baseDomain" $.Values.baseDomain "gateway" $gateway "root" $ "inherited" $inherited)) | fromYaml -}}
 {{- $_ := set $envoyProxyValues "envoyService" (mergeOverwrite $envoyServiceDefaults (deepCopy (default dict $envoyProxyValues.envoyService))) -}}
+{{- /* Check again after envoyProxy.envoyService.annotations is merged on top of the service annotations */}}
+{{- include "service.validateSubnets" (dict "owner" (printf "gateway %q" $gateway.name) "annotations" $envoyProxyValues.envoyService.annotations) -}}
 {{- $shutdownDefaults := (include "gateway.shutdownDefaults" (dict "provider" $.Values.provider "gateway" $gateway "inherited" $inherited)) | fromYaml -}}
 {{- if $shutdownDefaults -}}
 {{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}

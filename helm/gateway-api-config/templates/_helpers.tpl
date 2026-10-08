@@ -63,8 +63,35 @@ Gateway Service annotations
 {{- $_ := unset $annotations $k }}
 {{- end }}
 {{- $annotations = mergeOverwrite $annotations (deepCopy (default dict $service.annotations)) }}
+{{- include "service.validateSubnets" (dict "owner" (printf "gateway %q" .gateway.name) "annotations" $annotations) }}
 {{- $annotations | toYaml }}
 {{- end }}
+
+{{/*
+Fail when the service.beta.kubernetes.io/aws-load-balancer-subnets annotation has an empty
+entry, such as "a,", "a,,b" or "a, ,b", or is empty itself. The AWS Load Balancer
+Controller drops empty entries without a warning, so the NLB silently loses an availability
+zone and proxy pods in that zone get no traffic. A missing annotation is fine. Checked for
+every provider, because an empty entry is always a mistake.
+Takes: dict with "owner" (e.g. `gateway "x"`, used in the message) and "annotations"
+Emits nothing.
+*/}}
+{{- define "service.validateSubnets" -}}
+{{- $key := "service.beta.kubernetes.io/aws-load-balancer-subnets" -}}
+{{- $annotations := .annotations | default dict -}}
+{{- if and (hasKey $annotations $key) (not (kindIs "invalid" (index $annotations $key))) -}}
+{{- $value := toString (index $annotations $key) -}}
+{{- $hint := "list one subnet for each availability zone that can run proxy pods." -}}
+{{- if not (trim $value) -}}
+{{- fail (printf "%s: %s %q is empty. Remove the annotation, or %s" .owner $key $value $hint) -}}
+{{- end -}}
+{{- range splitList "," $value -}}
+{{- if not (trim .) -}}
+{{- fail (printf "%s: %s %q has an empty entry. Remove the extra comma, and %s" $.owner $key $value $hint) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Gateway Service loadBalancerClass

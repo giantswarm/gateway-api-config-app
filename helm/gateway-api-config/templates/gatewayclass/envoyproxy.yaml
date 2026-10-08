@@ -18,6 +18,7 @@ envoyDeployment:
 {{- if $customEnvoyProxyValues -}}
 {{- $envoyProxyValues = mergeOverwrite $envoyProxyValues (deepCopy $customEnvoyProxyValues) -}}
 {{- end }}
+{{- include "service.validateSubnets" (dict "owner" (printf "GatewayClass %q" $class.name) "annotations" (dig "envoyService" "annotations" dict $envoyProxyValues)) }}
 ---
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
