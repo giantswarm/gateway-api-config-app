@@ -144,24 +144,56 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 {{/*
 Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
 For AWS NLBs this ensures the pod's terminationGracePeriodSeconds stays above the
-drain timeout, and spreads the proxy pods one-per-node so each NLB instance target
-maps to a single envoy.
+drain timeout, prefers one proxy pod per node so each NLB instance target maps to a
+single envoy, and spreads the proxy pods evenly across availability zones so that
+losing one zone cannot take all of them down.
+Each pod default is left out when the GatewayClass EnvoyProxy sets the same field
+(affinity or topologySpreadConstraints), so the class value is inherited; the other
+pod default still applies. The zone spread is also left out with
+provider.aws.zoneSpread: false. The caller merges the gateway values over these
+defaults, so a non-empty topologySpreadConstraints list there replaces the zone spread.
+The zone spread is ScheduleAnyway, so it never keeps a proxy pod Pending, and uses
+nodeTaintsPolicy: Honor, so zones that only have nodes the proxies cannot run on (for
+example tainted control-plane nodes) do not count.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
 {{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $pod := dict }}
+{{- $inherited := .inherited | default dict }}
+{{- /* Both pod defaults select the proxy pods by the owning-gateway labels Envoy
+       Gateway stamps on them. */}}
 {{- /* Prefer one proxy pod per node so each NLB instance target maps to a single
-       envoy, improving NLB health-checking and traffic distribution. Selects pods by
-       the owning-gateway labels Envoy Gateway stamps on the proxy pods. */}}
+       envoy, improving NLB health-checking and traffic distribution. */}}
+{{- if not (dig "envoyDeployment" "pod" "affinity" nil $inherited) }}
 {{- $podAffinityTerm := dict
       "labelSelector" (dict "matchExpressions" (list
         (dict "key" "gateway.envoyproxy.io/owning-gateway-name" "operator" "In" "values" (list .gateway.name))
         (dict "key" "gateway.envoyproxy.io/owning-gateway-namespace" "operator" "In" "values" (list .namespace))
       ))
       "topologyKey" "kubernetes.io/hostname" }}
-{{- if not (dig "envoyDeployment" "pod" "affinity" nil (.inherited | default dict)) }}
 {{- $_ := set $pod "affinity" (dict "podAntiAffinity" (dict "preferredDuringSchedulingIgnoredDuringExecution" (list (dict "weight" 100 "podAffinityTerm" $podAffinityTerm)))) }}
+{{- end }}
+{{- /* Prefer an even spread of the proxy pods across zones. ScheduleAnyway only
+       scores the placement, so a zone without free capacity cannot keep a pod
+       Pending and stall an HPA scale-out. matchLabelKeys counts only the pods of the
+       same ReplicaSet, so the old pods of a rollout do not skew the placement of the
+       new ones. nodeTaintsPolicy Honor keeps zones that only have nodes the proxies
+       cannot run on (for example tainted control-plane nodes) out of the skew. */}}
+{{- if and (dig "provider" "aws" "zoneSpread" true .gateway) (not (dig "envoyDeployment" "pod" "topologySpreadConstraints" nil $inherited)) }}
+{{- $zoneSpread := dict
+      "maxSkew" 1
+      "topologyKey" "topology.kubernetes.io/zone"
+      "whenUnsatisfiable" "ScheduleAnyway"
+      "nodeTaintsPolicy" "Honor"
+      "labelSelector" (dict "matchLabels" (dict
+        "gateway.envoyproxy.io/owning-gateway-name" .gateway.name
+        "gateway.envoyproxy.io/owning-gateway-namespace" .namespace
+      ))
+      "matchLabelKeys" (list "pod-template-hash") }}
+{{- $_ := set $pod "topologySpreadConstraints" (list $zoneSpread) }}
+{{- end }}
+{{- if $pod }}
 {{- $_ := set $envoyDeployment "pod" $pod }}
 {{- end }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.

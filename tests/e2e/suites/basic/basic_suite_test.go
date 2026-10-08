@@ -67,6 +67,11 @@ func TestBasic(t *testing.T) {
 				gatewayKarpenterNodeTests()
 				gatewayKarpenterProxyPodTests()
 			})
+			// After the Karpenter block, which waits for the Karpenter nodes. The zone
+			// spread test only reads state: it checks the constraint and logs the zones.
+			It("should have the gateway proxies carry the zone spread constraint", func() {
+				gatewayZoneSpreadTests()
+			})
 			// The ListenerSet blocks come last on purpose: the chart listener set's
 			// ACME order and DNS record have been in flight since the app was
 			// installed, so by now they are effectively free, and the namespace and

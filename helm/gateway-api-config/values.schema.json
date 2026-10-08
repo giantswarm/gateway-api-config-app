@@ -283,6 +283,9 @@
                                     "properties": {
                                         "useNetworkLoadBalancer": {
                                             "type": "boolean"
+                                        },
+                                        "zoneSpread": {
+                                            "type": "boolean"
                                         }
                                     }
                                 }

@@ -1,0 +1,130 @@
+suite: pod readiness gate namespace label
+templates:
+  - templates/gatewayclass/clusterpolicy-readiness-gate.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: renders the ClusterRole and ClusterPolicy on CAPA when a gateway uses IP targets
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: lets the Kyverno background controller update only the proxy namespace
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    documentSelector:
+      path: kind
+      value: ClusterRole
+    asserts:
+      - equal:
+          path: metadata.labels["rbac.kyverno.io/aggregate-to-background-controller"]
+          value: "true"
+      - equal:
+          path: rules
+          value:
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+              resourceNames:
+                - envoy-gateway-system
+              verbs:
+                - get
+                - update
+                - patch
+
+  - it: labels the existing proxy namespace with the readiness gate label
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    documentSelector:
+      path: kind
+      value: ClusterPolicy
+    asserts:
+      - isAPIVersion:
+          of: kyverno.io/v1
+      - equal:
+          path: spec.rules[0].match.any[0].resources
+          value:
+            kinds:
+              - Namespace
+            names:
+              - envoy-gateway-system
+      - equal:
+          path: spec.rules[0].mutate.mutateExistingOnPolicyUpdate
+          value: true
+      - equal:
+          path: spec.rules[0].mutate.targets
+          value:
+            - apiVersion: v1
+              kind: Namespace
+              name: envoy-gateway-system
+      - equal:
+          path: spec.rules[0].mutate.patchStrategicMerge.metadata.labels["+(elbv2.k8s.aws/pod-readiness-gate-inject)"]
+          value: enabled
+
+  - it: renders when the gateway sets IP targets through envoyProxy.envoyService
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: renders when the GatewayClass sets IP targets
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: renders nothing on CAPA with the default instance targets
+    set:
+      provider: capa
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing on CAPA with explicit instance targets
+    set:
+      provider: capa
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing when only a disabled gateway sets IP targets
+    set:
+      provider: capa
+      gateways.default.enabled: false
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing on other providers
+    set:
+      provider: capz
+      gateways.default.service.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing without a provider
+    asserts:
+      - hasDocuments:
+          count: 0

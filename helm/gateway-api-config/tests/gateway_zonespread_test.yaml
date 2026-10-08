@@ -1,0 +1,182 @@
+suite: gateway EnvoyProxy zone spread default
+templates:
+  - templates/gateway/envoyproxy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: spreads the proxy pods across zones on CAPA with an NLB
+    set:
+      provider: capa
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+          value:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: ScheduleAnyway
+              nodeTaintsPolicy: Honor
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: giantswarm-default
+                  gateway.envoyproxy.io/owning-gateway-namespace: envoy-gateway-system
+              matchLabelKeys:
+                - pod-template-hash
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].nodeTaintsPolicy
+          value: Honor
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].whenUnsatisfiable
+          value: ScheduleAnyway
+
+  - it: selects the pods of the gateway it renders for
+    set:
+      provider: capa
+      gateways.default.name: edge
+    release:
+      namespace: other-namespace
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].labelSelector.matchLabels
+          value:
+            gateway.envoyproxy.io/owning-gateway-name: edge
+            gateway.envoyproxy.io/owning-gateway-namespace: other-namespace
+
+  - it: adds no zone spread when the GatewayClass EnvoyProxy sets topologySpreadConstraints
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.pod.topologySpreadConstraints:
+        - maxSkew: 2
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: envoy
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity
+
+  - it: adds the zone spread when the GatewayClass sets constraints but the gateway does not inherit them
+    set:
+      provider: capa
+      gateways.default.envoyProxy.mergeType: Replace
+      gatewayClasses.default.envoyProxy.envoyDeployment.pod.topologySpreadConstraints:
+        - maxSkew: 2
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].topologyKey
+          value: topology.kubernetes.io/zone
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].maxSkew
+          value: 1
+
+  - it: keeps the zone spread when the GatewayClass EnvoyProxy sets affinity
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.pod.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values:
+                      - eu-central-1a
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+      - lengthEqual:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+          count: 1
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints[0].topologyKey
+          value: topology.kubernetes.io/zone
+
+  - it: replaces the zone spread with a non-empty gateway list
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.pod.topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              gateway.envoyproxy.io/owning-gateway-name: giantswarm-default
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+          value:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchLabels:
+                  gateway.envoyproxy.io/owning-gateway-name: giantswarm-default
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity
+
+  # Pins how mergeOverwrite treats an empty list today: it replaces the default too.
+  # zoneSpread: false stays the documented way to remove it, as it does not depend on
+  # this merge detail.
+  - it: replaces the zone spread with an empty gateway list
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.pod.topologySpreadConstraints: []
+    asserts:
+      - lengthEqual:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+          count: 0
+
+  - it: removes the zone spread with zoneSpread false
+    set:
+      provider: capa
+      gateways.default.provider.aws.zoneSpread: false
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: renders no pod defaults when the GatewayClass sets both fields and the gateway sets none
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.pod:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: topology.kubernetes.io/zone
+                      operator: In
+                      values:
+                        - eu-central-1a
+        topologySpreadConstraints:
+          - maxSkew: 2
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: adds no zone spread on other providers
+    set:
+      provider: capz
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+
+  - it: adds no zone spread on CAPA when the NLB is disabled
+    set:
+      provider: capa
+      gateways.default.provider.aws.useNetworkLoadBalancer: false
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment

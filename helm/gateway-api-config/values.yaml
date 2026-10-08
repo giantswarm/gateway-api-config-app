@@ -56,6 +56,12 @@ gateways:
     provider:
       aws:
         useNetworkLoadBalancer: true
+        # Prefer an even spread of the proxy pods across availability zones (maxSkew 1,
+        # whenUnsatisfiable: ScheduleAnyway). Only applies with useNetworkLoadBalancer.
+        # Set false to remove the default constraint. A GatewayClass EnvoyProxy that sets
+        # envoyDeployment.pod.topologySpreadConstraints, or a non-empty list in this
+        # gateway's envoyProxy.envoyDeployment.pod.topologySpreadConstraints, replaces it.
+        zoneSpread: true
     service:
       annotations: {}
       labels: {}
