@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add an `ipmode` e2e suite that runs the default gateway with NLB IP targets on a three-zone cluster. It asserts that replaced proxy pods carry the AWS Load Balancer Controller target health readiness gate and only become Ready once it is True, and that the proxy pods run in at least two zones.
+
 ## [1.13.0] - 2026-10-08
 
 ### Added

@@ -1,0 +1,14 @@
+# Values provided here merge on top of the default CAPA values found in
+# https://github.com/giantswarm/cluster-standup-teardown
+global:
+  connectivity:
+    certManager:
+      useDnsChallenges: true
+
+  # ASG nodes only, no Karpenter: the ASG balances its instances across the cluster's
+  # availability zones, so three nodes give each zone a node with room for a proxy pod.
+  # The zone spread assertion relies on that spare capacity in every zone.
+  nodePools:
+    nodepool-0:
+      minSize: 3
+      maxSize: 4

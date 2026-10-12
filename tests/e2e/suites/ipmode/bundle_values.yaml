@@ -1,0 +1,26 @@
+apps:
+  gatewayApiCrds:
+    # Envoy Gateway 1.9 requires Gateway API v1.6 CRDs.
+    version: 1.9.1
+  envoyGateway:
+    # shutdown.healthCheckFailureDelay requires Envoy Gateway 1.9.
+    version: 1.10.0
+  gatewayApiConfig:
+    userConfig:
+      configMap:
+        values:
+          gateways:
+            default:
+              dnsName: ingress-ip
+              service:
+                annotations:
+                  # IP targets make the chart render the Kyverno policy that labels
+                  # envoy-gateway-system for the AWS Load Balancer Controller readiness gate.
+                  service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+              envoyProxy:
+                # Pinned so the HPA cannot change the pod count while the suite replaces
+                # and counts the proxy pods. Three replicas on a three-zone cluster make a
+                # full spread observable.
+                envoyHpa:
+                  minReplicas: 3
+                  maxReplicas: 3
