@@ -4,6 +4,15 @@ global:
   connectivity:
     certManager:
       useDnsChallenges: true
+    # NLB IP targets need pod IPs inside the VPC. The default Cilium IPAM hands out
+    # 100.64.0.0/12 overlay IPs the NLB cannot register, so the readiness gate never
+    # turns True. Cilium ENI mode gives the pods VPC IPs from secondary subnets.
+    network:
+      pods:
+        cidrBlocks:
+          - 10.1.0.0/16
+    cilium:
+      ipamMode: eni
 
   # ASG nodes only, no Karpenter: the ASG balances its instances across the cluster's
   # availability zones, so three nodes give each zone a node with room for a proxy pod.
