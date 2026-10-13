@@ -1,4 +1,4 @@
-package basic
+package common
 
 import (
 	"fmt"
@@ -34,7 +34,9 @@ const awsLBControllerBundleName = "aws-lb-controller-bundle"
 
 var awsLBControllerBundle *application.Application
 
-func installDependencies() {
+// InstallDependencies registers the spec that installs the apps every suite needs on
+// the workload cluster. Call it from the suite's AfterClusterReady.
+func InstallDependencies() {
 	It("should have aws-lb-controller-bundle deployed", func() {
 		org := state.GetCluster().Organization
 		clusterName := state.GetCluster().Name
@@ -69,10 +71,10 @@ func installDependencies() {
 	})
 }
 
-// cleanupDependencies removes the dependency app again. Best effort: the workload
+// CleanupDependencies removes the dependency app again. Best effort: the workload
 // cluster and its organization namespace are torn down right after, so a failure
 // here must not turn a green suite red.
-func cleanupDependencies() {
+func CleanupDependencies() {
 	if awsLBControllerBundle == nil {
 		return
 	}

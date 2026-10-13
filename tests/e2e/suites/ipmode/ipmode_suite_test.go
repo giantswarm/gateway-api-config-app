@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/suite"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -26,10 +28,10 @@ func TestIPMode(t *testing.T) {
 		WithIsUpgrade(isUpgrade).
 		WithValuesFile("./values.yaml").
 		AfterClusterReady(func() {
-			installDependencies()
+			common.InstallDependencies()
 		}).
 		AfterSuite(func() {
-			cleanupDependencies()
+			common.CleanupDependencies()
 		}).
 		Tests(func() {
 			// Ordered so a failure skips the rest: each step builds on the state the

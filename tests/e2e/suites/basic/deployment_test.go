@@ -20,6 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 // deploymentAppTests verifies the bundle application is installed with the correct version
@@ -66,7 +68,7 @@ func gatewayDeploymentTests() {
 
 	By("checking envoy proxy pods are running and ready")
 	proxyPodsListOptions := &cr.ListOptions{
-		Namespace: "envoy-gateway-system",
+		Namespace: common.ProxyNamespace,
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			"app.kubernetes.io/component": "proxy",
 			"app.kubernetes.io/name":      "envoy",
@@ -102,7 +104,7 @@ func gatewayDeploymentTests() {
 	Eventually(func() (bool, error) {
 		proxyPods := &corev1.PodList{}
 		err := wcClient.List(state.GetContext(), proxyPods, &cr.ListOptions{
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 			LabelSelector: labels.SelectorFromSet(map[string]string{
 				"app.kubernetes.io/component": "proxy",
 				"app.kubernetes.io/name":      "envoy",
@@ -148,11 +150,8 @@ func gatewayDeploymentTests() {
 	Eventually(func() error {
 		svcList := &corev1.ServiceList{}
 		err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
-			Namespace: "envoy-gateway-system",
-			LabelSelector: labels.SelectorFromSet(map[string]string{
-				"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-				"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-			}),
+			Namespace:     common.ProxyNamespace,
+			LabelSelector: common.DefaultGatewayProxySelector,
 		})
 		if err != nil {
 			return err
@@ -182,11 +181,8 @@ func gatewayDeploymentTests() {
 	Eventually(func() error {
 		svcList := &corev1.ServiceList{}
 		if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
-			Namespace: "envoy-gateway-system",
-			LabelSelector: labels.SelectorFromSet(map[string]string{
-				"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-				"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-			}),
+			Namespace:     common.ProxyNamespace,
+			LabelSelector: common.DefaultGatewayProxySelector,
 		}); err != nil {
 			return err
 		}
@@ -212,17 +208,12 @@ func gatewayHPAAndPDBTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
-	proxyLabelSelector := labels.SelectorFromSet(map[string]string{
-		"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-		"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-	})
-
 	By("checking HorizontalPodAutoscaler exists for the giantswarm-default proxy")
 	Eventually(func() error {
 		hpaList := &autoscalingv2.HorizontalPodAutoscalerList{}
 		if err := wcClient.List(state.GetContext(), hpaList, &cr.ListOptions{
-			Namespace:     "envoy-gateway-system",
-			LabelSelector: proxyLabelSelector,
+			Namespace:     common.ProxyNamespace,
+			LabelSelector: common.DefaultGatewayProxySelector,
 		}); err != nil {
 			return err
 		}
@@ -239,8 +230,8 @@ func gatewayHPAAndPDBTests() {
 	Eventually(func() error {
 		pdbList := &policyv1.PodDisruptionBudgetList{}
 		if err := wcClient.List(state.GetContext(), pdbList, &cr.ListOptions{
-			Namespace:     "envoy-gateway-system",
-			LabelSelector: proxyLabelSelector,
+			Namespace:     common.ProxyNamespace,
+			LabelSelector: common.DefaultGatewayProxySelector,
 		}); err != nil {
 			return err
 		}
@@ -257,11 +248,8 @@ func gatewayHPAAndPDBTests() {
 func getGatewayLBHostname(wcClient *client.Client) (string, error) {
 	svcList := &corev1.ServiceList{}
 	if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
-		Namespace: "envoy-gateway-system",
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-			"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-		}),
+		Namespace:     common.ProxyNamespace,
+		LabelSelector: common.DefaultGatewayProxySelector,
 	}); err != nil {
 		return "", err
 	}

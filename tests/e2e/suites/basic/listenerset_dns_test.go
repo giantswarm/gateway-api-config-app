@@ -14,6 +14,8 @@ import (
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	appsv1 "k8s.io/api/apps/v1"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -51,7 +53,7 @@ func listenerSetExternalDNSConfigTests() {
 // app.kubernetes.io/name does not turn this guard into a silent pass.
 func externalDNSArgs() []string {
 	deployments := &appsv1.DeploymentList{}
-	Expect(wc().List(state.GetContext(), deployments)).To(Succeed())
+	Expect(common.WC().List(state.GetContext(), deployments)).To(Succeed())
 
 	for _, deployment := range deployments.Items {
 		if !strings.Contains(deployment.Name, "external-dns") {
@@ -222,7 +224,7 @@ func equalHost(a, b string) bool {
 func gatewayLBAddresses() []string {
 	var addrs []string
 	Eventually(func() error {
-		lbHostname, err := getGatewayLBHostname(wc())
+		lbHostname, err := getGatewayLBHostname(common.WC())
 		if err != nil {
 			return err
 		}

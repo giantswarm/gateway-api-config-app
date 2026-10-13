@@ -12,35 +12,21 @@ import (
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
-	proxyNamespace = "envoy-gateway-system"
-	gatewayName    = "giantswarm-default"
 	// expectedReplicas is pinned by envoyHpa in bundle_values.yaml, so the HPA cannot
 	// change the pod count while the suite replaces and counts pods.
 	expectedReplicas = 3
 )
 
-// proxySelector selects the proxy pods and Service of the gateway under test by the
-// owning-gateway labels Envoy Gateway stamps on them.
-var proxySelector = labels.SelectorFromSet(map[string]string{
-	"gateway.envoyproxy.io/owning-gateway-name":      gatewayName,
-	"gateway.envoyproxy.io/owning-gateway-namespace": proxyNamespace,
-})
-
-func wcClient() *client.Client {
-	c, err := state.GetFramework().WC(state.GetCluster().Name)
-	Expect(err).NotTo(HaveOccurred())
-	return c
-}
-
 // proxyPods returns the gateway's proxy pods that are not being deleted.
 func proxyPods(c *client.Client) ([]corev1.Pod, error) {
 	list := &corev1.PodList{}
-	if err := c.List(state.GetContext(), list, &cr.ListOptions{Namespace: proxyNamespace, LabelSelector: proxySelector}); err != nil {
+	if err := c.List(state.GetContext(), list, &cr.ListOptions{Namespace: common.ProxyNamespace, LabelSelector: common.DefaultGatewayProxySelector}); err != nil {
 		return nil, err
 	}
 	pods := []corev1.Pod{}
@@ -95,7 +81,7 @@ func waitForReadyProxyPods(c *client.Client, timeout time.Duration) []corev1.Pod
 // count before the suite starts changing them.
 func proxyRunningTests() {
 	By("checking the proxy pods of the gateway are Ready")
-	pods := waitForReadyProxyPods(wcClient(), 15*time.Minute)
+	pods := waitForReadyProxyPods(common.WC(), 15*time.Minute)
 	for _, pod := range pods {
 		logger.Log("Proxy pod %s on node %s", pod.Name, pod.Spec.NodeName)
 	}

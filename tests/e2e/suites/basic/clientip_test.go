@@ -24,13 +24,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
 	// clientIPProbeName names every resource the probe needs. They all live in the
 	// gateway namespace because the http listener only accepts routes from Same.
 	clientIPProbeName      = "xff-probe"
-	clientIPProbeNamespace = "envoy-gateway-system"
+	clientIPProbeNamespace = common.ProxyNamespace
 	clientIPProbePort      = 8080
 	// busybox httpd hands request headers to CGI scripts as HTTP_* environment
 	// variables, which is all the probe needs to report what actually reached it.
@@ -199,7 +201,7 @@ func dumpClientIPDiagnostics(wcClient *client.Client) {
 		logger.Log("Diagnostics: ClientTrafficPolicy status: %s", status)
 	}
 
-	proxyPods, err := gatewayProxyPods(wcClient)
+	proxyPods, err := common.GatewayProxyPods(wcClient)
 	if err != nil {
 		logger.Log("Diagnostics: could not list the envoy proxy pods: %v", err)
 		return
@@ -341,7 +343,7 @@ func clientIPProbeRoute() *unstructured.Unstructured {
 	route.SetNamespace(clientIPProbeNamespace)
 	route.Object["spec"] = map[string]any{
 		"parentRefs": []any{map[string]any{
-			"name":        "giantswarm-default",
+			"name":        common.DefaultGatewayName,
 			"sectionName": "http",
 		}},
 		"rules": []any{map[string]any{

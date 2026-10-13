@@ -17,6 +17,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 // listenerSetCertificateContentTests checks each ListenerSet really got its own
@@ -31,10 +33,10 @@ import (
 // that gap.
 func listenerSetCertificateContentTests() {
 	By("checking the chart ListenerSet certificate covers exactly its own hostname")
-	assertPubliclyIssuedFor(gatewayNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
+	assertPubliclyIssuedFor(common.ProxyNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
 
 	By("checking Envoy serves the chart ListenerSet certificate for its own hostname")
-	expectServedCertificateFromSecret(gatewayNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
+	expectServedCertificateFromSecret(common.ProxyNamespace, chartListenerSetPrefix+"-https-tls", chartListenerSetHostname())
 
 	By("checking the tenant ListenerSet certificate covers exactly its own hostname")
 	assertPubliclyIssuedFor(tenantNamespace, tenantSecretName, tenantListenerSetHostname())
@@ -88,7 +90,7 @@ func assertPubliclyIssuedFor(namespace, secretName, hostname string) {
 // leafFromSecret parses the leaf certificate out of a kubernetes.io/tls Secret.
 func leafFromSecret(namespace, secretName string) (*x509.Certificate, error) {
 	secret := &corev1.Secret{}
-	if err := wc().Get(state.GetContext(), cr.ObjectKey{Name: secretName, Namespace: namespace}, secret); err != nil {
+	if err := common.WC().Get(state.GetContext(), cr.ObjectKey{Name: secretName, Namespace: namespace}, secret); err != nil {
 		return nil, fmt.Errorf("getting secret %s/%s: %w", namespace, secretName, err)
 	}
 
@@ -112,7 +114,7 @@ func leafFromSecret(namespace, secretName string) (*x509.Certificate, error) {
 // servedCertificate returns the leaf certificate Envoy actually presents for a
 // hostname, by handshaking against the gateway load balancer with that SNI.
 func servedCertificate(hostname string) (*x509.Certificate, error) {
-	lbHostname, err := getGatewayLBHostname(wc())
+	lbHostname, err := getGatewayLBHostname(common.WC())
 	if err != nil {
 		return nil, err
 	}

@@ -12,9 +12,9 @@ import (
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	corev1 "k8s.io/api/core/v1"
-)
 
-const zoneTopologyKey = "topology.kubernetes.io/zone"
+	"e2e/internal/common"
+)
 
 // zoneSpreadTests checks that the proxy pods, all scheduled by readinessGatePodTests
 // with every node already in place, run in as many zones as the replica count and
@@ -25,7 +25,7 @@ const zoneTopologyKey = "topology.kubernetes.io/zone"
 // zone a node with room for a proxy pod. A failure here on such a cluster means the
 // constraint does not work as intended, which is what the issue asked to verify.
 func zoneSpreadTests() {
-	c := wcClient()
+	c := common.WC()
 
 	By("finding the zones that have schedulable worker nodes")
 	zones := schedulableZones(c)
@@ -39,7 +39,7 @@ func zoneSpreadTests() {
 	nodes := &corev1.NodeList{}
 	Expect(c.List(state.GetContext(), nodes)).To(Succeed())
 	for _, node := range nodes.Items {
-		nodeZones[node.Name] = node.Labels[zoneTopologyKey]
+		nodeZones[node.Name] = node.Labels[common.ZoneTopologyKey]
 	}
 
 	pods, err := proxyPods(c)
@@ -64,15 +64,15 @@ func zoneSpreadTests() {
 // schedulableZones returns the zones of the Ready worker nodes that have no
 // NoSchedule or NoExecute taint, the nodes nodeTaintsPolicy: Honor counts.
 func schedulableZones(c *client.Client) []string {
-	nodes := &corev1.NodeList{}
-	Expect(c.List(state.GetContext(), nodes, client.DoesNotHaveLabels{"node-role.kubernetes.io/control-plane"})).To(Succeed())
+	nodes, err := common.ReadyWorkerNodes(c)
+	Expect(err).NotTo(HaveOccurred())
 
 	set := map[string]bool{}
-	for _, node := range nodes.Items {
-		if !isNodeReady(node) || hasSchedulingTaint(node) {
+	for _, node := range nodes {
+		if hasSchedulingTaint(node) {
 			continue
 		}
-		if zone := node.Labels[zoneTopologyKey]; zone != "" {
+		if zone := node.Labels[common.ZoneTopologyKey]; zone != "" {
 			set[zone] = true
 		}
 	}
@@ -82,15 +82,6 @@ func schedulableZones(c *client.Client) []string {
 	}
 	sort.Strings(zones)
 	return zones
-}
-
-func isNodeReady(node corev1.Node) bool {
-	for _, condition := range node.Status.Conditions {
-		if condition.Type == corev1.NodeReady {
-			return condition.Status == corev1.ConditionTrue
-		}
-	}
-	return false
 }
 
 func hasSchedulingTaint(node corev1.Node) bool {

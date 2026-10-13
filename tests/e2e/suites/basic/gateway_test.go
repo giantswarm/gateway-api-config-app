@@ -12,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 // gatewayGatewayTests verifies that the Gateway resource exists, has correct listeners on ports 80/443,
@@ -29,8 +31,8 @@ func gatewayGatewayTests() {
 	})
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
-			Name:      "giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Name:      common.DefaultGatewayName,
+			Namespace: common.ProxyNamespace,
 		}, gateway)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -39,7 +41,7 @@ func gatewayGatewayTests() {
 
 	By("checking Gateway spec.gatewayClassName = giantswarm-default")
 	spec := gateway.Object["spec"].(map[string]any)
-	Expect(spec["gatewayClassName"]).To(Equal("giantswarm-default"))
+	Expect(spec["gatewayClassName"]).To(Equal(common.DefaultGatewayClassName))
 
 	By("checking Gateway has two listeners: http (port 80) and https (port 443)")
 	listeners := spec["listeners"].([]any)
@@ -59,8 +61,8 @@ func gatewayGatewayTests() {
 	By("checking Gateway is Accepted and Programmed")
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
-			Name:      "giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Name:      common.DefaultGatewayName,
+			Namespace: common.ProxyNamespace,
 		}, gateway); err != nil {
 			return false, err
 		}
@@ -109,7 +111,7 @@ func gatewayEnvoyProxyTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gatewayclass-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, classProxy)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -141,7 +143,7 @@ func gatewayEnvoyProxyTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, gatewayProxy)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -171,7 +173,7 @@ func gatewayClientTrafficPolicyTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, ctp)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -183,7 +185,7 @@ func gatewayClientTrafficPolicyTests() {
 	targetRefs := ctpSpec["targetRefs"].([]any)
 	Expect(targetRefs).To(HaveLen(1))
 	targetRef := targetRefs[0].(map[string]any)
-	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
+	Expect(targetRef["name"]).To(Equal(common.DefaultGatewayName))
 	Expect(targetRef["kind"]).To(Equal("Gateway"))
 
 	By("checking ClientTrafficPolicy proxyProtocol.optional=false")
@@ -210,7 +212,7 @@ func gatewayClientTrafficPolicyTests() {
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, ctp); err != nil {
 			return false, err
 		}
@@ -228,7 +230,7 @@ func gatewayClientTrafficPolicyTests() {
 			if !ok {
 				continue
 			}
-			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != "giantswarm-default" {
+			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != common.DefaultGatewayName {
 				continue
 			}
 			conditions, ok := ancestor["conditions"].([]any)
@@ -266,7 +268,7 @@ func gatewayBackendTrafficPolicyTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, btp)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -278,7 +280,7 @@ func gatewayBackendTrafficPolicyTests() {
 	targetRefs := btpSpec["targetRefs"].([]any)
 	Expect(targetRefs).To(HaveLen(1))
 	targetRef := targetRefs[0].(map[string]any)
-	Expect(targetRef["name"]).To(Equal("giantswarm-default"))
+	Expect(targetRef["name"]).To(Equal(common.DefaultGatewayName))
 	Expect(targetRef["kind"]).To(Equal("Gateway"))
 
 	By("checking BackendTrafficPolicy carries the configured circuitBreaker")
@@ -324,7 +326,7 @@ func gatewayBackendTrafficPolicyTests() {
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, btp); err != nil {
 			return false, err
 		}
@@ -342,7 +344,7 @@ func gatewayBackendTrafficPolicyTests() {
 			if !ok {
 				continue
 			}
-			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != "giantswarm-default" {
+			if ancestorRef["kind"] != "Gateway" || ancestorRef["name"] != common.DefaultGatewayName {
 				continue
 			}
 			conditions, ok := ancestor["conditions"].([]any)
@@ -379,7 +381,7 @@ func gatewayIssuerTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "letsencrypt-giantswarm-gateway",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, issuer)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -399,7 +401,7 @@ func gatewayIssuerTests() {
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "letsencrypt-giantswarm-gateway",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, issuer); err != nil {
 			return false, err
 		}
@@ -440,7 +442,7 @@ func gatewayCertificateTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default-https",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, cert)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -462,7 +464,7 @@ func gatewayCertificateTests() {
 	Eventually(func() (bool, error) {
 		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default-https",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, cert); err != nil {
 			return false, err
 		}
@@ -503,7 +505,7 @@ func gatewayHTTPRouteTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "giantswarm-default-tls-redirect",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, httpRoute)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -515,7 +517,7 @@ func gatewayHTTPRouteTests() {
 	parentRefs := routeSpec["parentRefs"].([]any)
 	Expect(parentRefs).NotTo(BeEmpty())
 	parentRef := parentRefs[0].(map[string]any)
-	Expect(parentRef["name"]).To(Equal("giantswarm-default"))
+	Expect(parentRef["name"]).To(Equal(common.DefaultGatewayName))
 	Expect(parentRef["sectionName"]).To(Equal("http"))
 
 	By("checking HTTPRoute rules[0] redirects to https with 301")

@@ -13,6 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -46,7 +48,7 @@ func expectHTTPSOK(hostname, marker string) {
 			return nil
 		}
 
-		lbHostname, lbErr := getGatewayLBHostname(wc())
+		lbHostname, lbErr := getGatewayLBHostname(common.WC())
 		if lbErr != nil {
 			return err
 		}

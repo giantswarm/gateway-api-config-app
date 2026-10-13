@@ -16,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -38,7 +40,7 @@ var tgbName string
 // labelled the proxy namespace, and the controller created an IP-mode
 // TargetGroupBinding for the gateway Service.
 func readinessGateWiringTests() {
-	c := wcClient()
+	c := common.WC()
 
 	By("checking the readiness gate ClusterPolicy is Ready")
 	Eventually(func() error {
@@ -63,7 +65,7 @@ func readinessGateWiringTests() {
 	By("checking the proxy namespace carries the readiness gate label")
 	Eventually(func() (string, error) {
 		ns := &corev1.Namespace{}
-		if err := c.Get(state.GetContext(), cr.ObjectKey{Name: proxyNamespace}, ns); err != nil {
+		if err := c.Get(state.GetContext(), cr.ObjectKey{Name: common.ProxyNamespace}, ns); err != nil {
 			return "", err
 		}
 		return ns.Labels[readinessGateLabel], nil
@@ -102,7 +104,7 @@ func readinessGateWiringTests() {
 // ReplicaSet recreates a deleted pod with the same template hash, so the zone spread
 // counts the remaining pods when it places the new one.
 func readinessGatePodTests() {
-	c := wcClient()
+	c := common.WC()
 	gate := corev1.PodConditionType(readinessGatePrefix + tgbName)
 
 	pods, err := proxyPods(c)
@@ -152,7 +154,7 @@ func hasReadinessGate(pod corev1.Pod, gate corev1.PodConditionType) bool {
 // AWS Load Balancer Controller created for the gateway's LoadBalancer Service.
 func gatewayTargetGroupBinding(c *client.Client) (string, error) {
 	services := &corev1.ServiceList{}
-	if err := c.List(state.GetContext(), services, &cr.ListOptions{Namespace: proxyNamespace, LabelSelector: proxySelector}); err != nil {
+	if err := c.List(state.GetContext(), services, &cr.ListOptions{Namespace: common.ProxyNamespace, LabelSelector: common.DefaultGatewayProxySelector}); err != nil {
 		return "", err
 	}
 	serviceName := ""
@@ -162,12 +164,12 @@ func gatewayTargetGroupBinding(c *client.Client) (string, error) {
 		}
 	}
 	if serviceName == "" {
-		return "", fmt.Errorf("no LoadBalancer Service for gateway %s found", gatewayName)
+		return "", fmt.Errorf("no LoadBalancer Service for gateway %s found", common.DefaultGatewayName)
 	}
 
 	tgbs := &unstructured.UnstructuredList{}
 	tgbs.SetGroupVersionKind(schema.GroupVersionKind{Group: "elbv2.k8s.aws", Version: "v1beta1", Kind: "TargetGroupBindingList"})
-	if err := c.List(state.GetContext(), tgbs, cr.InNamespace(proxyNamespace)); err != nil {
+	if err := c.List(state.GetContext(), tgbs, cr.InNamespace(common.ProxyNamespace)); err != nil {
 		return "", err
 	}
 	for _, tgb := range tgbs.Items {
