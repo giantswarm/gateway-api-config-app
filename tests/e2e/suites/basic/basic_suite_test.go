@@ -14,6 +14,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -27,11 +29,11 @@ func TestBasic(t *testing.T) {
 		WithIsUpgrade(isUpgrade).
 		WithValuesFile("./values.yaml").
 		AfterClusterReady(func() {
-			installDependencies()
+			common.InstallDependencies()
 		}).
 		AfterSuite(func() {
 			cleanupListenerSetFixtures()
-			cleanupDependencies()
+			common.CleanupDependencies()
 		}).
 		Tests(func() {
 			It("should have the app correctly deployed", func() {

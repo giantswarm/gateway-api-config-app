@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 // gatewayClassResourceTests verifies GatewayClass is created with correct Envoy Gateway controller reference,
@@ -29,7 +31,7 @@ func gatewayClassResourceTests() {
 		Kind:    "GatewayClass",
 	})
 	Eventually(func() error {
-		return wcClient.Get(state.GetContext(), cr.ObjectKey{Name: "giantswarm-default"}, gatewayClass)
+		return wcClient.Get(state.GetContext(), cr.ObjectKey{Name: common.DefaultGatewayClassName}, gatewayClass)
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
@@ -47,7 +49,7 @@ func gatewayClassResourceTests() {
 
 	By("checking GatewayClass is Accepted")
 	Eventually(func() (bool, error) {
-		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{Name: "giantswarm-default"}, gatewayClass); err != nil {
+		if err := wcClient.Get(state.GetContext(), cr.ObjectKey{Name: common.DefaultGatewayClassName}, gatewayClass); err != nil {
 			return false, err
 		}
 		status, ok := gatewayClass.Object["status"].(map[string]any)
@@ -87,7 +89,7 @@ func gatewayClassEnvoyProxyTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gatewayclass-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, envoyProxy)
 	}).
 		WithTimeout(5 * time.Minute).

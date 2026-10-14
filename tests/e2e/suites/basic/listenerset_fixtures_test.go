@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
-	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	cmv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -22,12 +21,11 @@ import (
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/yaml"
+
+	"e2e/internal/common"
 )
 
 const (
-	gatewayNamespace = "envoy-gateway-system"
-	gatewayName      = "giantswarm-default"
-
 	// chartListenerSetName is what the chart renders for gateways.default.listenerSets.extra,
 	// and chartListenerSetPrefix the name its supporting resources are keyed on.
 	chartListenerSetName   = "giantswarm-default-extra"
@@ -98,16 +96,10 @@ func tenantListenerSetHostname() string { return fmt.Sprintf("%s.%s", tenantList
 // control request in the policy cascade matrix.
 func gatewayHostname() string { return fmt.Sprintf("ingress.%s", wcZone()) }
 
-func wc() *client.Client {
-	wcClient, err := state.GetFramework().WC(state.GetCluster().Name)
-	Expect(err).NotTo(HaveOccurred())
-	return wcClient
-}
-
 // createIfMissing creates obj and tolerates an existing one, so every fixture
 // step is safe to re-enter.
 func createIfMissing(obj cr.Object) {
-	err := wc().Create(state.GetContext(), obj)
+	err := common.WC().Create(state.GetContext(), obj)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		Expect(err).NotTo(HaveOccurred(), "failed to create %T %s/%s", obj, obj.GetNamespace(), obj.GetName())
 	}
@@ -198,7 +190,7 @@ func deployHttpbin() {
 	By("waiting for go-httpbin to become ready")
 	Eventually(func() error {
 		dep := &appsv1.Deployment{}
-		if err := wc().Get(state.GetContext(), cr.ObjectKey{Name: httpbinName, Namespace: tenantNamespace}, dep); err != nil {
+		if err := common.WC().Get(state.GetContext(), cr.ObjectKey{Name: httpbinName, Namespace: tenantNamespace}, dep); err != nil {
 			return err
 		}
 		if dep.Status.ReadyReplicas < 1 {
@@ -229,8 +221,8 @@ func createTenantListenerSet() {
 			ParentRef: gatewayv1.ParentGatewayReference{
 				Group:     &group,
 				Kind:      &kind,
-				Name:      gatewayv1.ObjectName(gatewayName),
-				Namespace: ptrTo(gatewayv1.Namespace(gatewayNamespace)),
+				Name:      gatewayv1.ObjectName(common.DefaultGatewayName),
+				Namespace: ptrTo(gatewayv1.Namespace(common.ProxyNamespace)),
 			},
 			Listeners: []gatewayv1.ListenerEntry{{
 				Name:     gatewayv1.SectionName("https"),
@@ -287,7 +279,7 @@ func createFixtureRoutes() {
 		"httpbin-gateway",
 		gatewayHostname(),
 		"gateway-control",
-		gatewayv1.Kind("Gateway"), gatewayName, gatewayNamespace,
+		gatewayv1.Kind("Gateway"), common.DefaultGatewayName, common.ProxyNamespace,
 		false,
 	))
 
@@ -295,7 +287,7 @@ func createFixtureRoutes() {
 		"httpbin-lset-chart",
 		chartListenerSetHostname(),
 		"lset-chart",
-		gatewayv1.Kind("ListenerSet"), chartListenerSetName, gatewayNamespace,
+		gatewayv1.Kind("ListenerSet"), chartListenerSetName, common.ProxyNamespace,
 		true,
 	))
 

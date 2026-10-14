@@ -8,14 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
-	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -90,7 +90,7 @@ func gatewayKarpenterProxyPodTests() {
 
 	By("checking envoy proxy pods do not opt out of Karpenter disruption")
 	Eventually(func() error {
-		proxyPods, err := gatewayProxyPods(wcClient)
+		proxyPods, err := common.GatewayProxyPods(wcClient)
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func gatewayKarpenterProxyPodTests() {
 
 	By("checking envoy proxy pods have a terminationGracePeriodSeconds above the drain timeout")
 	Eventually(func() error {
-		proxyPods, err := gatewayProxyPods(wcClient)
+		proxyPods, err := common.GatewayProxyPods(wcClient)
 		if err != nil {
 			return err
 		}
@@ -128,7 +128,7 @@ func gatewayKarpenterProxyPodTests() {
 
 	By("checking envoy proxy pods prefer one pod per node")
 	Eventually(func() error {
-		proxyPods, err := gatewayProxyPods(wcClient)
+		proxyPods, err := common.GatewayProxyPods(wcClient)
 		if err != nil {
 			return err
 		}
@@ -154,10 +154,10 @@ func gatewayKarpenterProxyPodTests() {
 		Should(Succeed())
 
 	By("checking envoy proxy pods are spread across nodes")
-	proxyPods, err := gatewayProxyPods(wcClient)
+	proxyPods, err := common.GatewayProxyPods(wcClient)
 	Expect(err).NotTo(HaveOccurred())
 
-	workers, err := readyWorkerNodes(wcClient)
+	workers, err := common.ReadyWorkerNodes(wcClient)
 	Expect(err).NotTo(HaveOccurred())
 
 	nodesByName := map[string]int{}
@@ -179,43 +179,4 @@ func gatewayKarpenterProxyPodTests() {
 		logger.Log("Envoy proxy pods are not spread one per node: %s", entry)
 		AddReportEntry("envoy proxy pod spread", entry)
 	}
-}
-
-// gatewayProxyPods returns the envoy proxy pods of the giantswarm-default gateway.
-// It errors when none are found so it can be used inside an Eventually block.
-func gatewayProxyPods(wcClient *client.Client) (*corev1.PodList, error) {
-	proxyPods := &corev1.PodList{}
-	err := wcClient.List(state.GetContext(), proxyPods, &cr.ListOptions{
-		Namespace: "envoy-gateway-system",
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-			"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-		}),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(proxyPods.Items) == 0 {
-		return nil, fmt.Errorf("no envoy proxy pods found for gateway giantswarm-default")
-	}
-	return proxyPods, nil
-}
-
-// readyWorkerNodes returns the Ready nodes that are not control plane nodes.
-func readyWorkerNodes(wcClient *client.Client) ([]corev1.Node, error) {
-	nodes := &corev1.NodeList{}
-	if err := wcClient.List(state.GetContext(), nodes, client.DoesNotHaveLabels{"node-role.kubernetes.io/control-plane"}); err != nil {
-		return nil, err
-	}
-
-	ready := []corev1.Node{}
-	for _, node := range nodes.Items {
-		for _, condition := range node.Status.Conditions {
-			if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
-				ready = append(ready, node)
-				break
-			}
-		}
-	}
-	return ready, nil
 }

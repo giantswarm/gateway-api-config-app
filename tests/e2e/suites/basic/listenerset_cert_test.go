@@ -21,6 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"e2e/internal/common"
 )
 
 // certRotationEnvVar gates the certificate rotation half of envoyproxy/gateway#9614.
@@ -32,25 +34,25 @@ const certRotationEnvVar = "E2E_LISTENERSET_CERT_ROTATION"
 // chart-managed ListenerSet, and that Envoy Gateway accepted each piece.
 func listenerSetChartResourceTests() {
 	ctx := state.GetContext()
-	wcClient := wc()
+	wcClient := common.WC()
 
 	By("checking the chart rendered ListenerSet " + chartListenerSetName)
 	ls := &gatewayv1.ListenerSet{}
 	Eventually(func() error {
-		return wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetName, Namespace: gatewayNamespace}, ls)
+		return wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetName, Namespace: common.ProxyNamespace}, ls)
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(Succeed())
 
-	Expect(string(ls.Spec.ParentRef.Name)).To(Equal(gatewayName))
+	Expect(string(ls.Spec.ParentRef.Name)).To(Equal(common.DefaultGatewayName))
 	Expect(ls.Spec.Listeners).To(HaveLen(1))
 	Expect(ls.Spec.Listeners[0].Hostname).NotTo(BeNil())
 	Expect(string(*ls.Spec.Listeners[0].Hostname)).To(Equal(chartListenerSetHostname()))
 
 	By("checking the chart rendered the ListenerSet Certificate")
 	cert := &cmv1.Certificate{}
-	Expect(wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: gatewayNamespace}, cert)).To(Succeed())
+	Expect(wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: common.ProxyNamespace}, cert)).To(Succeed())
 	Expect(cert.Spec.DNSNames).To(ConsistOf(chartListenerSetHostname()))
 	Expect(cert.Spec.SecretName).To(Equal(chartListenerSetPrefix + "-https-tls"))
 
@@ -64,12 +66,12 @@ func listenerSetChartResourceTests() {
 		Version: "v1alpha1",
 		Kind:    "DNSEndpoint",
 	})
-	err := wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: gatewayNamespace}, dnsEndpoint)
+	err := wcClient.Get(ctx, cr.ObjectKey{Name: chartListenerSetPrefix + "-https", Namespace: common.ProxyNamespace}, dnsEndpoint)
 	Expect(errors.IsNotFound(err)).To(BeTrue(),
 		"expected no DNSEndpoint for the chart ListenerSet, check dnsEndpoints.enabled in bundle_values.yaml, got err=%v", err)
 
 	By("waiting for the chart ListenerSet to be Accepted and Programmed")
-	expectListenerSetReady(chartListenerSetName, gatewayNamespace, "https", 15*time.Minute)
+	expectListenerSetReady(chartListenerSetName, common.ProxyNamespace, "https", 15*time.Minute)
 
 	By("checking the ListenerSet-targeted ClientTrafficPolicy and BackendTrafficPolicy are Accepted")
 	// Envoy Gateway collapses every 443 listener into one Envoy listener, so a
@@ -85,7 +87,7 @@ func listenerSetChartResourceTests() {
 // middle the ordering is not load-bearing and the test proves nothing.
 func listenerSetTenantCertTests() {
 	ctx := state.GetContext()
-	wcClient := wc()
+	wcClient := common.WC()
 
 	By("checking the tenant TLS Secret genuinely does not exist yet")
 	secret := &corev1.Secret{}
@@ -120,7 +122,7 @@ func listenerSetTenantCertTests() {
 	By("checking the parent Gateway reports both ListenerSets as attached")
 	Eventually(func() (int32, error) {
 		gw := &gatewayv1.Gateway{}
-		if err := wcClient.Get(ctx, cr.ObjectKey{Name: gatewayName, Namespace: gatewayNamespace}, gw); err != nil {
+		if err := wcClient.Get(ctx, cr.ObjectKey{Name: common.DefaultGatewayName, Namespace: common.ProxyNamespace}, gw); err != nil {
 			return 0, err
 		}
 		if gw.Status.AttachedListenerSets == nil {
@@ -141,7 +143,7 @@ func listenerSetCertRotationTests() {
 	}
 
 	ctx := state.GetContext()
-	wcClient := wc()
+	wcClient := common.WC()
 	host := tenantListenerSetHostname()
 
 	By("recording the serial currently served for " + host)
@@ -172,7 +174,7 @@ func listenerSetCertRotationTests() {
 func expectListenerSetReady(name, namespace, listener string, timeout time.Duration) {
 	Eventually(func() error {
 		ls := &gatewayv1.ListenerSet{}
-		if err := wc().Get(state.GetContext(), cr.ObjectKey{Name: name, Namespace: namespace}, ls); err != nil {
+		if err := common.WC().Get(state.GetContext(), cr.ObjectKey{Name: name, Namespace: namespace}, ls); err != nil {
 			return err
 		}
 		if !meta.IsStatusConditionTrue(ls.Status.Conditions, string(gatewayv1.ListenerSetConditionAccepted)) {
@@ -209,7 +211,7 @@ func expectPolicyAcceptedForListenerSet(kind, name, listenerSetName string) {
 	})
 
 	Eventually(func() error {
-		if err := wc().Get(state.GetContext(), cr.ObjectKey{Name: name, Namespace: gatewayNamespace}, policy); err != nil {
+		if err := common.WC().Get(state.GetContext(), cr.ObjectKey{Name: name, Namespace: common.ProxyNamespace}, policy); err != nil {
 			return err
 		}
 		ancestors, found, err := unstructured.NestedSlice(policy.Object, "status", "ancestors")
@@ -248,7 +250,7 @@ func expectPolicyAcceptedForListenerSet(kind, name, listenerSetName string) {
 // Ginkgo report. Deliberately not an assertion, see listenerSetTenantCertTests.
 func reportListenerSetConditions(stage string) {
 	ls := &gatewayv1.ListenerSet{}
-	if err := wc().Get(state.GetContext(), cr.ObjectKey{Name: tenantListenerSetName, Namespace: tenantNamespace}, ls); err != nil {
+	if err := common.WC().Get(state.GetContext(), cr.ObjectKey{Name: tenantListenerSetName, Namespace: tenantNamespace}, ls); err != nil {
 		AddReportEntry("tenant ListenerSet conditions "+stage, fmt.Sprintf("get failed: %v", err))
 		return
 	}

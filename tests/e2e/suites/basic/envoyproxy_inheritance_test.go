@@ -11,9 +11,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
+
+	"e2e/internal/common"
 )
 
 const (
@@ -43,7 +44,7 @@ func gatewayEnvoyProxyInheritanceTests() {
 	Eventually(func() error {
 		return wcClient.Get(state.GetContext(), cr.ObjectKey{
 			Name:      "gateway-giantswarm-default",
-			Namespace: "envoy-gateway-system",
+			Namespace: common.ProxyNamespace,
 		}, gatewayProxy)
 	}).
 		WithTimeout(5 * time.Minute).
@@ -72,11 +73,8 @@ func gatewayServiceInheritanceTests() {
 	Eventually(func() error {
 		svcList := &corev1.ServiceList{}
 		if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
-			Namespace: "envoy-gateway-system",
-			LabelSelector: labels.SelectorFromSet(map[string]string{
-				"gateway.envoyproxy.io/owning-gateway-name":      "giantswarm-default",
-				"gateway.envoyproxy.io/owning-gateway-namespace": "envoy-gateway-system",
-			}),
+			Namespace:     common.ProxyNamespace,
+			LabelSelector: common.DefaultGatewayProxySelector,
 		}); err != nil {
 			return err
 		}
