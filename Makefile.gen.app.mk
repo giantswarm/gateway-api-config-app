@@ -2,7 +2,7 @@
 #
 #    devctl
 #
-#    https://github.com/giantswarm/devctl/blob/04334ff66e688e6562a10436ad17ea55631ac849/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
+#    https://github.com/giantswarm/devctl/blob/a70f5a220e6a62f61ed5a5e7c055547592dbe34e/pkg/gen/input/makefile/internal/file/Makefile.gen.app.mk.template
 #
 
 ##@ App
@@ -54,6 +54,8 @@ check-env:
 
 # renovate: datasource=github-releases depName=helm-unittest/helm-unittest
 HELM_UNITTEST_VERSION ?= v1.2.1
+HELM_UNITTEST_ATTEMPTS ?= 3
+HELM_UNITTEST_RETRY_DELAY ?= 5
 
 .PHONY: helm-test install-helm-unittest
 
@@ -75,12 +77,17 @@ HELM_UNITTEST_VERSION ?= v1.2.1
 # Nothing here reads APPLICATION, so this target carries no `check-env` prerequisite. A
 # chart-only repository sets APPLICATION nowhere, and requiring it made `make helm-test`
 # fail in exactly the repositories this target exists for.
+# A chart under a placeholder directory such as `helm/{APP-NAME}` belongs to a template
+# repository: its names render only once a repository created from it fills them in, so
+# its suites cannot pass here and run on the rendered copy instead. It is skipped, as a
+# chart reference with a placeholder is no chart for the catalog either.
 helm-test: install-helm-unittest ## Run the chart unit tests (helm-unittest).
 	@echo "====> $@"
 	@found=""; \
 	for d in $$(find helm -type d \( -name tests -o -name unittests \) 2>/dev/null | sort); do \
 		c=$$(dirname "$$d"); \
 		[ -f "$$c/Chart.yaml" ] || continue; \
+		case "$$c" in *[{}]*) echo "skipping $$c: a template's placeholder chart"; continue;; esac; \
 		ls "$$d"/*_test.yaml >/dev/null 2>&1 || continue; \
 		found=1; \
 		helm unittest -f "$$(basename "$$d")/*_test.yaml" --with-subchart=false "$$c" || exit 1; \
@@ -90,12 +97,28 @@ helm-test: install-helm-unittest ## Run the chart unit tests (helm-unittest).
 # Installs the pinned version, and REPLACES a different one. A guard that only checks that
 # the plugin exists lets a developer keep an old version forever, and then a local run and
 # a CI run are not the same run -- which is the whole point of pinning it here.
+# helm v4 verifies a plugin's source by default and refuses this one, so `--verify=false`
+# is passed whenever `helm plugin install` knows the flag; helm v3 has none and installs as before.
+# The plugin's install hook downloads its binary with curl and no retry, so a transient
+# network error (a connection reset) fails it; the install runs up to
+# HELM_UNITTEST_ATTEMPTS times, HELM_UNITTEST_RETRY_DELAY seconds apart. A failed attempt
+# can leave a half-installed plugin behind that the next install refuses, so it is
+# uninstalled before each retry.
 install-helm-unittest:
 	@have=$$(helm plugin list 2>/dev/null | awk '$$1 == "unittest" {print $$2}'); \
 	want=$$(echo "$(HELM_UNITTEST_VERSION)" | sed 's/^v//'); \
 	if [ "$$have" != "$$want" ]; then \
 		[ -z "$$have" ] || helm plugin uninstall unittest >/dev/null 2>&1 || true; \
-		helm plugin install https://github.com/helm-unittest/helm-unittest --version $(HELM_UNITTEST_VERSION); \
+		verify=""; \
+		helm plugin install --help 2>&1 | grep -q -e '--verify' && verify="--verify=false"; \
+		attempt=1; \
+		until helm plugin install $$verify https://github.com/helm-unittest/helm-unittest --version $(HELM_UNITTEST_VERSION); do \
+			[ "$$attempt" -lt "$(HELM_UNITTEST_ATTEMPTS)" ] || exit 1; \
+			echo "helm-unittest install failed (attempt $$attempt of $(HELM_UNITTEST_ATTEMPTS)), retrying in $(HELM_UNITTEST_RETRY_DELAY)s" >&2; \
+			helm plugin uninstall unittest >/dev/null 2>&1 || true; \
+			sleep $(HELM_UNITTEST_RETRY_DELAY); \
+			attempt=$$((attempt + 1)); \
+		done; \
 	fi
 
 # Chart tests join `make test`, the interface CI calls (make-target-ci-interface ADR,
