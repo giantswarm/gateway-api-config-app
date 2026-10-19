@@ -26,6 +26,15 @@ const (
 	// EnvoyProxy keeps rendering it.
 	defaultOnlyAnnotation      = "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol"
 	defaultOnlyAnnotationValue = "*"
+	// classOnlyAnnotation is set only on the GatewayClass EnvoyProxy in bundle_values.yaml.
+	classOnlyAnnotation      = "e2e.giantswarm.io/gatewayclass-annotation"
+	classOnlyAnnotationValue = "gatewayclass"
+	// gatewayOnlyAnnotation is set only in the gateway service.annotations in bundle_values.yaml.
+	gatewayOnlyAnnotation      = "e2e.giantswarm.io/gateway-annotation"
+	gatewayOnlyAnnotationValue = "gateway"
+	// overriddenAnnotation is set on both levels in bundle_values.yaml, and the gateway wins.
+	overriddenAnnotation      = "e2e.giantswarm.io/overridden-annotation"
+	overriddenAnnotationValue = "gateway"
 )
 
 // gatewayEnvoyProxyInheritanceTests verifies the gateway EnvoyProxy leaves out a provider default
@@ -61,15 +70,28 @@ func gatewayEnvoyProxyInheritanceTests() {
 
 	By("checking gateway EnvoyProxy still renders the defaults the GatewayClass does not set")
 	Expect(annotations).To(HaveKeyWithValue(defaultOnlyAnnotation, defaultOnlyAnnotationValue))
+
+	By("checking gateway EnvoyProxy renders the gateway service annotations")
+	Expect(annotations).To(HaveKeyWithValue(gatewayOnlyAnnotation, gatewayOnlyAnnotationValue))
+	Expect(annotations).To(HaveKeyWithValue(overriddenAnnotation, overriddenAnnotationValue))
 }
 
 // gatewayServiceInheritanceTests verifies the LoadBalancer Service Envoy Gateway renders from the
-// merged EnvoyProxy carries the GatewayClass value, not the chart provider default.
+// merged EnvoyProxy carries the GatewayClass value, not the chart provider default, and that
+// annotations set on both the GatewayClass and the gateway reach it together, with the gateway
+// value winning on a shared key.
 func gatewayServiceInheritanceTests() {
 	wcName := state.GetCluster().Name
 	wcClient, _ := state.GetFramework().WC(wcName)
 
-	By("checking gateway Service carries the GatewayClass annotation and the remaining defaults")
+	By("checking gateway Service carries the GatewayClass and gateway annotations and the remaining defaults")
+	expected := map[string]string{
+		inheritedAnnotation:   inheritedAnnotationValue,
+		defaultOnlyAnnotation: defaultOnlyAnnotationValue,
+		classOnlyAnnotation:   classOnlyAnnotationValue,
+		gatewayOnlyAnnotation: gatewayOnlyAnnotationValue,
+		overriddenAnnotation:  overriddenAnnotationValue,
+	}
 	Eventually(func() error {
 		svcList := &corev1.ServiceList{}
 		if err := wcClient.List(state.GetContext(), svcList, &cr.ListOptions{
@@ -82,11 +104,10 @@ func gatewayServiceInheritanceTests() {
 			return fmt.Errorf("no services found for gateway giantswarm-default")
 		}
 		annotations := svcList.Items[0].Annotations
-		if got := annotations[inheritedAnnotation]; got != inheritedAnnotationValue {
-			return fmt.Errorf("expected annotation %s=%q from the GatewayClass, got %q", inheritedAnnotation, inheritedAnnotationValue, got)
-		}
-		if got := annotations[defaultOnlyAnnotation]; got != defaultOnlyAnnotationValue {
-			return fmt.Errorf("expected annotation %s=%q from the gateway defaults, got %q", defaultOnlyAnnotation, defaultOnlyAnnotationValue, got)
+		for key, want := range expected {
+			if got := annotations[key]; got != want {
+				return fmt.Errorf("expected annotation %s=%q on the gateway Service, got %q", key, want, got)
+			}
 		}
 		return nil
 	}).
