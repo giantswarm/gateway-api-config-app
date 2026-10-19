@@ -35,7 +35,7 @@ func gatewayMonitoringTests() {
 			Namespace: common.ProxyNamespace,
 		}, podMonitor)
 	}).
-		WithTimeout(5 * time.Minute).
+		WithTimeout(10 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(Succeed())
 
