@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	helmclient "github.com/giantswarm/apptest-framework/v5/pkg/client"
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
 	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
@@ -22,40 +21,6 @@ import (
 
 	"e2e/internal/common"
 )
-
-// deploymentAppTests verifies the bundle HelmRelease and the gateway-api-config HelmRelease it
-// renders are ready, with the latter at the version under test, before application-specific
-// tests run.
-func deploymentAppTests() {
-	cluster := state.GetCluster()
-	namespace := cluster.Organization.GetNamespace()
-	bundleName := fmt.Sprintf("%s-%s", cluster.Name, state.GetBundleApplication().AppName)
-	appName := fmt.Sprintf("%s-%s", cluster.Name, state.GetApplication().AppName)
-
-	By("checking the bundle HelmRelease is ready")
-	Eventually(func() (bool, error) {
-		return helmclient.IsHelmReleaseReady(state.GetContext(), bundleName, namespace)
-	}).
-		WithTimeout(5 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
-
-	By("checking the test app HelmRelease is ready")
-	Eventually(func() (bool, error) {
-		return helmclient.IsHelmReleaseReady(state.GetContext(), appName, namespace)
-	}).
-		WithTimeout(15 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
-
-	By("checking the test app HelmRelease is deployed at the correct version")
-	Eventually(func() (bool, error) {
-		return helmclient.IsHelmReleaseVersion(state.GetContext(), appName, namespace, state.GetApplication().Version)
-	}).
-		WithTimeout(5 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
-}
 
 // gatewayDeploymentTests validates Envoy proxy pods are running, use correct Giant Swarm images,
 // have external-dns annotations for the AWS NLB hostname, and confirms the LoadBalancer service is provisioned with an external hostname.

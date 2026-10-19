@@ -37,9 +37,6 @@ func TestBasic(t *testing.T) {
 			common.CleanupDependencies()
 		}).
 		Tests(func() {
-			It("should have the bundle and app HelmReleases deployed", func() {
-				deploymentAppTests()
-			})
 			It("should have the gatewayclass resources correctly configured", func() {
 				gatewayClassResourceTests()
 				gatewayClassEnvoyProxyTests()
