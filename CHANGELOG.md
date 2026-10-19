@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Install `gateway-api-bundle` as a HelmRelease in the e2e suites, matching its migration from App CRs, and drop the App deployment check the framework already covers.
+- Drop the e2e App deployment check, as `gateway-api-bundle` now installs its apps as HelmReleases and the framework already checks them.
 
 ## [1.13.0] - 2026-10-08
 
