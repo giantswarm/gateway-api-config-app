@@ -25,6 +25,7 @@ const (
 func TestBasic(t *testing.T) {
 	suite.New().
 		InAppBundle("gateway-api-bundle").
+		WithHelmRelease(true).
 		WithInstallNamespace("envoy-gateway-system").
 		WithIsUpgrade(isUpgrade).
 		WithValuesFile("./values.yaml").
@@ -36,7 +37,7 @@ func TestBasic(t *testing.T) {
 			common.CleanupDependencies()
 		}).
 		Tests(func() {
-			It("should have the app correctly deployed", func() {
+			It("should have the bundle and app HelmReleases deployed", func() {
 				deploymentAppTests()
 			})
 			It("should have the gatewayclass resources correctly configured", func() {

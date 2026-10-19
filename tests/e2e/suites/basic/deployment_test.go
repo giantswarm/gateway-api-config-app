@@ -9,52 +9,49 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	helmclient "github.com/giantswarm/apptest-framework/v5/pkg/client"
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
 	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
-	"github.com/giantswarm/clustertest/v5/pkg/wait"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"e2e/internal/common"
 )
 
-// deploymentAppTests verifies the bundle application is installed with the correct version
-// before application-specific tests run, ensuring the deployment foundation is ready.
+// deploymentAppTests verifies the bundle HelmRelease and the gateway-api-config HelmRelease it
+// renders are ready, with the latter at the version under test, before application-specific
+// tests run.
 func deploymentAppTests() {
-	By("checking bundle application is created")
-	Expect(state.GetBundleApplication()).ToNot(BeNil())
-	Expect(state.GetBundleApplication().AppName).ToNot(Equal(state.GetApplication().AppName))
+	cluster := state.GetCluster()
+	namespace := cluster.Organization.GetNamespace()
+	bundleName := fmt.Sprintf("%s-%s", cluster.Name, state.GetBundleApplication().AppName)
+	appName := fmt.Sprintf("%s-%s", cluster.Name, state.GetApplication().AppName)
 
-	By("checking the bundle app is deployed")
-	Eventually(wait.IsAppDeployed(state.GetContext(), state.GetFramework().MC(), state.GetBundleApplication().InstallName, state.GetBundleApplication().InstallNamespace)).
-		WithTimeout(30 * time.Second).
-		WithPolling(50 * time.Millisecond).
+	By("checking the bundle HelmRelease is ready")
+	Eventually(func() (bool, error) {
+		return helmclient.IsHelmReleaseReady(state.GetContext(), bundleName, namespace)
+	}).
+		WithTimeout(5 * time.Minute).
+		WithPolling(5 * time.Second).
 		Should(BeTrue())
 
-	By("checking the test app is deployed")
+	By("checking the test app HelmRelease is ready")
 	Eventually(func() (bool, error) {
-		done, err := wait.IsAppDeployed(state.GetContext(), state.GetFramework().MC(), state.GetApplication().InstallName, state.GetApplication().Organization.GetNamespace())()
-		if err != nil {
-			if errors.IsNotFound(err) {
-				logger.Log("App '%s/%s' doesn't exist yet", state.GetApplication().Organization.GetNamespace(), state.GetApplication().InstallName)
-				return false, nil
-			}
-			return false, err
-		}
-		return done, nil
+		return helmclient.IsHelmReleaseReady(state.GetContext(), appName, namespace)
 	}).
 		WithTimeout(15 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(BeTrue())
 
-	By("checking the test app is deployed at the correct version")
-	Eventually(wait.IsAppVersion(state.GetContext(), state.GetFramework().MC(), state.GetApplication().InstallName, state.GetApplication().Organization.GetNamespace(), state.GetApplication().Version)).
+	By("checking the test app HelmRelease is deployed at the correct version")
+	Eventually(func() (bool, error) {
+		return helmclient.IsHelmReleaseVersion(state.GetContext(), appName, namespace, state.GetApplication().Version)
+	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(5 * time.Second).
 		Should(BeTrue())
