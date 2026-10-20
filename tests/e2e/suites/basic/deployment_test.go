@@ -12,53 +12,15 @@ import (
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
 	"github.com/giantswarm/clustertest/v5/pkg/client"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
-	"github.com/giantswarm/clustertest/v5/pkg/wait"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	cr "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"e2e/internal/common"
 )
-
-// deploymentAppTests verifies the bundle application is installed with the correct version
-// before application-specific tests run, ensuring the deployment foundation is ready.
-func deploymentAppTests() {
-	By("checking bundle application is created")
-	Expect(state.GetBundleApplication()).ToNot(BeNil())
-	Expect(state.GetBundleApplication().AppName).ToNot(Equal(state.GetApplication().AppName))
-
-	By("checking the bundle app is deployed")
-	Eventually(wait.IsAppDeployed(state.GetContext(), state.GetFramework().MC(), state.GetBundleApplication().InstallName, state.GetBundleApplication().InstallNamespace)).
-		WithTimeout(30 * time.Second).
-		WithPolling(50 * time.Millisecond).
-		Should(BeTrue())
-
-	By("checking the test app is deployed")
-	Eventually(func() (bool, error) {
-		done, err := wait.IsAppDeployed(state.GetContext(), state.GetFramework().MC(), state.GetApplication().InstallName, state.GetApplication().Organization.GetNamespace())()
-		if err != nil {
-			if errors.IsNotFound(err) {
-				logger.Log("App '%s/%s' doesn't exist yet", state.GetApplication().Organization.GetNamespace(), state.GetApplication().InstallName)
-				return false, nil
-			}
-			return false, err
-		}
-		return done, nil
-	}).
-		WithTimeout(15 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
-
-	By("checking the test app is deployed at the correct version")
-	Eventually(wait.IsAppVersion(state.GetContext(), state.GetFramework().MC(), state.GetApplication().InstallName, state.GetApplication().Organization.GetNamespace(), state.GetApplication().Version)).
-		WithTimeout(5 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
-}
 
 // gatewayDeploymentTests validates Envoy proxy pods are running, use correct Giant Swarm images,
 // have external-dns annotations for the AWS NLB hostname, and confirms the LoadBalancer service is provisioned with an external hostname.

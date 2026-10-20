@@ -17,6 +17,8 @@ apps:
                 envoyService:
                   annotations:
                     service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "3"
+                    e2e.giantswarm.io/gatewayclass-annotation: gatewayclass
+                    e2e.giantswarm.io/overridden-annotation: gatewayclass
               errorPages:
                 enabled: true
                 statusCodes:
@@ -33,6 +35,12 @@ apps:
           gateways:
             default:
               dnsName: ingress
+              # Set alongside the GatewayClass annotations, so the suite covers both levels
+              # reaching the Service together and the gateway winning on a shared key.
+              service:
+                annotations:
+                  e2e.giantswarm.io/gateway-annotation: gateway
+                  e2e.giantswarm.io/overridden-annotation: gateway
               # Opt in to the header strip: it ships empty so existing installations keep
               # forwarding what the client sent, so the suite has to ask for it to cover it.
               clientTrafficPolicy:

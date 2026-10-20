@@ -36,9 +36,6 @@ func TestBasic(t *testing.T) {
 			common.CleanupDependencies()
 		}).
 		Tests(func() {
-			It("should have the app correctly deployed", func() {
-				deploymentAppTests()
-			})
 			It("should have the gatewayclass resources correctly configured", func() {
 				gatewayClassResourceTests()
 				gatewayClassEnvoyProxyTests()

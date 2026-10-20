@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add an `ipmode` e2e suite that runs the default gateway with NLB IP targets on a three-zone cluster. It asserts that replaced proxy pods carry the AWS Load Balancer Controller target health readiness gate and only become Ready once it is True, and that the proxy pods run in at least two zones.
+- Cover service annotations set on both the GatewayClass and the gateway in the e2e suite.
+
+### Changed
+
+- Drop the e2e App deployment check, as `gateway-api-bundle` now installs its apps as HelmReleases and the framework already checks them.
 
 ## [1.13.0] - 2026-10-08
 
