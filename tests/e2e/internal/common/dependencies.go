@@ -41,7 +41,6 @@ const (
 	awsLBControllerBundleServiceAccount = "automation"
 
 	awsLBControllerBundleInstallTimeout = 10 * time.Minute
-	awsLBControllerBundleCleanupTimeout = 5 * time.Minute
 )
 
 var awsLBControllerBundle *client.HelmReleaseConfig
@@ -88,28 +87,16 @@ func InstallDependencies() {
 
 // CleanupDependencies removes the dependency HelmRelease again. Best effort: the workload
 // cluster and its organization namespace are torn down right after, so a failure here must not
-// turn a green suite red. It still waits for the uninstall to reach the workload cluster, since
-// the bundle's child HelmRelease can't finalize once the cluster's kubeconfig is gone.
+// turn a green suite red. It does not wait for the uninstall: the suite's AfterSuite runs before
+// the framework uninstalls gateway-api-bundle, and the controller has to stay around long enough
+// to release the finalizers on the gateway LoadBalancer Services.
 func CleanupDependencies() {
 	if awsLBControllerBundle == nil {
 		return
 	}
 
 	cfg := *awsLBControllerBundle
-	ctx, cancel := context.WithTimeout(state.GetContext(), awsLBControllerBundleCleanupTimeout)
-	defer cancel()
-
-	if err := client.DeleteHelmRelease(ctx, cfg.Name, cfg.Namespace); err != nil {
+	if err := client.DeleteHelmRelease(state.GetContext(), cfg.Name, cfg.Namespace); err != nil {
 		logger.Log("Failed to delete HelmRelease %s/%s: %v", cfg.Namespace, cfg.Name, err)
-		return
-	}
-	if err := client.WaitForHelmReleaseDeleted(ctx, cfg.Name, cfg.Namespace); err != nil {
-		logger.Log("Gave up waiting for HelmRelease %s/%s to be deleted: %v", cfg.Namespace, cfg.Name, err)
-	}
-	if err := client.WaitForHelmReleaseChildrenDeleted(ctx, cfg.Name, cfg.Namespace); err != nil {
-		logger.Log("Gave up waiting for the children of HelmRelease %s/%s to be deleted: %v", cfg.Namespace, cfg.Name, err)
-	}
-	if err := client.DeleteHelmSource(state.GetContext(), cfg); err != nil {
-		logger.Log("Failed to delete the source of HelmRelease %s/%s: %v", cfg.Namespace, cfg.Name, err)
 	}
 }
