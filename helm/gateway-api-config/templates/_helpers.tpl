@@ -54,8 +54,13 @@ Gateway Service annotations
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-attributes" "load_balancing.cross_zone.enabled=true" }}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-target-group-attributes" "target_health_state.unhealthy.connection_termination.enabled=false,target_health_state.unhealthy.draining_interval_seconds=120,preserve_client_ip.enabled=false" }}
 
-{{- /* Tag the NLB with the owning gateway name and namespace */}}
-{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags" (printf "gateway.envoyproxy.io/owning-gateway-name=%s,gateway.envoyproxy.io/owning-gateway-namespace=%s" .gateway.name .root.Release.Namespace) }}
+{{- /* Tag the NLB with the owning gateway name and namespace, then the user's additional tags */}}
+{{- $tags := list (printf "gateway.envoyproxy.io/owning-gateway-name=%s" .gateway.name) (printf "gateway.envoyproxy.io/owning-gateway-namespace=%s" .root.Release.Namespace) }}
+{{- $additionalTags := dig "provider" "aws" "additionalResourceTags" dict .gateway }}
+{{- range $k := keys $additionalTags | sortAlpha }}
+{{- $tags = append $tags (printf "%s=%v" $k (index $additionalTags $k)) }}
+{{- end }}
+{{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags" (join "," $tags) }}
 {{- end }}
 
 {{- /* Leave out the defaults the GatewayClass EnvoyProxy already sets, so they are inherited */}}

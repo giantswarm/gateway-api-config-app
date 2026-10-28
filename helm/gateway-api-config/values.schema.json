@@ -281,6 +281,12 @@
                                 "aws": {
                                     "type": "object",
                                     "properties": {
+                                        "additionalResourceTags": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        },
                                         "useNetworkLoadBalancer": {
                                             "type": "boolean"
                                         },

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `provider.aws.additionalResourceTags` to add AWS tags to a gateway NLB without replacing the owning-gateway tags.
 - Add an `ipmode` e2e suite that runs the default gateway with NLB IP targets on a three-zone cluster. It asserts that replaced proxy pods carry the AWS Load Balancer Controller target health readiness gate and only become Ready once it is True, and that the proxy pods run in at least two zones.
 - Cover service annotations set on both the GatewayClass and the gateway in the e2e suite.
 
