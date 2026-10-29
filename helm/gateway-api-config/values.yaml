@@ -62,6 +62,11 @@ gateways:
         # envoyDeployment.pod.topologySpreadConstraints, or a non-empty list in this
         # gateway's envoyProxy.envoyDeployment.pod.topologySpreadConstraints, replaces it.
         zoneSpread: true
+        # Extra AWS tags for the NLB, its listeners and its target groups, as key: value.
+        # Appended to the owning-gateway tags the chart sets. Only applies with
+        # useNetworkLoadBalancer. A service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags
+        # annotation set on the gateway or its GatewayClass replaces all of these tags.
+        additionalResourceTags: {}
     service:
       annotations: {}
       labels: {}
