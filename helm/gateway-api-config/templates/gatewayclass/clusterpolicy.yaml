@@ -1,5 +1,8 @@
-{{- range $i, $class := .Values.gatewayClasses }}
-{{- if $class.enabled }}
+{{- $enabled := false }}
+{{- range .Values.gatewayClasses }}
+{{- if .enabled }}{{ $enabled = true }}{{ end }}
+{{- end }}
+{{- if $enabled }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -67,6 +70,9 @@ rules:
   - get
   - list
   - watch
+{{- end }}
+{{- range $i, $class := .Values.gatewayClasses }}
+{{- if $class.enabled }}
 ---
 {{- if not (dig "envoyProxy" "mergeGateways" false $class) }}
 apiVersion: kyverno.io/v1
