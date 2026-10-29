@@ -96,6 +96,29 @@ tests:
           path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-subnets"]
           value: subnet-a,subnet-b
 
+  - it: appends additional resource tags to the owning-gateway tags
+    set:
+      provider: capa
+      gateways.default.provider.aws.additionalResourceTags:
+        team: platform
+        datadog: monitored
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags"]
+          value: gateway.envoyproxy.io/owning-gateway-name=giantswarm-default,gateway.envoyproxy.io/owning-gateway-namespace=envoy-gateway-system,datadog=monitored,team=platform
+
+  - it: lets a gateway tags annotation replace the additional resource tags
+    set:
+      provider: capa
+      gateways.default.provider.aws.additionalResourceTags:
+        datadog: monitored
+      gateways.default.envoyProxy.envoyService.annotations:
+        service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: owner=me
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags"]
+          value: owner=me
+
   - it: adds no NLB defaults on CAPA when the NLB is disabled
     set:
       provider: capa
