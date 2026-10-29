@@ -1,0 +1,40 @@
+suite: gateway monitoring ClusterRoles and ClusterPolicies
+templates:
+  - templates/gatewayclass/clusterpolicy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: renders the ClusterRoles once when several GatewayClasses are enabled
+    set:
+      gatewayClasses:
+        default:
+          enabled: false
+        external:
+          enabled: true
+          name: external
+        internal:
+          enabled: true
+          name: internal
+    asserts:
+      - hasDocuments:
+          count: 4
+      - containsDocument:
+          apiVersion: kyverno.io/v1
+          kind: ClusterPolicy
+          name: generate-gateway-monitoring-external
+          any: true
+      - containsDocument:
+          apiVersion: kyverno.io/v1
+          kind: ClusterPolicy
+          name: generate-gateway-monitoring-internal
+          any: true
+
+  - it: renders nothing when no GatewayClass is enabled
+    set:
+      gatewayClasses:
+        default:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

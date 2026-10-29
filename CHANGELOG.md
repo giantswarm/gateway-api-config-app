@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Render the gateway monitoring ClusterRoles once instead of once per enabled GatewayClass, which broke installs through Flux HelmReleases.
+
 ### Added
 
 - Add `provider.aws.additionalResourceTags` to add AWS tags to a gateway NLB without replacing the owning-gateway tags.
