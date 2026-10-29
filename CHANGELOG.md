@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-10-29
+
 ### Fixed
 
 - Render the gateway monitoring ClusterRoles once instead of once per enabled GatewayClass, which broke installs through Flux HelmReleases.
@@ -342,7 +344,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add annotations and labels for the Gateways
 - Move external-dns config to the Gateway level
 
-[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.13.1...HEAD
+[1.13.1]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.3...v1.12.0
 [1.11.3]: https://github.com/giantswarm/gateway-api-config-app/compare/v1.11.2...v1.11.3
