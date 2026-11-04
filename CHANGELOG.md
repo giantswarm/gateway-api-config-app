@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CI: architect orb 10.16.7, which pushes the chart to the git app catalogs with the architect GitHub App instead of the `catalogbot` account (giantswarm/giantswarm#34786).
 - Upgrading restarts all proxy pods. In IP target mode, new proxy pods only become Ready once the NLB reports their target healthy.
 - **Behaviour change:** the render fails if `aws-load-balancer-subnets` has an empty entry (`a,`, `a,,b`) or an empty value. This stops upgrades with bad values; see the fleet scan in giantswarm/giantswarm#38041.
 
