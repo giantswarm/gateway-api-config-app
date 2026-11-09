@@ -4,7 +4,10 @@
 # a backend that does not exist are left out. The rule name and the first path match keep most
 # rules with the same backends apart. Rules that only differ in later matches, methods or
 # headers still produce the same series, which the scrape keeps once.
-# resourcePlural is also used for the RBAC rules of the instance.
+# A backend without a namespace label is in the namespace of the route.
+# The RBAC rules of the instance are built from resourcePlural. kube-state-metrics itself
+# takes the plural from the CRD, so a wrong resourcePlural does not break the config but
+# leaves the instance without access to the resources, and without metrics.
 - groupVersionKind:
     group: gateway.networking.k8s.io
     kind: HTTPRoute

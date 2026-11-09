@@ -371,7 +371,7 @@
                         "registry": {
                             "type": "string"
                         },
-                        "name": {
+                        "repository": {
                             "type": "string"
                         },
                         "tag": {

@@ -88,8 +88,8 @@ Default configuration for Envoy Gateway
 | kyvernoPolicies.observability.resourceNamespace | string | `"{{ request.object.metadata.namespace }}"` |  |
 | kyvernoPolicies.preconditions.key | string | `"{{ request.object.spec.gatewayClassName }}"` |  |
 | stateMetrics.enabled | bool | `true` |  |
-| stateMetrics.image.name | string | `"giantswarm/kube-state-metrics"` |  |
 | stateMetrics.image.registry | string | `"gsoci.azurecr.io"` |  |
+| stateMetrics.image.repository | string | `"giantswarm/kube-state-metrics"` |  |
 | stateMetrics.image.tag | string | `"v2.15.0"` |  |
 | stateMetrics.resources.limits.memory | string | `"128Mi"` |  |
 | stateMetrics.resources.requests.cpu | string | `"10m"` |  |

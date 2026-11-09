@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add a kube-state-metrics instance that exports the backends of each HTTPRoute rule as `gatewayapi_httproute_rule_backend_info`, with the first three `backendRefs` of the rule and its first path match as labels. The kube-state-metrics in observability-bundle does not export them. Disable it with `stateMetrics.enabled: false`.
+- Add a kube-state-metrics instance that exports the backends of each HTTPRoute rule as `gatewayapi_httproute_rule_backend_info`, with the first three `backendRefs` of the rule, the rule name and the type and value of its first path match as labels. The kube-state-metrics in observability-bundle does not export them. It adds a Deployment, ConfigMap and ServiceAccount in the release namespace, a ClusterRole and ClusterRoleBinding that can list and watch HTTPRoutes and CRDs, a PodMonitor, and a CiliumNetworkPolicy on clusters with Cilium. Disable it with `stateMetrics.enabled: false`.
 
 ## [1.13.1] - 2026-10-29
 

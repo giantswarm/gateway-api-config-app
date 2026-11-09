@@ -209,7 +209,7 @@ stateMetrics:
   enabled: true
   image:
     registry: gsoci.azurecr.io
-    name: giantswarm/kube-state-metrics
+    repository: giantswarm/kube-state-metrics
     tag: v2.15.0
   resources:
     requests:

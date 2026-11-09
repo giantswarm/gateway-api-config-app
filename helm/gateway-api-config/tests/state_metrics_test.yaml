@@ -67,7 +67,8 @@ tests:
               containerPort: 8081
               protocol: TCP
 
-  # The checksum is the hash of files/state-metrics. Update it when the config changes.
+  # The checksum is the hash of the resources rendered from files/state-metrics. Update it when
+  # they change. Comment-only edits of the files do not change it.
   - it: does not restart kube-state-metrics on a chart release that leaves it unchanged
     template: templates/state-metrics/deployment.yaml
     chart:

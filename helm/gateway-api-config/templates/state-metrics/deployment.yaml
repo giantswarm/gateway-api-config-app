@@ -14,6 +14,8 @@ spec:
   template:
     metadata:
       annotations:
+        # Only the resources, so a chart release does not restart the pod. Restart it by hand
+        # after changing the rest of the ConfigMap.
         checksum/config: {{ include "stateMetrics.resources" . | sha256sum }}
       labels:
         {{- include "stateMetrics.podLabels" . | nindent 8 }}
@@ -28,7 +30,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: kube-state-metrics
-          image: "{{ .Values.stateMetrics.image.registry }}/{{ .Values.stateMetrics.image.name }}:{{ .Values.stateMetrics.image.tag }}"
+          image: "{{ .Values.stateMetrics.image.registry }}/{{ .Values.stateMetrics.image.repository }}:{{ .Values.stateMetrics.image.tag }}"
           imagePullPolicy: IfNotPresent
           args:
             - --port=8080

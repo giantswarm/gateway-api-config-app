@@ -618,7 +618,7 @@ Returns: YAML list, consume with fromYamlArray
 {{- $resources := list }}
 {{- range $path, $_ := .Files.Glob "files/state-metrics/*.yaml" }}
 {{- range ($.Files.Get $path | fromYamlArray) }}
-{{- if not (and (kindIs "map" .) (dig "groupVersionKind" "group" "" .) .resourcePlural) }}
+{{- if not (and (kindIs "map" .) (kindIs "map" .groupVersionKind) (dig "groupVersionKind" "group" "" .) .resourcePlural) }}
 {{- fail (printf "%s: every entry needs groupVersionKind.group and resourcePlural, got %v" $path .) }}
 {{- end }}
 {{- $resources = append $resources . }}
