@@ -20,6 +20,12 @@ tests:
       - matchRegex:
           path: data["config.yaml"]
           pattern: 'backend2_name:\s+- backendRefs\s+- "2"\s+- name'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'match_path_type:\s+- matches\s+- "0"\s+- path\s+- type'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'rule_name:\s+- name'
 
   - it: runs kube-state-metrics for custom resources only, with the rendered config
     template: templates/state-metrics/deployment.yaml
@@ -38,6 +44,40 @@ tests:
           value: gsoci.azurecr.io/giantswarm/kube-state-metrics:v2.15.0
       - exists:
           path: spec.template.metadata.annotations["checksum/config"]
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --auto-gomemlimit
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value:
+            path: /livez
+            port: http
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value:
+            path: /readyz
+            port: telemetry
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: telemetry
+              containerPort: 8081
+              protocol: TCP
+
+  # The checksum is the hash of files/state-metrics. Update it when the config changes.
+  - it: does not restart kube-state-metrics on a chart release that leaves it unchanged
+    template: templates/state-metrics/deployment.yaml
+    chart:
+      version: 9.9.9
+    asserts:
+      - notExists:
+          path: spec.template.metadata.labels["helm.sh/chart"]
+      - equal:
+          path: spec.template.metadata.annotations["checksum/config"]
+          value: 49078c369622aedc3e3a6a72b24f170d6cb9910b61c0733704b8d8afd35a20ef
 
   - it: scrapes the pod with the team label and keeps the exported namespace
     template: templates/state-metrics/podmonitor.yaml
@@ -61,6 +101,9 @@ tests:
       - equal:
           path: rules[0].apiGroups
           value: [gateway.networking.k8s.io]
+      - equal:
+          path: rules[0].resources
+          value: [httproutes]
       - equal:
           path: rules[0].verbs
           value: [list, watch]

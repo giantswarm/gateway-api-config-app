@@ -1,7 +1,8 @@
 {{- if .Values.stateMetrics.enabled }}
-{{- $groups := list }}
+{{- $groups := dict }}
 {{- range (include "stateMetrics.resources" . | fromYamlArray) }}
-{{- $groups = append $groups .groupVersionKind.group }}
+{{- $group := .groupVersionKind.group }}
+{{- $_ := set $groups $group (append (get $groups $group | default list) .resourcePlural | uniq | sortAlpha) }}
 {{- end }}
 apiVersion: v1
 kind: ServiceAccount
@@ -18,11 +19,13 @@ metadata:
   labels:
     {{- include "stateMetrics.labels" . | nindent 4 }}
 rules:
-  {{- range $groups | uniq | sortAlpha }}
+  {{- range $group := keys $groups | sortAlpha }}
   - apiGroups:
-      - {{ . | quote }}
+      - {{ $group | quote }}
     resources:
-      - "*"
+      {{- range get $groups $group }}
+      - {{ . | quote }}
+      {{- end }}
     verbs:
       - list
       - watch

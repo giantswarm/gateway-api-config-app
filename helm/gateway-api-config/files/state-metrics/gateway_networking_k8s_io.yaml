@@ -1,12 +1,15 @@
 # HTTPRoute backends, which the kube-state-metrics in observability-bundle does not export.
 # KSM cannot iterate a list inside a list, so spec.rules[*].backendRefs[*] is read by fixed
 # index: one series per rule, with the first three backends of that rule as labels. Labels of
-# a backend that does not exist are left out. match_path keeps rules with the same backends
-# apart, which would otherwise produce duplicate series.
+# a backend that does not exist are left out. The rule name and the first path match keep most
+# rules with the same backends apart. Rules that only differ in later matches, methods or
+# headers still produce the same series, which the scrape keeps once.
+# resourcePlural is also used for the RBAC rules of the instance.
 - groupVersionKind:
     group: gateway.networking.k8s.io
     kind: HTTPRoute
     version: v1
+  resourcePlural: httproutes
   metricNamePrefix: gatewayapi_httproute
   labelsFromPath:
     name: [metadata, name]
@@ -19,6 +22,8 @@
         info:
           path: [spec, rules]
           labelsFromPath:
+            rule_name: [name]
+            match_path_type: [matches, "0", path, type]
             match_path: [matches, "0", path, value]
             backend0_kind: [backendRefs, "0", kind]
             backend0_namespace: [backendRefs, "0", namespace]

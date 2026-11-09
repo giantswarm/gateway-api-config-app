@@ -602,13 +602,27 @@ of the instance. application.giantswarm.io/team in the common labels routes the 
 {{- end -}}
 
 {{/*
+Labels of the kube-state-metrics pod. They leave out helm.sh/chart, so a chart release
+that does not change the instance does not restart it.
+*/}}
+{{- define "stateMetrics.podLabels" -}}
+{{ include "stateMetrics.selector" . }}
+application.giantswarm.io/team: {{ index .Chart.Annotations "io.giantswarm.application.team" | quote }}
+{{- end -}}
+
+{{/*
 The custom resource state configs in files/state-metrics, each a list of resources.
 Returns: YAML list, consume with fromYamlArray
 */}}
 {{- define "stateMetrics.resources" -}}
 {{- $resources := list }}
 {{- range $path, $_ := .Files.Glob "files/state-metrics/*.yaml" }}
-{{- $resources = concat $resources ($.Files.Get $path | fromYamlArray) }}
+{{- range ($.Files.Get $path | fromYamlArray) }}
+{{- if not (and (kindIs "map" .) (dig "groupVersionKind" "group" "" .) .resourcePlural) }}
+{{- fail (printf "%s: every entry needs groupVersionKind.group and resourcePlural, got %v" $path .) }}
+{{- end }}
+{{- $resources = append $resources . }}
+{{- end }}
 {{- end }}
 {{- $resources | toYaml }}
 {{- end -}}

@@ -1,0 +1,42 @@
+suite: kube-state-metrics CiliumNetworkPolicy
+templates:
+  - templates/state-metrics/ciliumnetworkpolicy.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: allows the API server and scrapes of the metrics port only
+    capabilities:
+      apiVersions:
+        - cilium.io/v2/CiliumNetworkPolicy
+    asserts:
+      - equal:
+          path: spec.endpointSelector.matchLabels
+          value:
+            app.kubernetes.io/name: gateway-api-config-state-metrics
+            app.kubernetes.io/component: state-metrics
+      - equal:
+          path: spec.egress
+          value:
+            - toEntities: [kube-apiserver]
+      - equal:
+          path: spec.ingress[0].toPorts[0].ports
+          value:
+            - port: "8080"
+              protocol: TCP
+
+  - it: renders nothing without Cilium
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders nothing when disabled
+    capabilities:
+      apiVersions:
+        - cilium.io/v2/CiliumNetworkPolicy
+    set:
+      stateMetrics:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

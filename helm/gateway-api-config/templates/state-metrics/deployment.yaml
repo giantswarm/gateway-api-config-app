@@ -14,9 +14,9 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/state-metrics/configmap.yaml") . | sha256sum }}
+        checksum/config: {{ include "stateMetrics.resources" . | sha256sum }}
       labels:
-        {{- include "stateMetrics.labels" . | nindent 8 }}
+        {{- include "stateMetrics.podLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "stateMetrics.name" . }}
       securityContext:
@@ -33,6 +33,7 @@ spec:
           args:
             - --port=8080
             - --telemetry-port=8081
+            - --auto-gomemlimit
             - --custom-resource-state-only=true
             - --custom-resource-state-config-file=/etc/state-metrics/config.yaml
           ports:

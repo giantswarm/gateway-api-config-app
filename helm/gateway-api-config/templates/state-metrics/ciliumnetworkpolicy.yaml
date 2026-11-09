@@ -18,8 +18,7 @@ spec:
         - cluster
       toPorts:
         - ports:
+            # Only the metrics port. The kubelet reaches the probes as host traffic.
             - port: "8080"
-              protocol: TCP
-            - port: "8081"
               protocol: TCP
 {{- end }}
