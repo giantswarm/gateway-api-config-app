@@ -576,3 +576,39 @@ Takes: dict with "gateway" and "root"
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Name of the kube-state-metrics instance that exports Gateway API resources.
+*/}}
+{{- define "stateMetrics.name" -}}
+{{- printf "%s-state-metrics" (include "name" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Selector labels of the kube-state-metrics instance.
+*/}}
+{{- define "stateMetrics.selector" -}}
+app.kubernetes.io/name: {{ include "stateMetrics.name" . | quote }}
+app.kubernetes.io/component: state-metrics
+{{- end -}}
+
+{{/*
+Labels of the kube-state-metrics resources: the common labels, with the name and component
+of the instance. application.giantswarm.io/team in the common labels routes the metrics.
+*/}}
+{{- define "stateMetrics.labels" -}}
+{{ omit (include "labels.common" . | fromYaml) "app.kubernetes.io/name" | toYaml }}
+{{ include "stateMetrics.selector" . }}
+{{- end -}}
+
+{{/*
+The custom resource state configs in files/state-metrics, each a list of resources.
+Returns: YAML list, consume with fromYamlArray
+*/}}
+{{- define "stateMetrics.resources" -}}
+{{- $resources := list }}
+{{- range $path, $_ := .Files.Glob "files/state-metrics/*.yaml" }}
+{{- $resources = concat $resources ($.Files.Get $path | fromYamlArray) }}
+{{- end }}
+{{- $resources | toYaml }}
+{{- end -}}

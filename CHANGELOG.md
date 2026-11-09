@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a kube-state-metrics instance that exports the backends of each HTTPRoute rule as `gatewayapi_httproute_rule_backend_info`, with the first three `backendRefs` of the rule and its first path match as labels. The kube-state-metrics in observability-bundle does not export them. Disable it with `stateMetrics.enabled: false`.
+
 ## [1.13.1] - 2026-10-29
 
 ### Fixed

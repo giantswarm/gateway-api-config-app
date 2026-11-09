@@ -1,0 +1,73 @@
+{{- if .Values.stateMetrics.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "stateMetrics.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "stateMetrics.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "stateMetrics.selector" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/state-metrics/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "stateMetrics.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "stateMetrics.name" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: kube-state-metrics
+          image: "{{ .Values.stateMetrics.image.registry }}/{{ .Values.stateMetrics.image.name }}:{{ .Values.stateMetrics.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - --port=8080
+            - --telemetry-port=8081
+            - --custom-resource-state-only=true
+            - --custom-resource-state-config-file=/etc/state-metrics/config.yaml
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: telemetry
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: telemetry
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.stateMetrics.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /etc/state-metrics
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "stateMetrics.name" . }}
+{{- end }}

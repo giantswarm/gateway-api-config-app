@@ -1,0 +1,15 @@
+{{- if .Values.stateMetrics.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "stateMetrics.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "stateMetrics.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    kind: CustomResourceStateMetrics
+    spec:
+      resources:
+        {{- include "stateMetrics.resources" . | nindent 8 }}
+{{- end }}

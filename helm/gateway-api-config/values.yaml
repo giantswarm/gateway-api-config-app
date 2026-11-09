@@ -201,3 +201,19 @@ gateways:
       envoyHpa: {}
       envoyPDB: {}
       envoyServiceAccount: {}
+
+# A kube-state-metrics instance that exports the Gateway API resources the kube-state-metrics
+# in observability-bundle does not, for example the backends of HTTPRoutes. The exported
+# resources are configured in files/state-metrics.
+stateMetrics:
+  enabled: true
+  image:
+    registry: gsoci.azurecr.io
+    name: giantswarm/kube-state-metrics
+    tag: v2.15.0
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi

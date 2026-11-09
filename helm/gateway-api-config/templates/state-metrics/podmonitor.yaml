@@ -1,0 +1,19 @@
+{{- if .Values.stateMetrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "stateMetrics.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "stateMetrics.labels" . | nindent 4 }}
+spec:
+  podMetricsEndpoints:
+    # honorLabels keeps the name and namespace of the exported resource instead of
+    # renaming them to exported_namespace in favour of the pod's namespace.
+    - port: http
+      honorLabels: true
+      interval: 60s
+  selector:
+    matchLabels:
+      {{- include "stateMetrics.selector" . | nindent 6 }}
+{{- end }}

@@ -1,0 +1,77 @@
+suite: kube-state-metrics for Gateway API resources
+templates:
+  - templates/state-metrics/configmap.yaml
+  - templates/state-metrics/deployment.yaml
+  - templates/state-metrics/podmonitor.yaml
+  - templates/state-metrics/rbac.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+tests:
+  - it: exports the HTTPRoute rule backends
+    template: templates/state-metrics/configmap.yaml
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "metricNamePrefix: gatewayapi_httproute"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "name: rule_backend_info"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'backend2_name:\s+- backendRefs\s+- "2"\s+- name'
+
+  - it: runs kube-state-metrics for custom resources only, with the rendered config
+    template: templates/state-metrics/deployment.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: gateway-api-config-state-metrics
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --custom-resource-state-only=true
+      - equal:
+          path: spec.template.spec.volumes[0].configMap.name
+          value: gateway-api-config-state-metrics
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: gsoci.azurecr.io/giantswarm/kube-state-metrics:v2.15.0
+      - exists:
+          path: spec.template.metadata.annotations["checksum/config"]
+
+  - it: scrapes the pod with the team label and keeps the exported namespace
+    template: templates/state-metrics/podmonitor.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["application.giantswarm.io/team"]
+          value: cabbage
+      - equal:
+          path: spec.podMetricsEndpoints[0].honorLabels
+          value: true
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: gateway-api-config-state-metrics
+            app.kubernetes.io/component: state-metrics
+
+  - it: only reads the API groups of the configured resources
+    template: templates/state-metrics/rbac.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: rules[0].apiGroups
+          value: [gateway.networking.k8s.io]
+      - equal:
+          path: rules[0].verbs
+          value: [list, watch]
+      - equal:
+          path: rules[1].apiGroups
+          value: [apiextensions.k8s.io]
+
+  - it: renders nothing when disabled
+    set:
+      stateMetrics:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
