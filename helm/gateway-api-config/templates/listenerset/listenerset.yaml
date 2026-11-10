@@ -14,10 +14,10 @@ metadata:
     {{- with $ls.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with $ls.annotations }}
+  {{- /* Since v0.23.0, external-dns only reads ListenerSets that carry the annotation
+         it filters on, so without it the listener hostnames get no DNS record. User annotations win. */}}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- mergeOverwrite (dict "giantswarm.io/external-dns" "managed") (deepCopy ($ls.annotations | default dict)) | toYaml | nindent 4 }}
 spec:
   {{- /* Same namespace as the parent, so parentRef.namespace is left to default. */}}
   parentRef:

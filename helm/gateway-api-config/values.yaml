@@ -94,6 +94,9 @@ gateways:
     # resources are always named gateway-<gateway.name>-<key>-<listener>.
     # Each entry accepts errorPages and backendTrafficPolicy of its own, which override
     # the gateway-wide ones for its listeners; without them the gateway policy applies.
+    # Each ListenerSet carries the giantswarm.io/external-dns: managed annotation, which
+    # external-dns v0.23.0 and newer needs to create records for routes attached to it. annotations of the
+    # entry are added to it and can override the value.
     # Example:
     #   listenerSets:
     #     extra:

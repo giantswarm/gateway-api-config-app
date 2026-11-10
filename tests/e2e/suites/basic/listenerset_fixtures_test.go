@@ -216,7 +216,13 @@ func createTenantListenerSet() {
 	terminate := gatewayv1.TLSModeTerminate
 
 	createIfMissing(&gatewayv1.ListenerSet{
-		ObjectMeta: metav1.ObjectMeta{Name: tenantListenerSetName, Namespace: tenantNamespace},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      tenantListenerSetName,
+			Namespace: tenantNamespace,
+			// Since external-dns v0.23.0 the annotation filter applies to ListenerSets as
+			// well, so a route attached to a ListenerSet without it gets no record.
+			Annotations: map[string]string{"giantswarm.io/external-dns": "managed"},
+		},
 		Spec: gatewayv1.ListenerSetSpec{
 			ParentRef: gatewayv1.ParentGatewayReference{
 				Group:     &group,

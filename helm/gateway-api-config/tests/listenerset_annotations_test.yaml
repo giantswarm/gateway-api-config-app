@@ -1,0 +1,49 @@
+suite: ListenerSet annotations
+templates:
+  - templates/listenerset/listenerset.yaml
+release:
+  name: gateway-api-config
+  namespace: envoy-gateway-system
+set:
+  gateways:
+    default:
+      listenerSets:
+        extra:
+          enabled: true
+          listeners:
+            https:
+              name: https
+              protocol: HTTPS
+              port: 443
+              hostname: extra.example.com
+              tls:
+                mode: Terminate
+tests:
+  - it: carries the annotation external-dns filters on
+    asserts:
+      - isKind:
+          of: ListenerSet
+      - equal:
+          path: metadata.annotations
+          value:
+            giantswarm.io/external-dns: managed
+
+  - it: adds the annotations of the entry
+    set:
+      gateways.default.listenerSets.extra.annotations:
+        example.com/owner: team-a
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            giantswarm.io/external-dns: managed
+            example.com/owner: team-a
+
+  - it: lets the entry override the external-dns annotation
+    set:
+      gateways.default.listenerSets.extra.annotations:
+        giantswarm.io/external-dns: unmanaged
+    asserts:
+      - equal:
+          path: metadata.annotations["giantswarm.io/external-dns"]
+          value: unmanaged
