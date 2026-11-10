@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Add the `giantswarm.io/external-dns: managed` annotation to chart-managed ListenerSets. Since v0.23.0, external-dns applies its annotation filter to ListenerSets too, so routes attached to a ListenerSet without it got no DNS record. Annotations set on a `listenerSets` entry are added and can override it.
+- Annotate the tenant ListenerSet of the `basic` e2e suite the same way.
+
 ## [1.13.1] - 2026-10-29
 
 ### Fixed
