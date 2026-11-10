@@ -63,6 +63,9 @@ func TestBasic(t *testing.T) {
 				gatewayMonitoringTests()
 				gatewayKyvernoRegenerationTest()
 			})
+			It("should export the HTTPRoute backends with its kube-state-metrics", func() {
+				gatewayStateMetricsTests()
+			})
 			It("should have the gateway integrated with karpenter", func() {
 				gatewayKarpenterNodeTests()
 				gatewayKarpenterProxyPodTests()
