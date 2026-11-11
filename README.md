@@ -107,7 +107,7 @@ On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
 - **Internet-facing scheme**: Exposes the Gateway publicly to accept traffic from the internet.
 - **Health checks on `/healthz` (port 80)**: Uses Envoy's built-in health endpoint to ensure traffic is only routed to healthy pods.
 - **Local external traffic policy**: Preserves the source IP at the node level and avoids extra network hops, reducing latency.
-- **Graceful shutdown (180s drain, 60s min drain)**: Allows in-flight requests to complete during pod termination, aligning with NLB's deregistration delay for zero-downtime deployments.
+- **Graceful shutdown (30s health check failure delay, 180s minimum drain, 200s drain timeout, 240s termination grace period)**: Keeps `/healthz` passing for 30s after SIGTERM so the NLB stops sending new flows first, then lets in-flight requests finish while the NLB deregisters the target, for zero-downtime deployments.
 
 ##### Choosing the NLB subnets
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Correct the CAPA graceful shutdown timers in the README. The chart sets a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period, not a 180s drain with a 60s minimum.
 - Add the `giantswarm.io/external-dns: managed` annotation to chart-managed ListenerSets. Since v0.23.0, external-dns applies its annotation filter to ListenerSets too, so routes attached to a ListenerSet without it got no DNS record. Annotations set on a `listenerSets` entry are added and can override it.
 - Annotate the tenant ListenerSet of the `basic` e2e suite the same way.
 
