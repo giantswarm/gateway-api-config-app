@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- Set the graceful shutdown timers on Azure (`provider: capz` and `provider: aks`), the same as on CAPA with an NLB: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. Until now Azure gateways used the upstream defaults, which fail the Envoy health check at SIGTERM while the Azure load balancer still sends new connections.
+- **Behaviour change:** set the graceful shutdown timers on Azure (`provider: capz`, which AKS clusters get too), the same as on CAPA with an NLB: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. Until now Azure gateways used the Envoy Gateway defaults, which fail the Envoy health check as soon as the pod starts terminating. With `externalTrafficPolicy: Local`, the Azure load balancer still sends new connections to the node until its probe notices. The default `Cluster` policy was not affected. Requires Envoy Gateway 1.9. Upgrading restarts all proxy pods on Azure, and each old proxy pod now drains for at least 180s.
+- **Behaviour change:** leave out the default 240s termination grace period patch when the gateway sets its own `envoyDeployment.patch`, or when the GatewayClass or the gateway sets `shutdown.drainTimeout`. Envoy Gateway then sets the grace period to the drain timeout plus 300s (500s for the default 200s). On CAPA, gateways with such a patch or drain timeout restart on upgrade and get the longer grace period.
 
 ### Fixed
 
+- Leave out the default 240s termination grace period patch when the GatewayClass sets its own `envoyDeployment.patch`. Envoy Gateway cannot merge the two patches, so the gateway stopped reconciling. A drain timeout longer than 240s was also cut short by the fixed grace period.
 - Correct the CAPA graceful shutdown timers in the README. The chart sets a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period, not a 180s drain with a 60s minimum.
 - Add the `giantswarm.io/external-dns: managed` annotation to chart-managed ListenerSets. Since v0.23.0, external-dns applies its annotation filter to ListenerSets too, so routes attached to a ListenerSet without it got no DNS record. Annotations set on a `listenerSets` entry are added and can override it.
 - Annotate the tenant ListenerSet of the `basic` e2e suite the same way.

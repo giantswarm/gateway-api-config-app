@@ -107,7 +107,7 @@ On CAPA clusters, the Gateway is configured with an AWS Network Load Balancer:
 - **Internet-facing scheme**: Exposes the Gateway publicly to accept traffic from the internet.
 - **Health checks on `/healthz` (port 80)**: Uses Envoy's built-in health endpoint to ensure traffic is only routed to healthy pods.
 - **Local external traffic policy**: Preserves the source IP at the node level and avoids extra network hops, reducing latency.
-- **Graceful shutdown (30s health check failure delay, 180s minimum drain, 200s drain timeout, 240s termination grace period)**: Keeps `/healthz` passing for 30s after SIGTERM so the NLB stops sending new flows first, then lets in-flight requests finish while the NLB deregisters the target, for zero-downtime deployments.
+- **Graceful shutdown (30s health check failure delay, 180s minimum drain, 200s drain timeout, 240s termination grace period)**: Keeps `/healthz` passing for 30s after the pod starts terminating so the NLB stops sending new flows first, then lets in-flight requests finish while the NLB deregisters the target, for zero-downtime deployments. Requires Envoy Gateway 1.9.
 
 ##### Choosing the NLB subnets
 
@@ -140,9 +140,11 @@ gateways:
 
 #### Azure load balancer (CAPZ and AKS)
 
-On CAPZ and AKS clusters (`provider: capz` or `provider: aks`), the Gateway gets the same graceful shutdown timers as on CAPA: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. The Azure load balancer keeps sending new connections to a node until its health probe fails (every 5s, 2 probes by default), so Envoy keeps `/healthz` passing for 30s after SIGTERM. Azure does not reset established connections, so they finish during Envoy's drain. The Service keeps `externalTrafficPolicy: Cluster`.
+On CAPZ and AKS clusters (both get `provider: capz`), the Gateway gets the same graceful shutdown timers as on CAPA: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. Requires Envoy Gateway 1.9.
 
-A GatewayClass EnvoyProxy that sets `shutdown` fields replaces these defaults field by field.
+The Service keeps `externalTrafficPolicy: Cluster`. The Azure load balancer then probes the node port over TCP and never sees Envoy's `/healthz`. A terminating proxy pod leaves the Service endpoints at once, and the drain lets its established connections finish. Azure does not reset them. The 30s health check failure delay matters when the gateway or its GatewayClass sets `externalTrafficPolicy: Local`. The Azure probe then targets the health check node port, which fails as soon as the pod starts terminating. It needs time (every 5s, 2 probes by default) to stop sending new connections to the node. Envoy stays ready (its `/ready` readiness probe keeps passing) for those 30s, so kube-proxy keeps forwarding to the terminating pod until the Azure probe has taken the node out.
+
+A GatewayClass EnvoyProxy that sets `shutdown` fields replaces these defaults field by field, as long as the gateway EnvoyProxy merges onto it (the default `mergeType: StrategicMerge`, or `JSONMerge`). With `mergeType: Replace` the defaults stay. The 240s termination grace period is left out when the GatewayClass or the gateway sets `shutdown.drainTimeout` or its own `envoyDeployment.patch`. Envoy Gateway then sets it to the drain timeout plus 300s. A patch you set yourself has to keep `terminationGracePeriodSeconds` above the drain timeout. The same applies on CAPA. The chart only sees GatewayClasses it manages itself. For a gateway whose `className` points at a GatewayClass managed elsewhere with its own patch, set `envoyProxy.mergeType: Replace` on the gateway, or set the patch on the gateway itself.
 
 ## Credit
 
