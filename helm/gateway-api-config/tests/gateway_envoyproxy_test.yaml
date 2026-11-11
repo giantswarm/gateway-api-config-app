@@ -139,14 +139,64 @@ tests:
       provider: capz
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment
-      - notExists:
-          path: spec.shutdown
+          path: spec.provider.kubernetes.envoyDeployment.pod
       - notExists:
           path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-scheme"]
       - equal:
           path: spec.provider.kubernetes.envoyService.annotations["external-dns.alpha.kubernetes.io/hostname"]
           value: gateway.example.com
+
+  - it: sets the graceful shutdown timers on Azure
+    set:
+      provider: capz
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            drainTimeout: 200s
+            minDrainDuration: 180s
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 240
+      - equal:
+          path: spec.provider.kubernetes.envoyService.externalTrafficPolicy
+          value: Cluster
+
+  - it: sets the graceful shutdown timers on AKS
+    set:
+      provider: aks
+    asserts:
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 240
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.pod
+
+  - it: adds no shutdown defaults on other providers
+    set:
+      provider: vsphere
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+      - notExists:
+          path: spec.shutdown
+
+  - it: lets the GatewayClass EnvoyProxy shutdown win over the Azure defaults
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.mergeType: StrategicMerge
+      gatewayClasses.default.envoyProxy.shutdown:
+        drainTimeout: 90s
+    asserts:
+      - notExists:
+          path: spec.shutdown.drainTimeout
+      - equal:
+          path: spec.shutdown.minDrainDuration
+          value: 180s
 
   - it: leaves out the anti-affinity default when the GatewayClass EnvoyProxy sets affinity
     set:

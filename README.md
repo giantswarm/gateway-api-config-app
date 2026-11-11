@@ -138,6 +138,12 @@ gateways:
                           - eu-central-1b
 ```
 
+#### Azure load balancer (CAPZ and AKS)
+
+On CAPZ and AKS clusters (`provider: capz` or `provider: aks`), the Gateway gets the same graceful shutdown timers as on CAPA: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. The Azure load balancer keeps sending new connections to a node until its health probe fails (every 5s, 2 probes by default), so Envoy keeps `/healthz` passing for 30s after SIGTERM. Azure does not reset established connections, so they finish during Envoy's drain. The Service keeps `externalTrafficPolicy: Cluster`.
+
+A GatewayClass EnvoyProxy that sets `shutdown` fields replaces these defaults field by field.
+
 ## Credit
 
 - [Giant Swarm Catalog](https://github.com/giantswarm/giantswarm-catalog)

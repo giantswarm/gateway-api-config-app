@@ -143,11 +143,21 @@ Gateway EnvoyService defaults - computes provider-specific envoyService configur
 {{- end }}
 
 {{/*
+Gateway graceful shutdown - "true" when the gateway gets the graceful shutdown timers:
+CAPA with an AWS NLB, and Azure (CAPZ and AKS). Takes the same dict as the defaults below.
+*/}}
+{{- define "gateway.gracefulShutdown" -}}
+{{- if or (and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway)) (has .provider (list "capz" "aks")) -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/*
 Gateway Shutdown defaults - computes provider-specific shutdown configuration
 */}}
 {{- define "gateway.shutdownDefaults" -}}
 {{- $shutdown := dict }}
-{{- /* Set defaults for AWS NLBs */}}
+{{- /* Set defaults for AWS NLBs and Azure load balancers */}}
 {{- /*
   Drain timers are aligned so the node always outlives the NLB connection drain.
 
@@ -161,8 +171,13 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
   (~20s) lands at ~50s and draining_interval_seconds (120s) then ends at ~170s, so
   a minDrainDuration of 180s keeps envoy (and therefore the node) alive until all
   in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
+
+  Azure (CAPZ and AKS) gets the same timers. Its load balancer probes the node
+  (every 5s, 2 probes by default) and keeps sending new flows until the probe
+  fails, so /healthz must not fail at SIGTERM there either. Azure does not reset
+  established flows, which then end with envoy's drain.
 */}}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
+{{- if include "gateway.gracefulShutdown" . }}
 {{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
 {{- $_ := set $shutdown "drainTimeout" "200s" }}
 {{- $_ := set $shutdown "minDrainDuration" "180s" }}
@@ -175,8 +190,8 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
 
 {{/*
 Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
-For AWS NLBs this ensures the pod's terminationGracePeriodSeconds stays above the
-drain timeout, prefers one proxy pod per node so each NLB instance target maps to a
+For AWS NLBs and Azure this ensures the pod's terminationGracePeriodSeconds stays above
+the drain timeout. For AWS NLBs it also prefers one proxy pod per node so each NLB instance target maps to a
 single envoy, and spreads the proxy pods evenly across availability zones so that
 losing one zone cannot take all of them down.
 Each pod default is left out when the GatewayClass EnvoyProxy sets the same field
@@ -228,6 +243,8 @@ example tainted control-plane nodes) do not count.
 {{- if $pod }}
 {{- $_ := set $envoyDeployment "pod" $pod }}
 {{- end }}
+{{- end }}
+{{- if include "gateway.gracefulShutdown" . }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
        It must stay above shutdown.drainTimeout (200s). */}}
 {{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}

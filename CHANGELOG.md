@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Set the graceful shutdown timers on Azure (`provider: capz` and `provider: aks`), the same as on CAPA with an NLB: a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period. Until now Azure gateways used the upstream defaults, which fail the Envoy health check at SIGTERM while the Azure load balancer still sends new connections.
+
 ### Fixed
 
 - Correct the CAPA graceful shutdown timers in the README. The chart sets a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period, not a 180s drain with a 60s minimum.

@@ -171,7 +171,7 @@ tests:
       provider: capz
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment
+          path: spec.provider.kubernetes.envoyDeployment.pod
 
   - it: adds no zone spread on CAPA when the NLB is disabled
     set:
