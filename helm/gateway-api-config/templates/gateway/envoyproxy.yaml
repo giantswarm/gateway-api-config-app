@@ -25,6 +25,7 @@ is kept as a placeholder for future gateway-specific defaults.
 {{- if $shutdownDefaults -}}
 {{- $_ := set $envoyProxyValues "shutdown" (mergeOverwrite $shutdownDefaults (deepCopy (default dict $envoyProxyValues.shutdown))) -}}
 {{- end }}
+{{- include "gateway.validateShutdown" (dict "owner" (printf "gateway %q" $gateway.name) "shutdown" (mergeOverwrite (deepCopy (dig "shutdown" dict $inherited)) (deepCopy (default dict $envoyProxyValues.shutdown)))) -}}
 {{- $envoyDeploymentDefaults := (include "gateway.envoyDeploymentDefaults" (dict "provider" $.Values.provider "gateway" $gateway "namespace" $.Release.Namespace "inherited" $inherited)) | fromYaml -}}
 {{- if $envoyDeploymentDefaults -}}
 {{- $_ := set $envoyProxyValues "envoyDeployment" (mergeOverwrite $envoyDeploymentDefaults (deepCopy (default dict $envoyProxyValues.envoyDeployment))) -}}

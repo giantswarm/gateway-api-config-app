@@ -39,6 +39,8 @@ gatewayClasses:
       # Settings here take precedence over the provider defaults the chart computes for each
       # gateway of this class (e.g. AWS NLB annotations, externalTrafficPolicy, shutdown), as
       # long as the gateway EnvoyProxy merges onto this one. Gateway values still win.
+      # Shutdown fields override the chart's timers field by field, and any of them
+      # drops the chart's fixed termination grace period (see the README).
       mergeType: ""
       envoyDeployment: {}
       envoyService: {}

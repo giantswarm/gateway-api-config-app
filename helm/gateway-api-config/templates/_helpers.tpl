@@ -143,12 +143,13 @@ Gateway EnvoyService defaults - computes provider-specific envoyService configur
 {{- end }}
 
 {{/*
-Gateway shutdown timers - the graceful shutdown timer set for the gateway's provider, as
-one unit: the three EnvoyProxy shutdown fields plus the pod terminationGracePeriodSeconds
-that must stay above drainTimeout. Empty when the provider has no set, or when the
-GatewayClass (if the gateway merges onto it) or the gateway sets any shutdown field: the
-chart's values only fit together, so an override takes over the whole set and Envoy
-Gateway derives the grace period from its drain timeout (+300s).
+Gateway shutdown timers - the graceful shutdown timers for the gateway's provider: the
+three EnvoyProxy shutdown fields plus the pod terminationGracePeriodSeconds that must stay
+above drainTimeout. Empty when the provider has no set. The shutdown fields are defaults
+that the GatewayClass or the gateway can override field by field; the grace period only
+fits the chart's own drain timeout, so it is left out as soon as any field is overridden
+(see gateway.envoyDeploymentDefaults), and gateway.validateShutdown fails the render on
+a mix that cannot work.
 
   CAPA with an AWS NLB: drain timers are aligned so the node always outlives the NLB
   connection drain. Listener drain starts when the pod starts terminating (the
@@ -176,23 +177,59 @@ Gateway derives the grace period from its drain timeout (+300s).
 */}}
 {{- define "gateway.shutdownTimers" -}}
 {{- $timers := dict }}
-{{- $ownShutdown := or (dig "shutdown" nil (.inherited | default dict)) (dig "envoyProxy" "shutdown" nil .gateway) }}
-{{- if not $ownShutdown }}
 {{- if eq .provider "capz" }}
 {{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "60s" "drainTimeout" "90s" "terminationGracePeriodSeconds" 120 }}
 {{- else if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "180s" "drainTimeout" "200s" "terminationGracePeriodSeconds" 240 }}
 {{- end }}
-{{- end }}
 {{- $timers | toYaml }}
 {{- end }}
 
 {{/*
-Gateway Shutdown defaults - the EnvoyProxy shutdown fields of gateway.shutdownTimers.
+Gateway Shutdown defaults - the EnvoyProxy shutdown fields of gateway.shutdownTimers,
+without the fields the GatewayClass sets, so the class value is inherited.
 */}}
 {{- define "gateway.shutdownDefaults" -}}
-{{- $timers := (include "gateway.shutdownTimers" .) | fromYaml }}
-{{- omit $timers "terminationGracePeriodSeconds" | toYaml }}
+{{- $shutdown := omit ((include "gateway.shutdownTimers" .) | fromYaml) "terminationGracePeriodSeconds" }}
+{{- range $k, $_ := dig "shutdown" dict (.inherited | default dict) }}
+{{- $_ := unset $shutdown $k }}
+{{- end }}
+{{- $shutdown | toYaml }}
+{{- end }}
+
+{{/*
+Duration in milliseconds - parses an Envoy Gateway duration such as 90s, 1m30s or 500ms
+(pattern ^([0-9]{1,5}(h|m|s|ms)){1,4}$). Returns the number of milliseconds.
+*/}}
+{{- define "duration.milliseconds" -}}
+{{- $ms := 0 }}
+{{- range regexFindAll "[0-9]+(ms|h|m|s)" (toString .) -1 }}
+{{- $n := regexFind "^[0-9]+" . | atoi }}
+{{- $unit := trimPrefix (regexFind "^[0-9]+" .) . }}
+{{- $ms = add $ms (mul $n (get (dict "ms" 1 "s" 1000 "m" 60000 "h" 3600000) $unit)) }}
+{{- end }}
+{{- $ms }}
+{{- end }}
+
+{{/*
+Gateway shutdown validation - fails the render when the effective shutdown timers cannot
+work. Envoy Gateway's shutdown manager stops draining once drainTimeout has passed since
+the pod started terminating, so a minDrainDuration above it is ignored, and a
+healthCheckFailureDelay at or above it never fails the health check before envoy exits.
+Takes the effective shutdown (GatewayClass, then gateway, then chart defaults); unset
+fields use the Envoy Gateway defaults (0s delay, 10s minimum drain, 60s drain timeout).
+*/}}
+{{- define "gateway.validateShutdown" -}}
+{{- $s := .shutdown | default dict }}
+{{- $drain := include "duration.milliseconds" ($s.drainTimeout | default "60s") | atoi }}
+{{- $min := include "duration.milliseconds" ($s.minDrainDuration | default "10s") | atoi }}
+{{- $delay := include "duration.milliseconds" ($s.healthCheckFailureDelay | default "0s") | atoi }}
+{{- if gt $min $drain }}
+{{- fail (printf "%s: shutdown.minDrainDuration (%v) must not exceed shutdown.drainTimeout (%v); Envoy Gateway stops draining at the drain timeout" .owner ($s.minDrainDuration | default "10s") ($s.drainTimeout | default "60s")) }}
+{{- end }}
+{{- if ge $delay $drain }}
+{{- fail (printf "%s: shutdown.healthCheckFailureDelay (%v) must be below shutdown.drainTimeout (%v); otherwise the health check never fails before envoy exits" .owner $s.healthCheckFailureDelay ($s.drainTimeout | default "60s")) }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -252,12 +289,16 @@ example tainted control-plane nodes) do not count.
 {{- end }}
 {{- end }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it,
-       from gateway.shutdownTimers. Left out when the GatewayClass sets its own
+       from gateway.shutdownTimers. Left out when the GatewayClass or the gateway sets
+       any shutdown field, since it only fits the chart's own drain timeout; Envoy
+       Gateway then derives it from the drain timeout (+300s). Also left out when the
+       GatewayClass sets its own
        envoyDeployment.patch: Envoy Gateway cannot merge two patches, their value
        is opaque JSON. A gateway patch is merged with this one by the caller
        (templates/gateway/envoyproxy.yaml). */}}
 {{- $grace := dig "terminationGracePeriodSeconds" nil ((include "gateway.shutdownTimers" .) | fromYaml) }}
-{{- if and $grace (not (dig "envoyDeployment" "patch" nil $inherited)) }}
+{{- $ownShutdown := or (dig "shutdown" nil $inherited) (dig "envoyProxy" "shutdown" nil .gateway) }}
+{{- if and $grace (not $ownShutdown) (not (dig "envoyDeployment" "patch" nil $inherited)) }}
 {{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" $grace))))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}

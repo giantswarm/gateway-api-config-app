@@ -187,14 +187,19 @@ tests:
       - notExists:
           path: spec.shutdown
 
-  - it: lets a GatewayClass shutdown field take over the whole Azure timer set
+  - it: lets a GatewayClass shutdown field win over the Azure defaults
     set:
       provider: capz
       gatewayClasses.default.envoyProxy.shutdown:
         drainTimeout: 300s
     asserts:
-      - notExists:
+      - equal:
           path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            minDrainDuration: 60s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
       - notExists:
           path: spec.provider.kubernetes.envoyDeployment.patch
 
@@ -256,7 +261,7 @@ tests:
           path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
           value: 120
 
-  - it: leaves out only the grace period patch on CAPA when the GatewayClass sets a drain timeout
+  - it: leaves out the grace period on CAPA when the GatewayClass sets a drain timeout
     set:
       provider: capa
       gatewayClasses.default.envoyProxy.shutdown:
@@ -264,6 +269,11 @@ tests:
     asserts:
       - notExists:
           path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            minDrainDuration: 180s
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity
       - exists:
@@ -320,7 +330,7 @@ tests:
       - notExists:
           path: spec.shutdown.healthCheckFailureDelay
 
-  - it: lets a gateway shutdown override take over the whole CAPA timer set
+  - it: keeps the other CAPA timers when the gateway overrides some of them
     set:
       provider: capa
       gateways.default.envoyProxy.shutdown:
@@ -332,6 +342,7 @@ tests:
       - equal:
           path: spec.shutdown
           value:
+            healthCheckFailureDelay: 30s
             minDrainDuration: 300s
             drainTimeout: 330s
       - exists:
@@ -408,6 +419,89 @@ tests:
       - equal:
           path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
           value: 240
+
+  - it: leaves out the GatewayClass shutdown fields with JSONMerge
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.shutdown:
+        minDrainDuration: 45s
+      gateways.default.envoyProxy.mergeType: JSONMerge
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            drainTimeout: 90s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: keeps the CAPA timers and pod defaults when the GatewayClass sets a patch
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                terminationGracePeriodSeconds: 600
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown.minDrainDuration
+          value: 180s
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+
+  - it: passes a gateway shutdown through on other providers without a grace period
+    set:
+      provider: vsphere
+      gateways.default.envoyProxy.shutdown:
+        drainTimeout: 120s
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            drainTimeout: 120s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+
+  - it: fails when the minimum drain exceeds the drain timeout
+    set:
+      provider: capz
+      gateways.default.envoyProxy.shutdown.minDrainDuration: 300s
+    asserts:
+      - failedTemplate:
+          errorPattern: 'shutdown.minDrainDuration \(300s\) must not exceed shutdown.drainTimeout \(90s\)'
+
+  - it: fails when a GatewayClass minimum drain exceeds the drain timeout
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.shutdown:
+        minDrainDuration: 5m
+    asserts:
+      - failedTemplate:
+          errorPattern: 'shutdown.minDrainDuration \(5m\) must not exceed shutdown.drainTimeout \(200s\)'
+
+  - it: fails when the health check failure delay reaches the drain timeout
+    set:
+      provider: vsphere
+      gateways.default.envoyProxy.shutdown.healthCheckFailureDelay: 1m
+    asserts:
+      - failedTemplate:
+          errorPattern: 'shutdown.healthCheckFailureDelay \(1m\) must be below shutdown.drainTimeout \(60s\)'
+
+  - it: parses composite durations
+    set:
+      provider: capa
+      gateways.default.envoyProxy.shutdown:
+        minDrainDuration: 1m30s
+        drainTimeout: 1m30s500ms
+    asserts:
+      - equal:
+          path: spec.shutdown.drainTimeout
+          value: 1m30s500ms
 
   - it: leaves out the anti-affinity default when the GatewayClass EnvoyProxy sets affinity
     set:
