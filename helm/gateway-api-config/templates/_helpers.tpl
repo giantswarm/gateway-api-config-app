@@ -148,8 +148,7 @@ three EnvoyProxy shutdown fields plus the pod terminationGracePeriodSeconds that
 above drainTimeout. Empty when the provider has no set. The shutdown fields are defaults
 that the GatewayClass or the gateway can override field by field; the grace period only
 fits the chart's own drain timeout, so it is left out as soon as any field is overridden
-(see gateway.envoyDeploymentDefaults), and gateway.validateShutdown fails the render on
-a mix that cannot work.
+(see gateway.envoyDeploymentDefaults).
 
   CAPA with an AWS NLB: drain timers are aligned so the node always outlives the NLB
   connection drain. Listener drain starts when the pod starts terminating (the
@@ -195,41 +194,6 @@ without the fields the GatewayClass sets, so the class value is inherited.
 {{- $_ := unset $shutdown $k }}
 {{- end }}
 {{- $shutdown | toYaml }}
-{{- end }}
-
-{{/*
-Duration in milliseconds - parses an Envoy Gateway duration such as 90s, 1m30s or 500ms
-(pattern ^([0-9]{1,5}(h|m|s|ms)){1,4}$). Returns the number of milliseconds.
-*/}}
-{{- define "duration.milliseconds" -}}
-{{- $ms := 0 }}
-{{- range regexFindAll "[0-9]+(ms|h|m|s)" (toString .) -1 }}
-{{- $n := regexFind "^[0-9]+" . | atoi }}
-{{- $unit := trimPrefix (regexFind "^[0-9]+" .) . }}
-{{- $ms = add $ms (mul $n (get (dict "ms" 1 "s" 1000 "m" 60000 "h" 3600000) $unit)) }}
-{{- end }}
-{{- $ms }}
-{{- end }}
-
-{{/*
-Gateway shutdown validation - fails the render when the effective shutdown timers cannot
-work. Envoy Gateway's shutdown manager stops draining once drainTimeout has passed since
-the pod started terminating, so a minDrainDuration above it is ignored, and a
-healthCheckFailureDelay at or above it never fails the health check before envoy exits.
-Takes the effective shutdown (GatewayClass, then gateway, then chart defaults); unset
-fields use the Envoy Gateway defaults (0s delay, 10s minimum drain, 60s drain timeout).
-*/}}
-{{- define "gateway.validateShutdown" -}}
-{{- $s := .shutdown | default dict }}
-{{- $drain := include "duration.milliseconds" ($s.drainTimeout | default "60s") | atoi }}
-{{- $min := include "duration.milliseconds" ($s.minDrainDuration | default "10s") | atoi }}
-{{- $delay := include "duration.milliseconds" ($s.healthCheckFailureDelay | default "0s") | atoi }}
-{{- if gt $min $drain }}
-{{- fail (printf "%s: shutdown.minDrainDuration (%v) must not exceed shutdown.drainTimeout (%v); Envoy Gateway stops draining at the drain timeout" .owner ($s.minDrainDuration | default "10s") ($s.drainTimeout | default "60s")) }}
-{{- end }}
-{{- if ge $delay $drain }}
-{{- fail (printf "%s: shutdown.healthCheckFailureDelay (%v) must be below shutdown.drainTimeout (%v); otherwise the health check never fails before envoy exits" .owner $s.healthCheckFailureDelay ($s.drainTimeout | default "60s")) }}
-{{- end }}
 {{- end }}
 
 {{/*

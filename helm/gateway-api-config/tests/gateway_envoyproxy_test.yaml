@@ -467,42 +467,6 @@ tests:
       - notExists:
           path: spec.provider.kubernetes.envoyDeployment
 
-  - it: fails when the minimum drain exceeds the drain timeout
-    set:
-      provider: capz
-      gateways.default.envoyProxy.shutdown.minDrainDuration: 300s
-    asserts:
-      - failedTemplate:
-          errorPattern: 'shutdown.minDrainDuration \(300s\) must not exceed shutdown.drainTimeout \(90s\)'
-
-  - it: fails when a GatewayClass minimum drain exceeds the drain timeout
-    set:
-      provider: capa
-      gatewayClasses.default.envoyProxy.shutdown:
-        minDrainDuration: 5m
-    asserts:
-      - failedTemplate:
-          errorPattern: 'shutdown.minDrainDuration \(5m\) must not exceed shutdown.drainTimeout \(200s\)'
-
-  - it: fails when the health check failure delay reaches the drain timeout
-    set:
-      provider: vsphere
-      gateways.default.envoyProxy.shutdown.healthCheckFailureDelay: 1m
-    asserts:
-      - failedTemplate:
-          errorPattern: 'shutdown.healthCheckFailureDelay \(1m\) must be below shutdown.drainTimeout \(60s\)'
-
-  - it: parses composite durations
-    set:
-      provider: capa
-      gateways.default.envoyProxy.shutdown:
-        minDrainDuration: 1m30s
-        drainTimeout: 1m30s500ms
-    asserts:
-      - equal:
-          path: spec.shutdown.drainTimeout
-          value: 1m30s500ms
-
   - it: leaves out the anti-affinity default when the GatewayClass EnvoyProxy sets affinity
     set:
       provider: capa

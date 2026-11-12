@@ -147,9 +147,9 @@ The Service keeps `externalTrafficPolicy: Cluster`. The Azure load balancer then
 
 This applies on CAPA and on Azure. The chart's shutdown timers are defaults that the gateway, or the GatewayClass it merges onto (the default `mergeType: StrategicMerge`, or `JSONMerge`), can override field by field. With `mergeType: Replace` the GatewayClass values are not used. The fixed termination grace period only fits the chart's own drain timeout, so it is left out as soon as any `shutdown` field is overridden. Envoy Gateway then sets it to the drain timeout plus 300s.
 
-The render fails when the result cannot work. A `minDrainDuration` above the `drainTimeout` is ignored, because Envoy Gateway stops draining at the drain timeout. A `healthCheckFailureDelay` at or above the `drainTimeout` never fails the health check before Envoy exits. Unset fields count with the Envoy Gateway defaults: 0s delay, 10s minimum drain and 60s drain timeout.
+Set `drainTimeout` at or above `minDrainDuration`: Envoy Gateway stops draining at the drain timeout, so a longer minimum drain has no effect. Unset fields use the Envoy Gateway defaults: 0s delay, 10s minimum drain and 60s drain timeout.
 
-The grace period is also left out when the GatewayClass sets its own `envoyDeployment.patch`, because Envoy Gateway cannot merge two patches. A patch set on the gateway is merged with it. A patch you set yourself has to keep `terminationGracePeriodSeconds` above the drain timeout. The chart only sees GatewayClasses it manages itself. For a gateway whose `className` points at a GatewayClass managed elsewhere with its own patch, set `envoyProxy.mergeType: Replace` on the gateway.
+The grace period is also left out when the GatewayClass sets its own `envoyDeployment.patch`, because Envoy Gateway cannot merge two patches. A patch set on the gateway is merged with it. A patch you set yourself has to keep `terminationGracePeriodSeconds` above the drain timeout, or the kubelet ends the drain early. The chart only sees GatewayClasses it manages itself. For a gateway whose `className` points at a GatewayClass managed elsewhere with its own patch, set `envoyProxy.mergeType: Replace` on the gateway.
 
 ## Credit
 

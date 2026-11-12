@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Behaviour change:** set graceful shutdown timers on Azure (`provider: capz`, which AKS clusters get too). Requires Envoy Gateway 1.9. Upgrading restarts all proxy pods on Azure. See the README for the values.
 - **Behaviour change:** leave out the fixed termination grace period when the gateway, or the GatewayClass it merges onto, sets any `shutdown` field. Envoy Gateway then sets it to the drain timeout plus 300s (500s for a 200s drain). Such gateways restart on upgrade. The other timers still fill in field by field.
-- **Behaviour change:** the render fails when the effective `minDrainDuration` exceeds the `drainTimeout`, or the `healthCheckFailureDelay` reaches it. Envoy Gateway ignores such values.
 
 ### Fixed
 
