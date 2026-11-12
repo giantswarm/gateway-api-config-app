@@ -256,9 +256,10 @@ example tainted control-plane nodes) do not count.
        from gateway.shutdownTimers. Left out when the GatewayClass or the gateway sets
        any shutdown field, since it only fits the chart's own drain timeout; Envoy
        Gateway then derives it from the drain timeout (+300s). Also left out when the
-       GatewayClass sets its own
-       envoyDeployment.patch: Envoy Gateway cannot merge two patches, their value
-       is opaque JSON. A gateway patch is merged with this one by the caller
+       GatewayClass sets its own envoyDeployment.patch, so the class patch keeps its
+       type and grace period: StrategicMerge cannot merge two patches (their value is
+       opaque JSON), and with JSONMerge this patch would override the class one. A
+       gateway patch is merged with this one by the caller
        (templates/gateway/envoyproxy.yaml). */}}
 {{- $grace := dig "terminationGracePeriodSeconds" nil ((include "gateway.shutdownTimers" .) | fromYaml) }}
 {{- $ownShutdown := or (dig "shutdown" nil $inherited) (dig "envoyProxy" "shutdown" nil .gateway) }}

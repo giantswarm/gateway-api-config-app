@@ -200,8 +200,6 @@ tests:
             minDrainDuration: 60s
       - notExists:
           path: spec.provider.kubernetes.envoyDeployment.patch
-      - notExists:
-          path: spec.provider.kubernetes.envoyDeployment.patch
 
   - it: keeps the Azure defaults when the gateway replaces the GatewayClass EnvoyProxy
     set:
@@ -279,7 +277,7 @@ tests:
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
 
-  - it: inherits the GatewayClass patch with JSONMerge
+  - it: leaves the GatewayClass patch alone with JSONMerge
     set:
       provider: capz
       gatewayClasses.default.envoyProxy.envoyDeployment.patch:
