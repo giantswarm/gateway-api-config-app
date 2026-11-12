@@ -174,7 +174,9 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
   a minDrainDuration of 180s keeps envoy (and therefore the node) alive until all
   in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
 
-  Azure (CAPZ and AKS, both provider "capz") gets the same timers. With the
+  Azure (CAPZ and AKS, both provider "capz") gets shorter timers: a 30s health
+  check failure delay, a 60s minimum drain and a 90s drain timeout. Its load
+  balancer has no NLB-style draining interval to outlive. With the
   default externalTrafficPolicy: Cluster the Azure load balancer probes the node
   port over TCP and never sees /healthz; the terminating pod leaves the Service
   endpoints at once and the drain lets its established connections finish, which
@@ -184,7 +186,11 @@ Gateway Shutdown defaults - computes provider-specific shutdown configuration
   time (every 5s, 2 probes by default) to stop sending new flows to the node.
   Envoy stays ready (/ready) for those 30s, so kube-proxy keeps forwarding to it.
 */}}
-{{- if include "gateway.gracefulShutdown" . }}
+{{- if eq .provider "capz" }}
+{{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
+{{- $_ := set $shutdown "drainTimeout" "90s" }}
+{{- $_ := set $shutdown "minDrainDuration" "60s" }}
+{{- else if include "gateway.gracefulShutdown" . }}
 {{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
 {{- $_ := set $shutdown "drainTimeout" "200s" }}
 {{- $_ := set $shutdown "minDrainDuration" "180s" }}
@@ -212,9 +218,9 @@ example tainted control-plane nodes) do not count.
 */}}
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
+{{- $inherited := .inherited | default dict }}
 {{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
 {{- $pod := dict }}
-{{- $inherited := .inherited | default dict }}
 {{- /* Both pod defaults select the proxy pods by the owning-gateway labels Envoy
        Gateway stamps on them. */}}
 {{- /* Prefer one proxy pod per node so each NLB instance target maps to a single
@@ -252,17 +258,18 @@ example tainted control-plane nodes) do not count.
 {{- end }}
 {{- end }}
 {{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
-       It must stay above shutdown.drainTimeout (200s). The patch is left out when
-       the GatewayClass or the gateway sets its own envoyDeployment.patch: Envoy
-       Gateway cannot merge two patches (their value is opaque JSON), and a gateway
-       patch would be merged into this one. It is also left out when either sets
-       shutdown.drainTimeout, so Envoy Gateway derives the grace period from that
-       drain timeout instead of a fixed 240s that could end the drain early. */}}
-{{- $gatewayEnvoyProxy := .gateway.envoyProxy | default dict }}
-{{- $ownPatch := or (dig "envoyDeployment" "patch" nil (.inherited | default dict)) (dig "envoyDeployment" "patch" nil $gatewayEnvoyProxy) }}
-{{- $ownDrainTimeout := or (dig "shutdown" "drainTimeout" nil (.inherited | default dict)) (dig "shutdown" "drainTimeout" nil $gatewayEnvoyProxy) }}
-{{- if and (include "gateway.gracefulShutdown" .) (not $ownPatch) (not $ownDrainTimeout) }}
-{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" 240))))) }}
+       It stays above shutdown.drainTimeout: 240s on CAPA (200s), 120s on Azure
+       (90s). The fixed value only fits the chart's own shutdown timers, so the patch is
+       left out when the GatewayClass or the gateway sets any shutdown field; Envoy
+       Gateway then derives the grace period from the drain timeout (+300s). It is
+       also left out when the GatewayClass sets its own envoyDeployment.patch:
+       Envoy Gateway cannot merge two patches, their value is opaque JSON. A
+       gateway patch is merged with this one by the caller, as before. */}}
+{{- $gatewayShutdown := dig "envoyProxy" "shutdown" dict .gateway }}
+{{- $ownShutdown := or (dig "shutdown" nil $inherited) $gatewayShutdown }}
+{{- $classPatch := dig "envoyDeployment" "patch" nil $inherited }}
+{{- if and (include "gateway.gracefulShutdown" .) (not $ownShutdown) (not $classPatch) }}
+{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" (ternary 120 240 (eq .provider "capz"))))))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}
 {{- end }}
