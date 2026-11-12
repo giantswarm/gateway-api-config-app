@@ -143,68 +143,62 @@ Gateway EnvoyService defaults - computes provider-specific envoyService configur
 {{- end }}
 
 {{/*
-Gateway graceful shutdown - "true" when the gateway gets the graceful shutdown timers:
-CAPA with an AWS NLB, and Azure. AKS clusters also get provider "capz" in their
-cluster-values, so the capz match covers both. Takes the same dict as the defaults below.
+Gateway shutdown timers - the graceful shutdown timer set for the gateway's provider, as
+one unit: the three EnvoyProxy shutdown fields plus the pod terminationGracePeriodSeconds
+that must stay above drainTimeout. Empty when the provider has no set, or when the
+GatewayClass (if the gateway merges onto it) or the gateway sets any shutdown field: the
+chart's values only fit together, so an override takes over the whole set and Envoy
+Gateway derives the grace period from its drain timeout (+300s).
+
+  CAPA with an AWS NLB: drain timers are aligned so the node always outlives the NLB
+  connection drain. Listener drain starts when the pod starts terminating (the
+  shutdown-manager preStop hook), but healthCheckFailureDelay holds /healthz up for
+  30s first. With externalTrafficPolicy: Local, failing it immediately makes the pod
+  non-ready while the NLB still forwards flows to the node, leaving it without a
+  serving local endpoint until the NLB notices. The delay covers that window, so the
+  NLB stops sending new flows before the endpoint goes away. The delay pushes every
+  later step back by the same 30s: healthcheck detection (~20s) lands at ~50s and
+  draining_interval_seconds (120s) then ends at ~170s, so a minDrainDuration of 180s
+  keeps envoy (and therefore the node) alive until all in-flight NLB flows have
+  moved off the node, avoiding RST/520 on node disruption.
+
+  Azure (CAPZ and AKS, both provider "capz"): the load balancer has no NLB draining
+  interval to outlive, so the timers are shorter. With the default
+  externalTrafficPolicy: Cluster it probes the node port over TCP and never sees
+  /healthz; the terminating pod leaves the Service endpoints at once and the drain
+  lets its established connections finish, which Azure does not reset. The 30s delay
+  matters when the gateway or its GatewayClass uses externalTrafficPolicy: Local. The
+  Azure probe then targets the health check node port, which fails as soon as the
+  pod terminates, and needs time (every 5s, 2 probes by default) to stop sending new
+  flows to the node. Envoy stays ready (/ready) for those 30s, so kube-proxy keeps
+  forwarding to it. Measured on AKS with Envoy Gateway 1.9.3 at 100 req/s during
+  proxy rollouts, with Local and Cluster: no failed requests.
 */}}
-{{- define "gateway.gracefulShutdown" -}}
-{{- if or (and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway)) (eq .provider "capz") -}}
-true
-{{- end -}}
+{{- define "gateway.shutdownTimers" -}}
+{{- $timers := dict }}
+{{- $ownShutdown := or (dig "shutdown" nil (.inherited | default dict)) (dig "envoyProxy" "shutdown" nil .gateway) }}
+{{- if not $ownShutdown }}
+{{- if eq .provider "capz" }}
+{{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "60s" "drainTimeout" "90s" "terminationGracePeriodSeconds" 120 }}
+{{- else if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
+{{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "180s" "drainTimeout" "200s" "terminationGracePeriodSeconds" 240 }}
+{{- end }}
+{{- end }}
+{{- $timers | toYaml }}
 {{- end }}
 
 {{/*
-Gateway Shutdown defaults - computes provider-specific shutdown configuration
+Gateway Shutdown defaults - the EnvoyProxy shutdown fields of gateway.shutdownTimers.
 */}}
 {{- define "gateway.shutdownDefaults" -}}
-{{- $shutdown := dict }}
-{{- /* Set defaults for AWS NLBs and Azure load balancers */}}
-{{- /*
-  Drain timers are aligned so the node always outlives the NLB connection drain.
-
-  Listener drain starts when the pod starts terminating (the shutdown-manager
-  preStop hook), but healthCheckFailureDelay holds /healthz up for 30s first.
-  With externalTrafficPolicy: Local, failing it immediately makes
-  the pod non-ready while the NLB still forwards flows to the node, leaving it
-  without a serving local endpoint until the NLB notices. The delay covers that
-  window, so the NLB stops sending new flows before the endpoint goes away.
-
-  The delay pushes every later step back by the same 30s: healthcheck detection
-  (~20s) lands at ~50s and draining_interval_seconds (120s) then ends at ~170s, so
-  a minDrainDuration of 180s keeps envoy (and therefore the node) alive until all
-  in-flight NLB flows have moved off the node, avoiding RST/520 on node disruption.
-
-  Azure (CAPZ and AKS, both provider "capz") gets shorter timers: a 30s health
-  check failure delay, a 60s minimum drain and a 90s drain timeout. Its load
-  balancer has no NLB-style draining interval to outlive. With the
-  default externalTrafficPolicy: Cluster the Azure load balancer probes the node
-  port over TCP and never sees /healthz; the terminating pod leaves the Service
-  endpoints at once and the drain lets its established connections finish, which
-  Azure does not reset. The 30s delay only matters when the gateway or its
-  GatewayClass uses externalTrafficPolicy: Local. The Azure probe then targets the
-  health check node port, which fails as soon as the pod terminates, and needs
-  time (every 5s, 2 probes by default) to stop sending new flows to the node.
-  Envoy stays ready (/ready) for those 30s, so kube-proxy keeps forwarding to it.
-*/}}
-{{- if eq .provider "capz" }}
-{{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
-{{- $_ := set $shutdown "drainTimeout" "90s" }}
-{{- $_ := set $shutdown "minDrainDuration" "60s" }}
-{{- else if include "gateway.gracefulShutdown" . }}
-{{- $_ := set $shutdown "healthCheckFailureDelay" "30s" }}
-{{- $_ := set $shutdown "drainTimeout" "200s" }}
-{{- $_ := set $shutdown "minDrainDuration" "180s" }}
-{{- end }}
-{{- range $k, $_ := dig "shutdown" dict (.inherited | default dict) }}
-{{- $_ := unset $shutdown $k }}
-{{- end }}
-{{- $shutdown | toYaml }}
+{{- $timers := (include "gateway.shutdownTimers" .) | fromYaml }}
+{{- omit $timers "terminationGracePeriodSeconds" | toYaml }}
 {{- end }}
 
 {{/*
 Gateway EnvoyDeployment defaults - computes provider-specific deployment configuration.
-For AWS NLBs and Azure this ensures the pod's terminationGracePeriodSeconds stays
-above the drain timeout. For AWS NLBs it also prefers one proxy pod per node so each
+For AWS NLBs and Azure this sets the pod's terminationGracePeriodSeconds from
+gateway.shutdownTimers. For AWS NLBs it also prefers one proxy pod per node so each
 NLB instance target maps to a single envoy, and spreads the proxy pods evenly across
 availability zones so that losing one zone cannot take all of them down.
 Each pod default is left out when the GatewayClass EnvoyProxy sets the same field
@@ -257,19 +251,14 @@ example tainted control-plane nodes) do not count.
 {{- $_ := set $envoyDeployment "pod" $pod }}
 {{- end }}
 {{- end }}
-{{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it.
-       It stays above shutdown.drainTimeout: 240s on CAPA (200s), 120s on Azure
-       (90s). The fixed value only fits the chart's own shutdown timers, so the patch is
-       left out when the GatewayClass or the gateway sets any shutdown field; Envoy
-       Gateway then derives the grace period from the drain timeout (+300s). It is
-       also left out when the GatewayClass sets its own envoyDeployment.patch:
-       Envoy Gateway cannot merge two patches, their value is opaque JSON. A
-       gateway patch is merged with this one by the caller, as before. */}}
-{{- $gatewayShutdown := dig "envoyProxy" "shutdown" dict .gateway }}
-{{- $ownShutdown := or (dig "shutdown" nil $inherited) $gatewayShutdown }}
-{{- $classPatch := dig "envoyDeployment" "patch" nil $inherited }}
-{{- if and (include "gateway.gracefulShutdown" .) (not $ownShutdown) (not $classPatch) }}
-{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" (ternary 120 240 (eq .provider "capz"))))))) }}
+{{- /* terminationGracePeriodSeconds has no dedicated field on EnvoyProxy, so patch it,
+       from gateway.shutdownTimers. Left out when the GatewayClass sets its own
+       envoyDeployment.patch: Envoy Gateway cannot merge two patches, their value
+       is opaque JSON. A gateway patch is merged with this one by the caller
+       (templates/gateway/envoyproxy.yaml). */}}
+{{- $grace := dig "terminationGracePeriodSeconds" nil ((include "gateway.shutdownTimers" .) | fromYaml) }}
+{{- if and $grace (not (dig "envoyDeployment" "patch" nil $inherited)) }}
+{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" $grace))))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}
 {{- end }}

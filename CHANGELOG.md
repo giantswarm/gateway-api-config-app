@@ -10,11 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Behaviour change:** set graceful shutdown timers on Azure (`provider: capz`, which AKS clusters get too). Requires Envoy Gateway 1.9. Upgrading restarts all proxy pods on Azure. See the README for the values.
-- **Behaviour change:** leave out the default termination grace period when the GatewayClass or the gateway sets any `shutdown` field. Envoy Gateway then derives it from the drain timeout. Such gateways restart on upgrade.
+- **Behaviour change:** treat the shutdown timers and the termination grace period as one set. When the gateway, or the GatewayClass it merges onto, sets any `shutdown` field, the chart leaves out all of its timers and the grace period, instead of filling in the other fields. Envoy Gateway then sets the grace period to the drain timeout plus 300s (500s for a 200s drain). Such gateways restart on upgrade.
 
 ### Fixed
 
-- Leave out the default termination grace period patch when the GatewayClass sets its own `envoyDeployment.patch`. Envoy Gateway cannot merge the two patches, so the gateway stopped reconciling.
+- Leave out the default termination grace period patch when the GatewayClass the gateway merges onto sets its own `envoyDeployment.patch`. Envoy Gateway cannot merge the two patches, so the gateway stopped reconciling.
 - Replace the dead GitOps docs link in the README and drop the link to the web interface docs, which no longer exist.
 - Correct the CAPA graceful shutdown timers in the README. The chart sets a 30s health check failure delay, a 180s minimum drain, a 200s drain timeout and a 240s termination grace period, not a 180s drain with a 60s minimum.
 - Add the `giantswarm.io/external-dns: managed` annotation to chart-managed ListenerSets. Since v0.23.0, external-dns applies its annotation filter to ListenerSets too, so routes attached to a ListenerSet without it got no DNS record. Annotations set on a `listenerSets` entry are added and can override it.
