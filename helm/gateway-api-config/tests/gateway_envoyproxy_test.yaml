@@ -139,14 +139,331 @@ tests:
       provider: capz
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment
-      - notExists:
-          path: spec.shutdown
+          path: spec.provider.kubernetes.envoyDeployment.pod
       - notExists:
           path: spec.provider.kubernetes.envoyService.annotations["service.beta.kubernetes.io/aws-load-balancer-scheme"]
       - equal:
           path: spec.provider.kubernetes.envoyService.annotations["external-dns.alpha.kubernetes.io/hostname"]
           value: gateway.example.com
+
+  - it: sets the graceful shutdown timers on Azure
+    set:
+      provider: capz
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            drainTimeout: 90s
+            minDrainDuration: 60s
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: StrategicMerge
+            value:
+              spec:
+                template:
+                  spec:
+                    terminationGracePeriodSeconds: 120
+      - equal:
+          path: spec.provider.kubernetes.envoyService.externalTrafficPolicy
+          value: Cluster
+
+  - it: adds no shutdown defaults on other providers
+    set:
+      provider: vsphere
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+      - notExists:
+          path: spec.shutdown
+
+  - it: adds no shutdown defaults without a provider
+    set:
+      provider: ""
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
+      - notExists:
+          path: spec.shutdown
+
+  - it: lets a GatewayClass shutdown field win over the Azure defaults
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.shutdown:
+        drainTimeout: 300s
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            minDrainDuration: 60s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: keeps the Azure defaults when the gateway replaces the GatewayClass EnvoyProxy
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.shutdown:
+        drainTimeout: 300s
+      gateways.default.envoyProxy.mergeType: Replace
+    asserts:
+      - equal:
+          path: spec.shutdown.drainTimeout
+          value: 90s
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 120
+
+  - it: leaves out the grace period patch when the gateway sets its own drain timeout
+    set:
+      provider: capz
+      gateways.default.envoyProxy.shutdown.drainTimeout: 300s
+    asserts:
+      - equal:
+          path: spec.shutdown.drainTimeout
+          value: 300s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: leaves out the grace period patch when the GatewayClass EnvoyProxy sets a patch
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                terminationGracePeriodSeconds: 600
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown.drainTimeout
+          value: 90s
+
+  - it: keeps the grace period patch when the gateway replaces a GatewayClass patch
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                terminationGracePeriodSeconds: 600
+      gateways.default.envoyProxy.mergeType: Replace
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 120
+
+  - it: leaves out the grace period on CAPA when the GatewayClass sets a drain timeout
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.shutdown:
+        drainTimeout: 300s
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            minDrainDuration: 180s
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.topologySpreadConstraints
+
+  - it: leaves the GatewayClass patch alone with JSONMerge
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                terminationGracePeriodSeconds: 600
+      gateways.default.envoyProxy.mergeType: JSONMerge
+    asserts:
+      - equal:
+          path: spec.mergeType
+          value: JSONMerge
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: merges a gateway patch with the grace period patch on CAPA
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: JSONMerge
+        value:
+          spec:
+            replicas: 3
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: JSONMerge
+            value:
+              spec:
+                replicas: 3
+                template:
+                  spec:
+                    terminationGracePeriodSeconds: 240
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+
+  - it: leaves out the grace period patch when the GatewayClass sets a health check failure delay
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.shutdown:
+        healthCheckFailureDelay: 60s
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - notExists:
+          path: spec.shutdown.healthCheckFailureDelay
+
+  - it: keeps the other CAPA timers when the gateway overrides some of them
+    set:
+      provider: capa
+      gateways.default.envoyProxy.shutdown:
+        minDrainDuration: 300s
+        drainTimeout: 330s
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            minDrainDuration: 300s
+            drainTimeout: 330s
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+
+  - it: leaves out the grace period when a gateway patch comes with a shutdown override
+    set:
+      provider: capz
+      gateways.default.envoyProxy.shutdown.drainTimeout: 600s
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: JSONMerge
+        value:
+          spec:
+            replicas: 3
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: JSONMerge
+            value:
+              spec:
+                replicas: 3
+
+  - it: merges a gateway patch with the Azure grace period
+    set:
+      provider: capz
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            replicas: 3
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: StrategicMerge
+            value:
+              spec:
+                replicas: 3
+                template:
+                  spec:
+                    terminationGracePeriodSeconds: 120
+
+  - it: adds no grace period to a gateway patch on CAPA without an NLB
+    set:
+      provider: capa
+      gateways.default.provider.aws.useNetworkLoadBalancer: false
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: JSONMerge
+        value:
+          spec:
+            replicas: 3
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: JSONMerge
+            value:
+              spec:
+                replicas: 3
+      - notExists:
+          path: spec.shutdown
+
+  - it: keeps the CAPA timer set when the gateway replaces a GatewayClass shutdown
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.shutdown:
+        drainTimeout: 300s
+      gateways.default.envoyProxy.mergeType: Replace
+    asserts:
+      - equal:
+          path: spec.shutdown.drainTimeout
+          value: 200s
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 240
+
+  - it: leaves out the GatewayClass shutdown fields with JSONMerge
+    set:
+      provider: capz
+      gatewayClasses.default.envoyProxy.shutdown:
+        minDrainDuration: 45s
+      gateways.default.envoyProxy.mergeType: JSONMerge
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            healthCheckFailureDelay: 30s
+            drainTimeout: 90s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+
+  - it: keeps the CAPA timers and pod defaults when the GatewayClass sets a patch
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                terminationGracePeriodSeconds: 600
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - equal:
+          path: spec.shutdown.minDrainDuration
+          value: 180s
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+
+  - it: passes a gateway shutdown through on other providers without a grace period
+    set:
+      provider: vsphere
+      gateways.default.envoyProxy.shutdown:
+        drainTimeout: 120s
+    asserts:
+      - equal:
+          path: spec.shutdown
+          value:
+            drainTimeout: 120s
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment
 
   - it: leaves out the anti-affinity default when the GatewayClass EnvoyProxy sets affinity
     set:
