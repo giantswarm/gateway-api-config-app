@@ -122,11 +122,12 @@ func readinessGatePodTests() {
 	for _, old := range pods {
 		By(fmt.Sprintf("replacing proxy pod %s", old.Name))
 		// The list is read once, so a pod can be gone by the time its turn comes, for
-		// example replaced by an Envoy Gateway rollout or evicted in the meantime. Its
-		// ReplicaSet replaces it, so the wait below still covers the new pod.
+		// example replaced by an Envoy Gateway rollout or evicted in the meantime. The
+		// Deployment keeps three replicas, so the wait below covers whichever pod
+		// replaces it.
 		if err := c.Delete(state.GetContext(), &old); err != nil {
 			Expect(cr.IgnoreNotFound(err)).To(Succeed())
-			logger.Log("proxy pod %s is already gone, waiting for its replacement", old.Name)
+			logger.Log("proxy pod %s is already gone, waiting for the proxy pods to be Ready", old.Name)
 		}
 
 		// The new pod is not Ready while its target registers, so waiting for all pods
