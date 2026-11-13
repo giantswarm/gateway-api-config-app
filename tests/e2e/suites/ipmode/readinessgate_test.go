@@ -121,7 +121,13 @@ func readinessGatePodTests() {
 
 	for _, old := range pods {
 		By(fmt.Sprintf("replacing proxy pod %s", old.Name))
-		Expect(c.Delete(state.GetContext(), &old)).To(Succeed())
+		// The list is read once, so a pod can be gone by the time its turn comes, for
+		// example after an HPA scale-in. A missing pod needs no replacement.
+		if err := c.Delete(state.GetContext(), &old); err != nil {
+			Expect(cr.IgnoreNotFound(err)).To(Succeed())
+			logger.Log("proxy pod %s is already gone, skipping it", old.Name)
+			continue
+		}
 
 		// The new pod is not Ready while its target registers, so waiting for all pods
 		// to be Ready also waits out the NLB health checks.

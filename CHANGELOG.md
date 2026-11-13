@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `ipmode` e2e suite skips a proxy pod that is already gone when it replaces the pods, instead of failing on the 404, for example after an HPA scale-in.
 - Leave out the default termination grace period patch when the GatewayClass the gateway merges onto sets its own `envoyDeployment.patch`. With `StrategicMerge` Envoy Gateway cannot merge the two patches, so the gateway stopped reconciling; with `JSONMerge` the chart's patch overrode the class patch's type and grace period. Such gateways restart on upgrade and get the class patch's grace period, or the drain timeout plus 300s.
 - A drain timeout longer than the chart's fixed termination grace period was cut short by it.
 - Replace the dead GitOps docs link in the README and drop the link to the web interface docs, which no longer exist.
