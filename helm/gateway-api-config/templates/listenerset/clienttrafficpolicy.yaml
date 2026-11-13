@@ -1,6 +1,6 @@
 {{- range $i, $gateway := .Values.gateways }}
 {{- if $gateway.enabled }}
-{{- $isNLB := include "gateway.isNLB" (dict "gateway" $gateway "root" $) }}
+{{- $isNLB := include "gateway.awsNlb" (dict "provider" $.Values.provider "gateway" $gateway) }}
 {{- $parentEnabled := include "gateway.clientTrafficPolicyEnabled" (dict "gateway" $gateway "root" $) }}
 {{- range $lsKey, $ls := $gateway.listenerSets }}
 {{- if $ls.enabled }}

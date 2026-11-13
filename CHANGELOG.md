@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Check for CAPA with an AWS NLB in one `gateway.awsNlb` helper instead of seven copies, replacing `gateway.isNLB`. The rendered output does not change.
 - **Behaviour change:** set graceful shutdown timers on Azure (`provider: capz`, which AKS clusters get too). Requires Envoy Gateway 1.9. Upgrading restarts all proxy pods on Azure. See the README for the values.
 - **Behaviour change:** leave out the fixed termination grace period when the gateway, or the GatewayClass it merges onto, sets any `shutdown` field. Envoy Gateway then sets it to the drain timeout plus 300s (500s for a 200s drain). Such gateways restart on upgrade. The other timers still fill in field by field.
 
