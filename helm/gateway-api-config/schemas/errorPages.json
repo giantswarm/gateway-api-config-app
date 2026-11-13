@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "Error pages, set on a GatewayClass, a gateway or a listener set.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "enabled": {
+            "type": "boolean"
+        },
+        "statusCodes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "Range",
+                            "Value"
+                        ]
+                    },
+                    "value": {
+                        "type": "integer"
+                    },
+                    "range": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "start": {
+                                "type": "integer"
+                            },
+                            "end": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "contentType": {
+            "type": "string"
+        },
+        "body": {
+            "type": "string"
+        },
+        "existingConfigMapName": {
+            "type": "string"
+        }
+    }
+}

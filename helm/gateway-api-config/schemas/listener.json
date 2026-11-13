@@ -1,0 +1,96 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "A Gateway API listener, used by gateways.<k>.listeners and gateways.<k>.listenerSets.<k>.listeners.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "protocol": {
+            "type": "string"
+        },
+        "port": {
+            "type": "integer"
+        },
+        "hostname": {
+            "type": "string"
+        },
+        "httpsRedirectEnabled": {
+            "description": "Only read on the gateway listener keyed http.",
+            "type": "boolean"
+        },
+        "subdomains": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "allowedRoutes": {
+            "description": "Gateway API AllowedRoutes, passed through as is.",
+            "type": "object",
+            "additionalProperties": true
+        },
+        "certificate": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "wildcard": {
+                    "type": "boolean"
+                },
+                "issuer": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "kind": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "dnsEndpoints": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "annotations": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "tls": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "mode": {
+                    "type": "string"
+                },
+                "certificateRefs": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "namespace": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
