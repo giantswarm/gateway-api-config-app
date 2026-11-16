@@ -7,13 +7,13 @@ kyvernoPolicies:
   preconditions:
     key: "{{ request.object.spec.gatewayClassName }}"
 
-gatewayClasses:
+gatewayClasses:  # @schema mergeProperties: true
   default:
     enabled: true
     name: giantswarm-default
     # Per-gatewayclass error pages configuration applied to all gateways in this class.
     # Per-gateway errorPages settings override these defaults.
-    errorPages:
+    errorPages:  # @schema $ref: schemas/errorPages.json; skipProperties: true
       enabled: false
       statusCodes:
         - type: Range
@@ -31,7 +31,7 @@ gatewayClasses:
       contentType: "text/html"
       body: ""
       existingConfigMapName: ""
-    envoyProxy:
+    envoyProxy:  # @schema $ref: schemas/envoyProxy.json; skipProperties: true
       enabled: true
       # Controls how this GatewayClass-level EnvoyProxy merges with EnvoyGateway defaults
       # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). Leave unset to fully
@@ -48,13 +48,15 @@ gatewayClasses:
       envoyPDB: {}
       envoyServiceAccount: {}
 
-gateways:
+gateways:  # @schema mergeProperties: true
   default:
     enabled: true
     name: giantswarm-default
     dnsName: gateway
     className: giantswarm-default
     overrideBaseDomain: ""
+    labels: {}  # @schema additionalProperties: true
+    annotations: {}  # @schema additionalProperties: true
     provider:
       aws:
         useNetworkLoadBalancer: true
@@ -68,10 +70,10 @@ gateways:
         # Appended to the owning-gateway tags the chart sets. Only applies with
         # useNetworkLoadBalancer. A service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags
         # annotation set on the gateway or its GatewayClass replaces all of these tags.
-        additionalResourceTags: {}
+        additionalResourceTags: {}  # @schema additionalProperties: {type: string}
     service:
-      annotations: {}
-      labels: {}
+      annotations: {}  # @schema additionalProperties: true
+      labels: {}  # @schema additionalProperties: true
       externalTrafficPolicy: ""
       loadBalancerClass: ""
     tlsIssuer:
@@ -87,7 +89,7 @@ gateways:
       enabled: false
       namespaces:
         from: All
-        selector: {}
+        selector: {}  # @schema additionalProperties: true
     # Chart-managed ListenerSets, rendered in the release namespace alongside the gateway.
     # Each entry adds listeners to this gateway beyond the 64 the Gateway itself can hold,
     # with its own Certificate, DNS records and traffic policies. Listeners use the same
@@ -116,8 +118,8 @@ gateways:
     #               name: letsencrypt-giantswarm
     #           tls:
     #             mode: Terminate
-    listenerSets: {}
-    listeners:
+    listenerSets: {}  # @schema additionalProperties: {$ref: schemas/listenerSet.json}
+    listeners:  # @schema skipProperties: true; additionalProperties: {$ref: schemas/listener.json}
       http:
         name: http
         protocol: HTTP
@@ -167,13 +169,13 @@ gateways:
     # derives from the header.
     # Leave it empty for a gateway fronted by a CDN, which legitimately supplies these
     # headers, and configure clientIPDetection for it explicitly instead.
-    clientTrafficPolicy:
-      untrustedClientHeaders: []
+    clientTrafficPolicy:  # @schema additionalProperties: true
+      untrustedClientHeaders: []  # @schema item: string
         # - x-forwarded-for
         # - x-real-ip
     # Per-gateway error pages override gatewayClass errorPages settings.
     # Omit fields to inherit from gatewayClass config.
-    errorPages: {}
+    errorPages: {}  # @schema $ref: schemas/errorPages.json
     # BackendTrafficPolicy configures Envoy Gateway backend traffic settings for
     # this gateway. When omitted, a policy is created only if error pages are
     # enabled (see errorPages). Any keys set here are passed directly to the
@@ -192,8 +194,8 @@ gateways:
     #       maxConnections: 1024
     #       maxPendingRequests: 1024
     #       maxParallelRequests: 1024
-    backendTrafficPolicy: {}
-    envoyProxy:
+    backendTrafficPolicy: {}  # @schema additionalProperties: true
+    envoyProxy:  # @schema $ref: schemas/envoyProxy.json; skipProperties: true
       enabled: true
       # Controls how this gateway-level EnvoyProxy merges onto the GatewayClass-level one
       # (hierarchy: EnvoyGateway defaults < GatewayClass < Gateway). StrategicMerge lets the

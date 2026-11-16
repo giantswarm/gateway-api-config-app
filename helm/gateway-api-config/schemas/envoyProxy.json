@@ -1,0 +1,62 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "EnvoyProxy settings of a GatewayClass or a gateway. The object fields are passed to the EnvoyProxy spec as is.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "enabled": {
+            "type": "boolean"
+        },
+        "mergeType": {
+            "type": "string"
+        },
+        "envoyDeployment": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "envoyService": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "envoyHpa": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "envoyPDB": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "envoyServiceAccount": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "logging": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "telemetry": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "bootstrap": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "shutdown": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "concurrency": {
+            "type": "integer"
+        },
+        "extraArgs": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "mergeGateways": {
+            "type": "boolean"
+        }
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "A chart-managed ListenerSet of a gateway.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "enabled": {
+            "type": "boolean"
+        },
+        "name": {
+            "type": "string"
+        },
+        "labels": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "annotations": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "listeners": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "listener.json"
+            }
+        },
+        "errorPages": {
+            "$ref": "errorPages.json"
+        },
+        "backendTrafficPolicy": {
+            "description": "Passed to the BackendTrafficPolicy spec as is, except enabled.",
+            "type": "object",
+            "additionalProperties": true
+        },
+        "clientTrafficPolicy": {
+            "description": "Passed to the ClientTrafficPolicy spec as is, except enabled and untrustedClientHeaders.",
+            "type": "object",
+            "additionalProperties": true
+        }
+    }
+}
