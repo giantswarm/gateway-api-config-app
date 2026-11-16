@@ -1,3 +1,15 @@
+{{/*
+Gateway AWS NLB - "true" when the gateway runs on CAPA with an AWS Network Load Balancer
+(provider.aws.useNetworkLoadBalancer, on by default). Every AWS NLB default of the chart
+keys off this: the Service, shutdown, deployment and ClientTrafficPolicy defaults.
+Takes a dict with "provider" and "gateway".
+*/}}
+{{- define "gateway.awsNlb" -}}
+{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) -}}
+true
+{{- end -}}
+{{- end }}
+
 {{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
@@ -35,7 +47,7 @@ Gateway Service annotations
 {{- $_ := set $annotations "giantswarm.io/external-dns" "managed" }}
 
 {{- /* Use AWS NLB */}}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
+{{- if include "gateway.awsNlb" . }}
 {{- /* Enable PROXY Protocol */}}
 {{- $_ := set $annotations "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol" "*" }}
 
@@ -105,7 +117,7 @@ Gateway Service loadBalancerClass
 {{- $service := .gateway.service }}
 {{- if $service.loadBalancerClass }}
 {{- $service.loadBalancerClass }}
-{{- else if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) (not (dig "envoyService" "loadBalancerClass" "" (.inherited | default dict))) }}
+{{- else if and (include "gateway.awsNlb" .) (not (dig "envoyService" "loadBalancerClass" "" (.inherited | default dict))) }}
 {{- "service.k8s.aws/nlb" }}
 {{- end }}
 {{- end }}
@@ -118,7 +130,7 @@ Gateway Service externalTrafficPolicy
 {{- if $service.externalTrafficPolicy }}
 {{- $service.externalTrafficPolicy }}
 {{- else if not (dig "envoyService" "externalTrafficPolicy" "" (.inherited | default dict)) }}
-{{- ternary "Local" "Cluster" (and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway)) }}
+{{- ternary "Local" "Cluster" (eq (include "gateway.awsNlb" .) "true") }}
 {{- end }}
 {{- end }}
 
@@ -178,7 +190,7 @@ fits the chart's own drain timeout, so it is left out as soon as any field is ov
 {{- $timers := dict }}
 {{- if eq .provider "capz" }}
 {{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "60s" "drainTimeout" "90s" "terminationGracePeriodSeconds" 120 }}
-{{- else if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
+{{- else if include "gateway.awsNlb" . }}
 {{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "180s" "drainTimeout" "200s" "terminationGracePeriodSeconds" 240 }}
 {{- end }}
 {{- $timers | toYaml }}
@@ -214,7 +226,7 @@ example tainted control-plane nodes) do not count.
 {{- define "gateway.envoyDeploymentDefaults" -}}
 {{- $envoyDeployment := dict }}
 {{- $inherited := .inherited | default dict }}
-{{- if and (eq .provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) }}
+{{- if include "gateway.awsNlb" . }}
 {{- $pod := dict }}
 {{- /* Both pod defaults select the proxy pods by the owning-gateway labels Envoy
        Gateway stamps on them. */}}
@@ -513,16 +525,6 @@ spec:
 {{- end -}}
 
 {{/*
-Whether a gateway fronts an AWS NLB, which drives the ClientTrafficPolicy defaults.
-Takes: dict with "gateway" and "root"
-*/}}
-{{- define "gateway.isNLB" -}}
-{{- if and (eq .root.Values.provider "capa") (dig "provider" "aws" "useNetworkLoadBalancer" true .gateway) -}}
-true
-{{- end -}}
-{{- end -}}
-
-{{/*
 ClientTrafficPolicy spec body: NLB defaults with the user's values merged on top.
 Takes: dict with "clientTrafficPolicy" (the user block), "isNLB" and
 "untrustedClientHeaders" (the effective list, which callers resolve).
@@ -576,7 +578,7 @@ Takes: dict with "gateway" and "root"
 */}}
 {{- define "gateway.clientTrafficPolicyEnabled" -}}
 {{- $ctp := .gateway.clientTrafficPolicy | default dict -}}
-{{- $isNLB := include "gateway.isNLB" . -}}
+{{- $isNLB := include "gateway.awsNlb" (dict "provider" .root.Values.provider "gateway" .gateway) -}}
 {{- if ternary $ctp.enabled (ne $isNLB "") (hasKey $ctp "enabled") -}}
 true
 {{- end -}}
