@@ -3,15 +3,12 @@ package common
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/apptest-framework/v5/pkg/client"
 	"github.com/giantswarm/apptest-framework/v5/pkg/state"
-	"github.com/giantswarm/clustertest/v5/pkg/application"
 	"github.com/giantswarm/clustertest/v5/pkg/logger"
 )
 
@@ -34,6 +31,8 @@ enableServiceMutatorWebhook: false
 
 const (
 	awsLBControllerBundleName = "aws-lb-controller-bundle"
+	// Pinned: looking up the latest release needs a GitHub token, which fails in CI.
+	awsLBControllerBundleVersion = "6.1.0"
 
 	// awsLBControllerBundleServiceAccount is the service account the bundle HelmRelease
 	// impersonates. It exists in every organization namespace and is what the framework uses
@@ -53,12 +52,6 @@ func InstallDependencies() {
 		clusterName := state.GetCluster().Name
 		mcName := state.GetFramework().MC().GetClusterName()
 
-		// Resolve the version here instead of leaving it as "latest": the AfterSuite would
-		// otherwise ask GitHub again, a full suite later, when the CI token has usually expired.
-		version, err := application.GetLatestAppVersion(awsLBControllerBundleName)
-		Expect(err).NotTo(HaveOccurred())
-		logger.Log("Using %s version %s", awsLBControllerBundleName, version)
-
 		name := fmt.Sprintf("%s-%s", clusterName, awsLBControllerBundleName)
 		cfg := client.HelmReleaseConfig{
 			Name:      name,
@@ -68,8 +61,7 @@ func InstallDependencies() {
 			TargetNamespace:  org.GetNamespace(),
 			StorageNamespace: org.GetNamespace(),
 			ChartName:        awsLBControllerBundleName,
-			// GitHub release tags carry a "v" prefix, OCI chart tags do not.
-			ChartVersion: strings.TrimPrefix(version, "v"),
+			ChartVersion:     awsLBControllerBundleVersion,
 			// Named after the HelmRelease so another suite's leftover source can't pin the version.
 			SourceName:         name,
 			ServiceAccountName: awsLBControllerBundleServiceAccount,
