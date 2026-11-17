@@ -11,6 +11,7 @@ version: 2.1
 setup: true
 orbs:
   continuation: circleci/continuation@2.0.1
+
 jobs:
   setup:
     executor: continuation/default
@@ -31,6 +32,7 @@ jobs:
           fi
     - continuation/continue:
         configuration_path: .circleci/continue.yml
+
 workflows:
   setup:
     jobs:
