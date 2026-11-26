@@ -1,7 +1,6 @@
 package basic
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -37,7 +36,7 @@ const (
 	// while the proxies roll: one request every 50ms, 20 per second.
 	rolloutRequestInterval = 50 * time.Millisecond
 	// rolloutSettleTime keeps the traffic going after the last old proxy pod is gone,
-	// so a node the NLB still routes to is covered too.
+	// while checking that the new proxy pods stay running.
 	rolloutSettleTime = 30 * time.Second
 	// rolloutMaxFailureRatio tolerates a stray network error between the test runner
 	// and the NLB. Without the readiness listener a rollout of two proxies fails
@@ -47,8 +46,8 @@ const (
 
 // gatewayReadinessListenerTests validates that the envoy readiness probe of the
 // default gateway's proxy pods points at the chart's readiness listener, that the
-// startup probe still uses Envoy Gateway's /ready, and that /healthz fails 1s after
-// a pod starts terminating.
+// startup probe still uses Envoy Gateway's /ready, and that the shutdown-manager
+// preStop hook carries the 1s health check failure delay.
 func gatewayReadinessListenerTests() {
 	wcClient := common.WC()
 
@@ -98,7 +97,10 @@ func gatewayRolloutBehaviorTest() {
 	Eventually(func() error {
 		var err error
 		hostname, err = getGatewayLBHostname(wcClient)
-		return err
+		if err != nil {
+			return fmt.Errorf("getting the gateway load balancer hostname: %w", err)
+		}
+		return nil
 	}).
 		WithTimeout(5 * time.Minute).
 		WithPolling(10 * time.Second).
@@ -128,7 +130,7 @@ func gatewayRolloutBehaviorTest() {
 			Namespace:     common.ProxyNamespace,
 			LabelSelector: common.DefaultGatewayProxySelector,
 		}); err != nil {
-			return err
+			return fmt.Errorf("listing the proxy Deployments: %w", err)
 		}
 		if len(deployments.Items) != 1 {
 			return fmt.Errorf("expected one proxy Deployment for gateway %s, found %d", common.DefaultGatewayName, len(deployments.Items))
@@ -196,7 +198,7 @@ func gatewayRolloutBehaviorTest() {
 				return fmt.Errorf("old proxy pod %s/%s still exists", pod.Namespace, pod.Name)
 			}
 			if !apierrors.IsNotFound(err) {
-				return err
+				return fmt.Errorf("getting old proxy pod %s/%s: %w", pod.Namespace, pod.Name, err)
 			}
 		}
 		return nil
@@ -205,7 +207,15 @@ func gatewayRolloutBehaviorTest() {
 		WithPolling(10 * time.Second).
 		Should(Succeed())
 
-	time.Sleep(rolloutSettleTime)
+	By("checking the new proxy pods stay running while the traffic settles")
+	proxyPodsListOptions := &cr.ListOptions{
+		Namespace:     common.ProxyNamespace,
+		LabelSelector: common.DefaultGatewayProxySelector,
+	}
+	Consistently(arePodsRunning(ctx, wcClient, proxyPodsListOptions)).
+		WithTimeout(rolloutSettleTime).
+		WithPolling(5 * time.Second).
+		Should(BeTrue())
 	close(stop)
 	wg.Wait()
 
@@ -221,14 +231,6 @@ func gatewayRolloutBehaviorTest() {
 	Expect(float64(lost)/float64(sent)).To(BeNumerically("<=", rolloutMaxFailureRatio),
 		"%d of %d new connections failed during the proxy rollout:\n%s", lost, sent, strings.Join(failures, "\n"))
 
-	By("checking the new proxy pods are ready")
-	Eventually(arePodsRunning(ctx, wcClient, &cr.ListOptions{
-		Namespace:     common.ProxyNamespace,
-		LabelSelector: common.DefaultGatewayProxySelector,
-	})).
-		WithTimeout(5 * time.Minute).
-		WithPolling(5 * time.Second).
-		Should(BeTrue())
 }
 
 // probeGateway sends one request over a new connection and expects the HTTP to HTTPS
@@ -237,11 +239,11 @@ func gatewayRolloutBehaviorTest() {
 func probeGateway(httpClient *http.Client, url string) error {
 	resp, err := httpClient.Get(url) //nolint:noctx
 	if err != nil {
-		return err
+		return fmt.Errorf("GET %s: %w", url, err)
 	}
 	defer resp.Body.Close() //nolint:errcheck
 	if resp.StatusCode != http.StatusMovedPermanently {
-		return errors.New(resp.Status)
+		return fmt.Errorf("GET %s: unexpected status %s", url, resp.Status)
 	}
 	return nil
 }

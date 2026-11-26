@@ -16,23 +16,39 @@ AWS NLB gateway to its own listener. Envoy Gateway's readiness probe (19003 /rea
 the listener /healthz the NLB probes are the same health_check filter, so the shutdown
 fails both at once. The chart adds a static listener on readinessListenerPort through
 the EnvoyProxy bootstrap (type Merge, appended to Envoy Gateway's listeners) that
-answers readinessListenerPath with a direct 200 and is never drained, and points the
-readiness probe at it. Startup and liveness probes keep 19003 /ready.
-Left out when the gateway or the GatewayClass it merges onto sets a bootstrap (the
-chart cannot merge two bootstraps) or the class sets an envoyDeployment.patch (see
+answers readinessListenerPath with a direct 200, and points the readiness probe at it.
+Startup and liveness probes keep 19003 /ready.
+Turned off with provider.aws.readinessListener: false. Also left out when the gateway or
+the chart-managed GatewayClass it merges onto sets a bootstrap (the chart cannot merge
+two bootstraps) or the class sets an envoyDeployment.patch (see
 gateway.envoyDeploymentDefaults), and when the gateway patch sets containers or a type
-other than StrategicMerge, which would replace the probe. Takes a dict with
-"provider", "gateway" and "inherited".
+other than StrategicMerge, which would replace the probe. The chart cannot see a
+GatewayClass it does not manage, so such gateways turn it off themselves when the class
+sets a patch or a bootstrap. Takes a dict with "provider", "gateway" and "inherited".
 */}}
 {{- define "gateway.readinessListener" -}}
 {{- $inherited := .inherited | default dict }}
 {{- $patch := dig "envoyProxy" "envoyDeployment" "patch" dict .gateway }}
+{{- $patch = ternary $patch dict (kindIs "map" $patch) }}
+{{- $podSpec := dict }}
+{{- $value := get $patch "value" }}
+{{- if kindIs "map" $value }}
+{{- $spec := get $value "spec" }}
+{{- if kindIs "map" $spec }}
+{{- $template := get $spec "template" }}
+{{- if kindIs "map" $template }}
+{{- $podSpec = get $template "spec" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $podSpec = ternary $podSpec dict (kindIs "map" $podSpec) }}
 {{- if and (include "gateway.awsNlb" .)
+      (dig "provider" "aws" "readinessListener" true .gateway)
       (not (dig "bootstrap" nil $inherited))
       (not (dig "envoyProxy" "bootstrap" nil .gateway))
       (not (dig "envoyDeployment" "patch" nil $inherited))
-      (eq (dig "type" "StrategicMerge" $patch) "StrategicMerge")
-      (not (dig "value" "spec" "template" "spec" "containers" nil $patch)) -}}
+      (eq (get $patch "type" | default "StrategicMerge") "StrategicMerge")
+      (not (get $podSpec "containers")) -}}
 true
 {{- end -}}
 {{- end }}
@@ -42,9 +58,33 @@ true
 
 {{/*
 Gateway readiness listener bootstrap - the EnvoyProxy bootstrap that adds the readiness
-listener. drain_type MODIFY_ONLY keeps it out of drain_listeners, so it answers until
-envoy exits.
+listener. The shutdown drains it gracefully like every listener, so it keeps accepting
+for the drain period: Envoy Gateway drains with skip_exit and envoy exits at the drain
+timeout. drain_type MODIFY_ONLY keeps /healthcheck/fail from draining its connections.
 */}}
+
+{{/*
+Gateway readiness listener port check - fails the render when a listener of the gateway
+or of one of its listener sets takes the readiness listener port, which envoy would
+reject as a duplicate address. Takes a dict with "gateway".
+*/}}
+{{- define "gateway.validateReadinessListenerPort" -}}
+{{- $port := include "gateway.readinessListenerPort" . | int }}
+{{- range $_, $l := .gateway.listeners }}
+{{- if and $l (eq ($l.port | int) $port) }}
+{{- fail (printf "gateway %q: listener %q uses port %d, which the chart reserves for the envoy readiness listener on AWS NLB gateways. Use another port or set provider.aws.readinessListener: false." $.gateway.name $l.name $port) }}
+{{- end }}
+{{- end }}
+{{- range $lsKey, $ls := .gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- range $_, $l := $ls.listeners }}
+{{- if and $l (eq ($l.port | int) $port) }}
+{{- fail (printf "gateway %q: listener set %q listener %q uses port %d, which the chart reserves for the envoy readiness listener on AWS NLB gateways. Use another port or set provider.aws.readinessListener: false." $.gateway.name $lsKey $l.name $port) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
 {{- define "gateway.readinessListenerBootstrap" -}}
 type: Merge
 value: |
@@ -239,7 +279,7 @@ fits the chart's own drain timeout, so it is left out as soon as any field is ov
   no local endpoint and refuses new connections until the NLB notices (~20-30s).
   The chart avoids that with its readiness listener (see gateway.readinessListener):
   the pod readiness probe moves to a listener /healthcheck/fail does not flip, so the
-  pod stays serving for the whole drain. /healthz then fails after a 1s delay (kept
+  pod stays serving for the drain. /healthz then fails after a 1s delay (kept
   above 0, since Envoy Gateway only drains the listeners explicitly with a delay) and
   the NLB stops sending new flows at ~20s while envoy still accepts them.
   draining_interval_seconds (120s) then ends at ~140s, and a minDrainDuration of 180s

@@ -644,6 +644,66 @@ tests:
           path: spec.shutdown.healthCheckFailureDelay
           value: 30s
 
+  - it: turns the readiness listener off with provider.aws.readinessListener false
+    set:
+      provider: capa
+      gateways.default.provider.aws.readinessListener: false
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+
+  - it: adds no patch for a gateway on an external class that sets its timers and turns the readiness listener off
+    set:
+      provider: capa
+      gateways.default.className: external-class
+      gateways.default.provider.aws.readinessListener: false
+      gateways.default.envoyProxy.shutdown.drainTimeout: 300s
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - notExists:
+          path: spec.bootstrap
+
+  - it: tolerates a null pod template in a gateway patch
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template: null
+    asserts:
+      - exists:
+          path: spec.bootstrap
+
+  - it: rejects a gateway listener on the readiness listener port
+    set:
+      provider: capa
+      gateways.default.listeners.extra:
+        name: extra
+        protocol: HTTP
+        port: 19004
+    asserts:
+      - failedTemplate:
+          errorPattern: "uses port 19004, which the chart reserves"
+
+  - it: allows the readiness listener port when the readiness listener is off
+    set:
+      provider: capa
+      gateways.default.provider.aws.readinessListener: false
+      gateways.default.listeners.extra:
+        name: extra
+        protocol: HTTP
+        port: 19004
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+
   - it: renders nothing when the gateway is disabled
     set:
       provider: capa

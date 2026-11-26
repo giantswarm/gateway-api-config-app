@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Behaviour change:** keep terminating proxy pods of AWS NLB gateways serving until envoy has drained. Envoy's readiness probe moved to a dedicated listener, and the health check failure delay dropped to 1s, so the NLB stops sending new connections to a node before it refuses them. Rollouts and evictions no longer cause connection errors. Upgrading restarts all proxy pods on CAPA.
+- **Behaviour change:** keep terminating AWS NLB proxy pods serving during the drain, so rollouts and evictions no longer refuse connections. Upgrading restarts proxy pods on CAPA. Turn it off with `provider.aws.readinessListener`.
 - The `ipmode` e2e suite no longer fails when a proxy pod is already gone by the time it replaces it, for example after an Envoy Gateway rollout or an eviction. It waits for the replacement pod instead.
 - Leave out the default termination grace period patch when the GatewayClass the gateway merges onto sets its own `envoyDeployment.patch`. With `StrategicMerge` Envoy Gateway cannot merge the two patches, so the gateway stopped reconciling; with `JSONMerge` the chart's patch overrode the class patch's type and grace period. Such gateways restart on upgrade and get the class patch's grace period, or the drain timeout plus 300s.
 - A drain timeout longer than the chart's fixed termination grace period was cut short by it.

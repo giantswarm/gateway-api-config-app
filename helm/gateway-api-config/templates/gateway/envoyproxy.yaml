@@ -30,6 +30,7 @@ is kept as a placeholder for future gateway-specific defaults.
 {{- $_ := set $envoyProxyValues "envoyDeployment" (mergeOverwrite $envoyDeploymentDefaults (deepCopy (default dict $envoyProxyValues.envoyDeployment))) -}}
 {{- end }}
 {{- if include "gateway.readinessListener" (dict "provider" $.Values.provider "gateway" $gateway "inherited" $inherited) -}}
+{{- include "gateway.validateReadinessListenerPort" (dict "gateway" $gateway) -}}
 {{- $_ := set $envoyProxyValues "bootstrap" ((include "gateway.readinessListenerBootstrap" $) | fromYaml) -}}
 {{- end }}
 {{- if not $envoyProxyValues.mergeType -}}
