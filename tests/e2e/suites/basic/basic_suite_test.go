@@ -72,6 +72,12 @@ func TestBasic(t *testing.T) {
 			It("should have the gateway proxies carry the zone spread constraint", func() {
 				gatewayZoneSpreadTests()
 			})
+			// Restarts the proxies, so it comes after every spec that reads the
+			// original proxy pods.
+			It("should keep answering new connections during a proxy rollout", func() {
+				gatewayReadinessListenerTests()
+				gatewayRolloutBehaviorTest()
+			})
 			// The ListenerSet blocks come last on purpose: the chart listener set's
 			// ACME order and DNS record have been in flight since the app was
 			// installed, so by now they are effectively free, and the namespace and

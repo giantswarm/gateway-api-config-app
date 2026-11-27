@@ -10,6 +10,115 @@ true
 {{- end -}}
 {{- end }}
 
+{{/*
+Gateway readiness listener - "true" when the chart moves the envoy readiness probe of an
+AWS NLB gateway to its own listener. Envoy Gateway's readiness probe (19003 /ready) and
+the listener /healthz the NLB probes are the same health_check filter, so the shutdown
+fails both at once. The chart adds a static listener on readinessListenerPort through
+the EnvoyProxy bootstrap (type Merge, appended to Envoy Gateway's listeners) that
+answers readinessListenerPath with a direct 200, and points the readiness probe at it.
+Startup and liveness probes keep 19003 /ready.
+Turned off with provider.aws.readinessListener: false. Also left out when the gateway or
+the chart-managed GatewayClass it merges onto sets a bootstrap (the chart cannot merge
+two bootstraps) or the class sets an envoyDeployment.patch (see
+gateway.envoyDeploymentDefaults), and when the gateway patch sets containers or a type
+other than StrategicMerge, which would replace the probe. The chart cannot see a
+GatewayClass it does not manage, so such gateways turn it off themselves when the class
+sets a patch or a bootstrap. Takes a dict with "provider", "gateway" and "inherited".
+*/}}
+{{- define "gateway.readinessListener" -}}
+{{- $inherited := .inherited | default dict }}
+{{- $patch := dig "envoyProxy" "envoyDeployment" "patch" dict .gateway }}
+{{- $patch = ternary $patch dict (kindIs "map" $patch) }}
+{{- $podSpec := dict }}
+{{- $value := get $patch "value" }}
+{{- if kindIs "map" $value }}
+{{- $spec := get $value "spec" }}
+{{- if kindIs "map" $spec }}
+{{- $template := get $spec "template" }}
+{{- if kindIs "map" $template }}
+{{- $podSpec = get $template "spec" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $podSpec = ternary $podSpec dict (kindIs "map" $podSpec) }}
+{{- if and (include "gateway.awsNlb" .)
+      (dig "provider" "aws" "readinessListener" true .gateway)
+      (not (dig "bootstrap" nil $inherited))
+      (not (dig "envoyProxy" "bootstrap" nil .gateway))
+      (not (dig "envoyDeployment" "patch" nil $inherited))
+      (eq (get $patch "type" | default "StrategicMerge") "StrategicMerge")
+      (not (get $podSpec "containers")) -}}
+true
+{{- end -}}
+{{- end }}
+
+{{- define "gateway.readinessListenerPort" -}}19004{{- end }}
+{{- define "gateway.readinessListenerPath" -}}/ready{{- end }}
+
+{{/*
+Gateway readiness listener bootstrap - the EnvoyProxy bootstrap that adds the readiness
+listener. The shutdown drains it gracefully like every listener, so it keeps accepting
+for the drain period: Envoy Gateway drains with skip_exit and envoy exits at the drain
+timeout. drain_type MODIFY_ONLY keeps /healthcheck/fail from draining its connections.
+*/}}
+
+{{/*
+Gateway readiness listener port check - fails the render when a listener of the gateway
+or of one of its listener sets takes the readiness listener port, which envoy would
+reject as a duplicate address. Takes a dict with "gateway".
+*/}}
+{{- define "gateway.validateReadinessListenerPort" -}}
+{{- $port := include "gateway.readinessListenerPort" . | int }}
+{{- range $_, $l := .gateway.listeners }}
+{{- if and $l (eq ($l.port | int) $port) }}
+{{- fail (printf "gateway %q: listener %q uses port %d, which the chart reserves for the envoy readiness listener on AWS NLB gateways. Use another port or set provider.aws.readinessListener: false." $.gateway.name $l.name $port) }}
+{{- end }}
+{{- end }}
+{{- range $lsKey, $ls := .gateway.listenerSets }}
+{{- if $ls.enabled }}
+{{- range $_, $l := $ls.listeners }}
+{{- if and $l (eq ($l.port | int) $port) }}
+{{- fail (printf "gateway %q: listener set %q listener %q uses port %d, which the chart reserves for the envoy readiness listener on AWS NLB gateways. Use another port or set provider.aws.readinessListener: false." $.gateway.name $lsKey $l.name $port) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- define "gateway.readinessListenerBootstrap" -}}
+type: Merge
+value: |
+  static_resources:
+    listeners:
+    - name: giantswarm-readiness
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: {{ include "gateway.readinessListenerPort" . }}
+      drain_type: MODIFY_ONLY
+      bypass_overload_manager: true
+      filter_chains:
+      - filters:
+        - name: envoy.filters.network.http_connection_manager
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            stat_prefix: giantswarm-readiness
+            route_config:
+              virtual_hosts:
+              - name: readiness
+                domains:
+                - "*"
+                routes:
+                - match:
+                    path: {{ include "gateway.readinessListenerPath" . }}
+                  direct_response:
+                    status: 200
+            http_filters:
+            - name: envoy.filters.http.router
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+{{- end }}
+
 {{/* vim: set filetype=mustache: */}}
 {{/*
 Expand the name of the chart.
@@ -163,16 +272,20 @@ fits the chart's own drain timeout, so it is left out as soon as any field is ov
 (see gateway.envoyDeploymentDefaults).
 
   CAPA with an AWS NLB: drain timers are aligned so the node always outlives the NLB
-  connection drain. Listener drain starts when the pod starts terminating (the
-  shutdown-manager preStop hook), but healthCheckFailureDelay holds /healthz up for
-  30s first. With externalTrafficPolicy: Local, failing it immediately makes the pod
-  non-ready while the NLB still forwards flows to the node, leaving it without a
-  serving local endpoint until the NLB notices. The delay covers that window, so the
-  NLB stops sending new flows before the endpoint goes away. The delay pushes every
-  later step back by the same 30s: healthcheck detection (~20s) lands at ~50s and
-  draining_interval_seconds (120s) then ends at ~170s, so a minDrainDuration of 180s
-  keeps envoy (and therefore the node) alive until all in-flight NLB flows have
-  moved off the node, avoiding RST/520 on node disruption.
+  connection drain. The NLB health check targets envoy's own /healthz, since with PROXY
+  protocol it cannot probe the health check node port. Envoy Gateway serves the pod
+  readiness probe (19003 /ready) from the same health_check filter, so failing /healthz
+  also makes the pod not serving. With externalTrafficPolicy: Local the node then has
+  no local endpoint and refuses new connections until the NLB notices (~20-30s).
+  The chart avoids that with its readiness listener (see gateway.readinessListener):
+  the pod readiness probe moves to a listener /healthcheck/fail does not flip, so the
+  pod stays serving for the drain. /healthz then fails after a 1s delay (kept
+  above 0, since Envoy Gateway only drains the listeners explicitly with a delay) and
+  the NLB stops sending new flows at ~20s while envoy still accepts them.
+  draining_interval_seconds (120s) then ends at ~140s, and a minDrainDuration of 180s
+  keeps envoy (and therefore the node) alive until all in-flight NLB flows have moved
+  off the node, avoiding RST/520 on node disruption. Without the readiness listener
+  the delay stays at 30s, which at least keeps the pod serving for 30s.
 
   Azure (CAPZ and AKS, both provider "capz"): the load balancer has no NLB draining
   interval to outlive, so the timers are shorter. With the default
@@ -191,7 +304,8 @@ fits the chart's own drain timeout, so it is left out as soon as any field is ov
 {{- if eq .provider "capz" }}
 {{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "60s" "drainTimeout" "90s" "terminationGracePeriodSeconds" 120 }}
 {{- else if include "gateway.awsNlb" . }}
-{{- $timers = dict "healthCheckFailureDelay" "30s" "minDrainDuration" "180s" "drainTimeout" "200s" "terminationGracePeriodSeconds" 240 }}
+{{- $delay := ternary "1s" "30s" (eq (include "gateway.readinessListener" .) "true") }}
+{{- $timers = dict "healthCheckFailureDelay" $delay "minDrainDuration" "180s" "drainTimeout" "200s" "terminationGracePeriodSeconds" 240 }}
 {{- end }}
 {{- $timers | toYaml }}
 {{- end }}
@@ -275,8 +389,18 @@ example tainted control-plane nodes) do not count.
        (templates/gateway/envoyproxy.yaml). */}}
 {{- $grace := dig "terminationGracePeriodSeconds" nil ((include "gateway.shutdownTimers" .) | fromYaml) }}
 {{- $ownShutdown := or (dig "shutdown" nil $inherited) (dig "envoyProxy" "shutdown" nil .gateway) }}
-{{- if and $grace (not $ownShutdown) (not (dig "envoyDeployment" "patch" nil $inherited)) }}
-{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" (dict "terminationGracePeriodSeconds" $grace))))) }}
+{{- $podSpec := dict }}
+{{- if and $grace (not $ownShutdown) }}
+{{- $_ := set $podSpec "terminationGracePeriodSeconds" $grace }}
+{{- end }}
+{{- /* The readiness listener probe, see gateway.readinessListener. Kept when a
+       shutdown field is overridden, since it does not depend on the timers. */}}
+{{- if include "gateway.readinessListener" . }}
+{{- $probe := dict "httpGet" (dict "path" (include "gateway.readinessListenerPath" .) "port" (include "gateway.readinessListenerPort" . | int)) }}
+{{- $_ := set $podSpec "containers" (list (dict "name" "envoy" "readinessProbe" $probe)) }}
+{{- end }}
+{{- if and $podSpec (not (dig "envoyDeployment" "patch" nil $inherited)) }}
+{{- $_ := set $envoyDeployment "patch" (dict "type" "StrategicMerge" "value" (dict "spec" (dict "template" (dict "spec" $podSpec)))) }}
 {{- end }}
 {{- $envoyDeployment | toYaml }}
 {{- end }}

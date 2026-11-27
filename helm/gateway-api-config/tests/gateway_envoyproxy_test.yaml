@@ -55,11 +55,17 @@ tests:
               spec:
                 template:
                   spec:
+                    containers:
+                      - name: envoy
+                        readinessProbe:
+                          httpGet:
+                            path: /ready
+                            port: 19004
                     terminationGracePeriodSeconds: 240
       - equal:
           path: spec.shutdown
           value:
-            healthCheckFailureDelay: 30s
+            healthCheckFailureDelay: 1s
             drainTimeout: 200s
             minDrainDuration: 180s
 
@@ -266,11 +272,13 @@ tests:
         drainTimeout: 300s
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment.patch
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers[0].readinessProbe
       - equal:
           path: spec.shutdown
           value:
-            healthCheckFailureDelay: 30s
+            healthCheckFailureDelay: 1s
             minDrainDuration: 180s
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity
@@ -316,6 +324,11 @@ tests:
                     terminationGracePeriodSeconds: 240
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+      - notExists:
+          path: spec.bootstrap
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
 
   - it: leaves out the grace period patch when the GatewayClass sets a health check failure delay
     set:
@@ -336,11 +349,13 @@ tests:
         drainTimeout: 330s
     asserts:
       - notExists:
-          path: spec.provider.kubernetes.envoyDeployment.patch
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+      - exists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers[0].readinessProbe
       - equal:
           path: spec.shutdown
           value:
-            healthCheckFailureDelay: 30s
+            healthCheckFailureDelay: 1s
             minDrainDuration: 300s
             drainTimeout: 330s
       - exists:
@@ -451,6 +466,11 @@ tests:
           value: 180s
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity
+      - notExists:
+          path: spec.bootstrap
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
 
   - it: passes a gateway shutdown through on other providers without a grace period
     set:
@@ -499,6 +519,190 @@ tests:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity.podAntiAffinity
       - exists:
           path: spec.provider.kubernetes.envoyDeployment.pod.affinity.nodeAffinity
+
+  - it: adds the readiness listener bootstrap on CAPA with an NLB
+    set:
+      provider: capa
+    asserts:
+      - equal:
+          path: spec.bootstrap.type
+          value: Merge
+      - matchRegex:
+          path: spec.bootstrap.value
+          pattern: "port_value: 19004"
+      - matchRegex:
+          path: spec.bootstrap.value
+          pattern: "drain_type: MODIFY_ONLY"
+      - matchRegex:
+          path: spec.bootstrap.value
+          pattern: "path: /ready"
+
+  - it: adds no readiness listener on other providers
+    set:
+      provider: capz
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+
+  - it: adds no readiness listener on CAPA without an NLB
+    set:
+      provider: capa
+      gateways.default.provider.aws.useNetworkLoadBalancer: false
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+
+  - it: keeps a gateway bootstrap and the 30s delay on CAPA
+    set:
+      provider: capa
+      gateways.default.envoyProxy.bootstrap:
+        type: Merge
+        value: "admin: {}"
+    asserts:
+      - equal:
+          path: spec.bootstrap
+          value:
+            type: Merge
+            value: "admin: {}"
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.terminationGracePeriodSeconds
+          value: 240
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+
+  - it: leaves out the readiness listener when the GatewayClass sets a bootstrap
+    set:
+      provider: capa
+      gatewayClasses.default.envoyProxy.bootstrap:
+        type: Merge
+        value: "admin: {}"
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+
+  - it: merges a StrategicMerge gateway patch with the readiness probe on CAPA
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            minReadySeconds: 30
+    asserts:
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+          value:
+            type: StrategicMerge
+            value:
+              spec:
+                minReadySeconds: 30
+                template:
+                  spec:
+                    containers:
+                      - name: envoy
+                        readinessProbe:
+                          httpGet:
+                            path: /ready
+                            port: 19004
+                    terminationGracePeriodSeconds: 240
+      - exists:
+          path: spec.bootstrap
+
+  - it: leaves out the readiness listener when the gateway patch sets containers
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: envoy
+                    readinessProbe:
+                      periodSeconds: 10
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+      - equal:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+          value:
+            - name: envoy
+              readinessProbe:
+                periodSeconds: 10
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+
+  - it: turns the readiness listener off with provider.aws.readinessListener false
+    set:
+      provider: capa
+      gateways.default.provider.aws.readinessListener: false
+    asserts:
+      - notExists:
+          path: spec.bootstrap
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch.value.spec.template.spec.containers
+      - equal:
+          path: spec.shutdown.healthCheckFailureDelay
+          value: 30s
+
+  - it: adds no patch for a gateway on an external class that sets its timers and turns the readiness listener off
+    set:
+      provider: capa
+      gateways.default.className: external-class
+      gateways.default.provider.aws.readinessListener: false
+      gateways.default.envoyProxy.shutdown.drainTimeout: 300s
+    asserts:
+      - notExists:
+          path: spec.provider.kubernetes.envoyDeployment.patch
+      - notExists:
+          path: spec.bootstrap
+
+  - it: tolerates a null pod template in a gateway patch
+    set:
+      provider: capa
+      gateways.default.envoyProxy.envoyDeployment.patch:
+        type: StrategicMerge
+        value:
+          spec:
+            template: null
+    asserts:
+      - exists:
+          path: spec.bootstrap
+
+  - it: rejects a gateway listener on the readiness listener port
+    set:
+      provider: capa
+      gateways.default.listeners.extra:
+        name: extra
+        protocol: HTTP
+        port: 19004
+    asserts:
+      - failedTemplate:
+          errorPattern: "uses port 19004, which the chart reserves"
+
+  - it: allows the readiness listener port when the readiness listener is off
+    set:
+      provider: capa
+      gateways.default.provider.aws.readinessListener: false
+      gateways.default.listeners.extra:
+        name: extra
+        protocol: HTTP
+        port: 19004
+    asserts:
+      - notExists:
+          path: spec.bootstrap
 
   - it: renders nothing when the gateway is disabled
     set:

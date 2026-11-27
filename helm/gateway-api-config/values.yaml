@@ -71,6 +71,12 @@ gateways:  # @schema mergeProperties: true
         # useNetworkLoadBalancer. A service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags
         # annotation set on the gateway or its GatewayClass replaces all of these tags.
         additionalResourceTags: {}  # @schema additionalProperties: {type: string}
+        # Move the envoy readiness probe to a listener on port 19004 that keeps passing
+        # while envoy drains, so a terminating proxy pod keeps serving its node until the
+        # NLB has stopped sending to it. Only applies with useNetworkLoadBalancer. Set
+        # false when the gateway uses a GatewayClass managed outside this chart that sets
+        # its own envoyDeployment.patch or bootstrap. See docs/aws-nlb-readiness-listener.md.
+        readinessListener: true
     service:
       annotations: {}  # @schema additionalProperties: true
       labels: {}  # @schema additionalProperties: true
